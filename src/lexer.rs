@@ -41,6 +41,7 @@ impl Lexer {
 
                     Lexer::to_keyword_or_identifier(id)
                 },
+                ' ' | '\t' | '\n' => Token::Symbol(SymbolToken::Spacing),
                 '(' => Token::Symbol(SymbolToken::OpenParen),
                 ')' => Token::Symbol(SymbolToken::ClosingParen),
                 '{' => Token::Symbol(SymbolToken::OpenCurlyBracket),
