@@ -19,6 +19,7 @@ impl Lexer {
 
         while let Some((index, char)) = input.next() {
             let new_token = match char {
+                ' ' | '\t' | '\n' => continue,
                 'a'..='z' | 'A'..='Z' | '_' => {
                     let mut id = char.to_string();
 
@@ -41,7 +42,6 @@ impl Lexer {
 
                     Lexer::to_keyword_or_identifier(id)
                 },
-                ' ' | '\t' | '\n' => Token::Symbol(SymbolToken::Spacing),
                 '(' => Token::Symbol(SymbolToken::OpenParen),
                 ')' => Token::Symbol(SymbolToken::ClosingParen),
                 '{' => Token::Symbol(SymbolToken::OpenCurlyBracket),

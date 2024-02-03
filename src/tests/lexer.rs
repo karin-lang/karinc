@@ -20,6 +20,20 @@ fn generates_single_token() {
 }
 
 #[test]
+fn ignores_spacing() {
+    assert_eq!(
+        Lexer::tokenize("id id"),
+        (
+            vec![
+                Token::Identifier("id".to_string()),
+                Token::Identifier("id".to_string()),
+            ],
+            Vec::new(),
+        ),
+    );
+}
+
+#[test]
 fn generates_multiple_tokens() {
     assert_eq!(
         Lexer::tokenize("fn(id)"),
