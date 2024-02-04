@@ -1,4 +1,4 @@
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub struct TokenPosition {
     pub index: usize,
     pub len: usize,
@@ -7,6 +7,12 @@ pub struct TokenPosition {
 impl TokenPosition {
     pub fn new(index: usize, len: usize) -> TokenPosition {
         TokenPosition { index, len }
+    }
+}
+
+impl Default for TokenPosition {
+    fn default() -> Self {
+        TokenPosition { index: 0, len: 0 }
     }
 }
 
