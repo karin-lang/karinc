@@ -26,8 +26,8 @@ fn parses_function() {
 #[test]
 fn skips_expected_function_identifier() {
     let tokens = vec![
-        (TokenPosition::new(0, 1), keyword!(Function)),
-        (TokenPosition::default(), symbol!(OpenParen)),
+        (TokenPosition::default(), keyword!(Function)),
+        (TokenPosition::new(0, 0, 0, 1), symbol!(OpenParen)),
         (TokenPosition::default(), symbol!(ClosingParen)),
         (TokenPosition::default(), symbol!(OpenCurlyBracket)),
         (TokenPosition::default(), symbol!(ClosingCurlyBracket)),
@@ -37,7 +37,7 @@ fn skips_expected_function_identifier() {
         Parser::new(&tokens).parse(),
         (
             Hir::new(),
-            vec![ParserLog::ExpectedIdentifier(TokenPosition::new(1, 1))],
+            vec![ParserLog::ExpectedIdentifier(TokenPosition::new(0, 0, 0, 1))],
         ),
     );
 }

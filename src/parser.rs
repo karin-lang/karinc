@@ -106,7 +106,7 @@ impl<'a> Parser<'a> {
     fn parse_function(&mut self) -> ParserCombinatoryResult<HirFunction> {
         let mut current_input = self.input.clone();
 
-        let fn_token_position = next_or_exit!(current_input, Token::Keyword(KeywordToken::Function)).0;
+        next_or_exit!(current_input, Token::Keyword(KeywordToken::Function));
 
         let id = {
             let id_token = peek_or_exit!(current_input);
@@ -117,7 +117,7 @@ impl<'a> Parser<'a> {
                     Some(v.clone())
                 },
                 _ => {
-                    self.logs.push(ParserLog::ExpectedIdentifier(TokenPosition::new(fn_token_position.index + fn_token_position.len, 1)));
+                    self.logs.push(ParserLog::ExpectedIdentifier(id_token.0));
                     None
                 },
             }

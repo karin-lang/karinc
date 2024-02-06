@@ -1,5 +1,6 @@
 pub mod token;
 
+use std::str::Chars;
 use token::*;
 
 pub type LexerResult = (Vec<Token>, Vec<LexerLog>);
@@ -9,15 +10,64 @@ pub enum LexerLog {
     UnknownToken(TokenPosition, String),
 }
 
+#[derive(Clone, Debug)]
+pub struct LexerInput<'a> {
+    input: Chars<'a>,
+    index: usize,
+    line: usize,
+    column: usize,
+}
+
+impl<'a> LexerInput<'a> {
+    pub fn new(input: &str, index: usize, line: usize, column: usize) -> LexerInput {
+        LexerInput {
+            input: input.chars(),
+            index,
+            line,
+            column,
+        }
+    }
+
+    pub fn next(&mut self) -> Option<(TokenPosition, char)> {
+        if let Some(char) = self.input.next() {
+            let pos = TokenPosition::new(self.index, self.line, self.column, 1);
+
+            self.index += 1;
+
+            if char == '\n' {
+                self.line += 1;
+                self.column = 0;
+            } else {
+                self.column += 1;
+            }
+
+            Some((pos, char))
+        } else {
+            None
+        }
+    }
+}
+
+impl<'a> From<&'a str> for LexerInput<'a> {
+    fn from(input: &'a str) -> Self {
+        LexerInput {
+            input: input.chars(),
+            index: 0,
+            line: 0,
+            column: 0,
+        }
+    }
+}
+
 pub struct Lexer;
 
 impl Lexer {
     pub fn tokenize(input: &str) -> LexerResult {
-        let mut input = input.char_indices();
+        let mut input = LexerInput::from(input);
         let mut logs = Vec::new();
         let mut tokens = Vec::new();
 
-        while let Some((index, char)) = input.next() {
+        while let Some((pos, char)) = input.next() {
             let new_token = match char {
                 ' ' | '\t' | '\n' => continue,
                 'a'..='z' | 'A'..='Z' | '_' => {
@@ -47,7 +97,7 @@ impl Lexer {
                 '{' => Token::Symbol(SymbolToken::OpenCurlyBracket),
                 '}' => Token::Symbol(SymbolToken::ClosingCurlyBracket),
                 _ => {
-                    logs.push(LexerLog::UnknownToken(TokenPosition::new(index, 1), char.to_string()));
+                    logs.push(LexerLog::UnknownToken(pos, char.to_string()));
                     continue;
                 },
             };
