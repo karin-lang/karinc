@@ -12,11 +12,14 @@ impl Hir {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct HirIdentifier(pub String);
+
+#[derive(Clone, Debug, PartialEq)]
 pub enum HirItem {
     Function(HirFunction),
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct HirFunction {
-    pub id: String,
+    pub id: HirIdentifier,
 }

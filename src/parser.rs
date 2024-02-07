@@ -131,7 +131,7 @@ impl<'a> Parser<'a> {
         self.input = current_input;
 
         if let Some(id) = id {
-            ParserCombinatoryResult::Matched(HirFunction { id })
+            ParserCombinatoryResult::Matched(HirFunction { id: HirIdentifier(id) })
         } else {
             ParserCombinatoryResult::Ignored
         }

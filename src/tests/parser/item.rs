@@ -16,7 +16,7 @@ fn parses_function() {
         ParserCombinatoryResult::Matched(
             HirItem::Function(
                 HirFunction {
-                    id: "f".to_string(),
+                    id: HirIdentifier("f".to_string()),
                 },
             ),
         ),

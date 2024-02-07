@@ -50,7 +50,7 @@ fn choices_single_item() {
                 items: vec![
                     HirItem::Function(
                         HirFunction {
-                            id: "f".to_string(),
+                            id: HirIdentifier("f".to_string()),
                         },
                     ),
                 ],
