@@ -50,7 +50,6 @@ fn parses_function_call() {
         (TokenPosition::default(), id!("f")),
         (TokenPosition::default(), symbol!(OpenParen)),
         (TokenPosition::default(), symbol!(ClosingParen)),
-        (TokenPosition::default(), symbol!(Semicolon)),
     ];
 
     let mut parser = Parser::new(&tokens);
