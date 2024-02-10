@@ -39,7 +39,7 @@ fn skips_expected_function_identifier() {
         Parser::new(&tokens).parse(),
         (
             Hir::new(),
-            vec![ParserLog::ExpectedIdentifier(TokenPosition::default())],
+            vec![ParserLog::ExpectedIdentifier(TokenPosition::new(0, 0, 0, 1))],
         ),
     );
 }

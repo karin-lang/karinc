@@ -208,8 +208,10 @@ impl<'a> Parser<'a> {
 
                 match result {
                     ParserCombinatoryResult::Matched((_, token)) => id = Some(token.clone()),
-                    // todo: ParserInputを実装 (current_i.peek().pos())
-                    _ => self.logs.push(ParserLog::ExpectedIdentifier(TokenPosition::default())),
+                    _ => {
+                        let pos = i.peek().map(|v| v.0).unwrap_or(TokenPosition::default());
+                        self.logs.push(ParserLog::ExpectedIdentifier(pos))
+                    },
                 }
 
                 ParserCombinatoryResult::Matched(())
