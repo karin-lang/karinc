@@ -42,6 +42,7 @@ pub enum KeywordToken {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum SymbolToken {
+    Semicolon,
     OpenParen,
     ClosingParen,
     OpenCurlyBracket,

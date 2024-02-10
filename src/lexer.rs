@@ -92,6 +92,7 @@ impl Lexer {
 
                     Lexer::to_keyword_or_identifier(id)
                 },
+                ';' => Token::Symbol(SymbolToken::Semicolon),
                 '(' => Token::Symbol(SymbolToken::OpenParen),
                 ')' => Token::Symbol(SymbolToken::ClosingParen),
                 '{' => Token::Symbol(SymbolToken::OpenCurlyBracket),
