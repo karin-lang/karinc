@@ -1,7 +1,7 @@
 use crate::{*, ir::hir::*, lexer::token::*, parser::{Parser, ParserCombinatoryResult, ParserLog}};
 
 #[test]
-fn parses_function() {
+fn parses_function_definition() {
     let tokens = vec![
         (TokenPosition::default(), keyword!(Function)),
         (TokenPosition::default(), id!("f")),
@@ -12,7 +12,7 @@ fn parses_function() {
     ];
 
     assert_eq!(
-        Parser::new(&tokens).parse_item(),
+        Parser::new(&tokens).parse_item_definition(),
         ParserCombinatoryResult::Matched(
             Some(
                 HirItem::Function(
@@ -26,7 +26,7 @@ fn parses_function() {
 }
 
 #[test]
-fn skips_expected_function_identifier() {
+fn ignores_function_definition_with_undefined_identifier() {
     let tokens = vec![
         (TokenPosition::default(), keyword!(Function)),
         (TokenPosition::new(0, 0, 0, 1), symbol!(OpenParen)),

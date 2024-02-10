@@ -171,7 +171,7 @@ impl<'a> Parser<'a> {
 
             let result = choice!(
                 {
-                    let result = self.parse_item();
+                    let result = self.parse_item_definition();
                     let unit_result = result.to_unit();
 
                     if let ParserCombinatoryResult::Matched(Some(new_item)) = result {
@@ -192,12 +192,12 @@ impl<'a> Parser<'a> {
         (hir, self.logs)
     }
 
-    pub fn parse_item(&mut self) -> ParserCombinatoryResult<Option<HirItem>> {
-        let result = self.parse_function();
+    pub fn parse_item_definition(&mut self) -> ParserCombinatoryResult<Option<HirItem>> {
+        let result = self.parse_function_definition();
         result.map(|option| option.map(|f| HirItem::Function(f)))
     }
 
-    pub fn parse_function(&mut self) -> ParserCombinatoryResult<Option<HirFunction>> {
+    pub fn parse_function_definition(&mut self) -> ParserCombinatoryResult<Option<HirFunction>> {
         let mut i = self.input.clone();
         let mut id = None;
 
