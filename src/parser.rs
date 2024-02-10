@@ -1,40 +1,99 @@
 use std::{iter::Peekable, slice::Iter};
 use crate::{ir::hir::*, lexer::token::*};
 
-macro_rules! next {
-    ($input:expr) => {
-        $input.next()
-    };
-}
+macro_rules! seq {
+    ($($result:expr)*) => {
+        {
+            $(
+                match $result {
+                    ParserCombinatoryResult::Matched(_) => (),
+                    ParserCombinatoryResult::Unmatched => return ParserCombinatoryResult::Unmatched,
+                }
+            )*
 
-macro_rules! next_or_exit {
-    ($input:expr) => {
-        match $input.next() {
-            Some(v) => v,
-            None => return ParserCombinatoryResult::Unmatched,
-        }
-    };
-
-    ($input:expr, $token:expr) => {
-        match $input.next() {
-            Some(v) if v.1 == $token => v,
-            _ => return ParserCombinatoryResult::Unmatched,
+            ParserCombinatoryResult::Matched(())
         }
     };
 }
 
-macro_rules! peek_or_exit {
+macro_rules! choice {
+    ($($result:expr)*) => {
+        'choice: {
+            $(
+                if let ParserCombinatoryResult::Matched(_) = $result {
+                    break 'choice ParserCombinatoryResult::Matched(());
+                };
+            )*
+
+            ParserCombinatoryResult::Unmatched
+        }
+    };
+}
+
+macro_rules! id {
     ($input:expr) => {
         match $input.peek() {
-            Some(v) => v,
-            None => return ParserCombinatoryResult::Unmatched,
+            Some((pos, token)) => {
+                if let Token::Identifier(id) = token {
+                    $input.next();
+                    ParserCombinatoryResult::Matched((pos, id))
+                } else {
+                    ParserCombinatoryResult::Unmatched
+                }
+            },
+            None => ParserCombinatoryResult::Unmatched,
+        }
+    };
+}
+
+macro_rules! keyword {
+    ($input:expr) => {
+        match $input.peek() {
+            Some((pos, token)) => {
+                if let Token::Keyword(keyword) = token {
+                    $input.next();
+                    ParserCombinatoryResult::Matched((pos, keyword))
+                } else {
+                    ParserCombinatoryResult::Unmatched
+                }
+            },
+            None => ParserCombinatoryResult::Unmatched,
         }
     };
 
-    ($input:expr, $token:expr) => {
+    ($input:expr, $keyword:ident) => {
         match $input.peek() {
-            Some(v) if v.1 == $token => v,
-            _ => return ParserCombinatoryResult::Unmatched,
+            Some((pos, token)) if *token == Token::Keyword(KeywordToken::$keyword) => {
+                $input.next();
+                ParserCombinatoryResult::Matched((pos, KeywordToken::$keyword))
+            },
+            _ => ParserCombinatoryResult::Unmatched,
+        }
+    };
+}
+
+macro_rules! symbol {
+    ($input:expr) => {
+        match $input.peek() {
+            Some((pos, token)) => {
+                if let Token::Symbol(symbol) = token {
+                    $input.next();
+                    ParserCombinatoryResult::Matched((pos, symbol))
+                } else {
+                    ParserCombinatoryResult::Unmatched
+                }
+            },
+            None => ParserCombinatoryResult::Unmatched,
+        }
+    };
+
+    ($input:expr, $symbol:ident) => {
+        match $input.peek() {
+            Some((pos, token)) if *token == Token::Symbol(SymbolToken::$symbol) => {
+                $input.next();
+                ParserCombinatoryResult::Matched((pos, SymbolToken::$symbol))
+            },
+            _ => ParserCombinatoryResult::Unmatched,
         }
     };
 }
@@ -51,7 +110,41 @@ pub enum ParserLog {
 pub enum ParserCombinatoryResult<T> {
     Matched(T),
     Unmatched,
-    Ignored,
+}
+
+impl<T> ParserCombinatoryResult<T> {
+    pub fn is_matched(&self) -> bool {
+        if let ParserCombinatoryResult::Matched(_) = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn is_unmatched(&self) -> bool {
+        if let ParserCombinatoryResult::Unmatched = self {
+            true
+        } else {
+            false
+        }
+    }
+
+    pub fn to_unit(&self) -> ParserCombinatoryResult<()> {
+        match self {
+            ParserCombinatoryResult::Matched(_) => ParserCombinatoryResult::Matched(()),
+            ParserCombinatoryResult::Unmatched => ParserCombinatoryResult::Unmatched,
+        }
+    }
+
+    pub fn map<O, F>(self, f: F) -> ParserCombinatoryResult<O>
+    where
+        F: FnOnce(T) -> O,
+    {
+        match self {
+            ParserCombinatoryResult::Matched(v) => ParserCombinatoryResult::Matched(f(v)),
+            ParserCombinatoryResult::Unmatched => ParserCombinatoryResult::Unmatched,
+        }
+    }
 }
 
 pub struct Parser<'a> {
@@ -76,64 +169,82 @@ impl<'a> Parser<'a> {
                 None => break,
             };
 
-            match self.parse_item() {
-                ParserCombinatoryResult::Matched(v) => {
-                    items.push(v);
-                    continue;
-                },
-                ParserCombinatoryResult::Unmatched => (),
-                ParserCombinatoryResult::Ignored => continue,
-            }
+            let result = choice!(
+                {
+                    let result = self.parse_item();
+                    let unit_result = result.to_unit();
 
-            self.logs.push(ParserLog::ExpectedItemDeclarationOrUseStatement(start_token_position));
-            self.input.next();
+                    if let ParserCombinatoryResult::Matched(Some(new_item)) = result {
+                        items.push(new_item);
+                    }
+
+                    unit_result
+                }
+            );
+
+            if let ParserCombinatoryResult::Unmatched = result {
+                self.logs.push(ParserLog::ExpectedItemDeclarationOrUseStatement(start_token_position));
+                self.input.next();
+            }
         }
 
         let hir = Hir { items };
         (hir, self.logs)
     }
 
-    pub fn parse_item(&mut self) -> ParserCombinatoryResult<HirItem> {
-        match self.parse_function() {
-            ParserCombinatoryResult::Matched(v) => return ParserCombinatoryResult::Matched(HirItem::Function(v)),
-            ParserCombinatoryResult::Unmatched => (),
-            ParserCombinatoryResult::Ignored => return ParserCombinatoryResult::Ignored,
-        };
-
-        ParserCombinatoryResult::Unmatched
+    pub fn parse_item(&mut self) -> ParserCombinatoryResult<Option<HirItem>> {
+        let result = self.parse_function();
+        result.map(|option| option.map(|f| HirItem::Function(f)))
     }
 
-    fn parse_function(&mut self) -> ParserCombinatoryResult<HirFunction> {
-        let mut current_input = self.input.clone();
+    pub fn parse_function(&mut self) -> ParserCombinatoryResult<Option<HirFunction>> {
+        let mut i = self.input.clone();
+        let mut id = None;
 
-        next_or_exit!(current_input, Token::Keyword(KeywordToken::Function));
+        let result = seq!(
+            keyword!(i, Function)
+            {
+                let result = id!(i);
 
-        let id = {
-            let id_token = peek_or_exit!(current_input);
+                match result {
+                    ParserCombinatoryResult::Matched((_, token)) => id = Some(token.clone()),
+                    // todo: ParserInputを実装 (current_i.peek().pos())
+                    _ => self.logs.push(ParserLog::ExpectedIdentifier(TokenPosition::default())),
+                }
 
-            match &id_token.1 {
-                Token::Identifier(v) => {
-                    next!(current_input);
-                    Some(v.clone())
-                },
-                _ => {
-                    self.logs.push(ParserLog::ExpectedIdentifier(id_token.0));
-                    None
-                },
+                ParserCombinatoryResult::Matched(())
             }
+            symbol!(i, OpenParen)
+            symbol!(i, ClosingParen)
+            symbol!(i, OpenCurlyBracket)
+            symbol!(i, ClosingCurlyBracket)
+        );
+
+        let id = if let Some(v) = id {
+            v
+        } else {
+            self.input = i;
+            return ParserCombinatoryResult::Matched(None);
         };
 
-        next_or_exit!(current_input, Token::Symbol(SymbolToken::OpenParen));
-        next_or_exit!(current_input, Token::Symbol(SymbolToken::ClosingParen));
-        next_or_exit!(current_input, Token::Symbol(SymbolToken::OpenCurlyBracket));
-        next_or_exit!(current_input, Token::Symbol(SymbolToken::ClosingCurlyBracket));
+        result.map(|_| {
+            self.input = i;
 
-        self.input = current_input;
+            let f = HirFunction {
+                id: HirIdentifier(id),
+            };
 
-        if let Some(id) = id {
-            ParserCombinatoryResult::Matched(HirFunction { id: HirIdentifier(id) })
-        } else {
-            ParserCombinatoryResult::Ignored
-        }
+            Some(f)
+        })
+    }
+
+    pub fn parse_identifier(&mut self) -> ParserCombinatoryResult<HirIdentifier> {
+        let mut i = self.input.clone();
+        let result = id!(i);
+
+        result.map(|(_, v)| {
+            self.input = i;
+            HirIdentifier(v.clone())
+        })
     }
 }

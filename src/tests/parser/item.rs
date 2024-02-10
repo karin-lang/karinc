@@ -14,10 +14,12 @@ fn parses_function() {
     assert_eq!(
         Parser::new(&tokens).parse_item(),
         ParserCombinatoryResult::Matched(
-            HirItem::Function(
-                HirFunction {
-                    id: HirIdentifier("f".to_string()),
-                },
+            Some(
+                HirItem::Function(
+                    HirFunction {
+                        id: HirIdentifier("f".to_string()),
+                    },
+                ),
             ),
         ),
     );
@@ -37,7 +39,7 @@ fn skips_expected_function_identifier() {
         Parser::new(&tokens).parse(),
         (
             Hir::new(),
-            vec![ParserLog::ExpectedIdentifier(TokenPosition::new(0, 0, 0, 1))],
+            vec![ParserLog::ExpectedIdentifier(TokenPosition::default())],
         ),
     );
 }

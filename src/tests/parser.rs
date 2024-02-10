@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod item;
 
-use crate::{ir::hir::*, lexer::token::*, parser::Parser};
+use crate::{ir::hir::*, lexer::token::*, parser::{Parser, ParserCombinatoryResult}};
 
 #[macro_export]
 macro_rules! id {
@@ -81,4 +81,35 @@ fn skips_unknown_syntax_token_with_error() {
     //         Vec::new(),
     //     ),
     // );
+}
+
+#[test]
+fn matches_identifier() {
+    let tokens = vec![
+        (TokenPosition::default(), id!("f")),
+    ];
+
+    assert_eq!(
+        Parser::new(&tokens).parse_identifier(),
+        ParserCombinatoryResult::Matched(HirIdentifier("f".to_string())),
+    );
+}
+
+#[test]
+fn does_not_match_identifier() {
+    let tokens = vec![
+        (TokenPosition::default(), symbol!(OpenParen)),
+    ];
+
+    assert_eq!(
+        Parser::new(&tokens).parse_identifier(),
+        ParserCombinatoryResult::Unmatched,
+    );
+
+    let tokens = Vec::new();
+
+    assert_eq!(
+        Parser::new(&tokens).parse_identifier(),
+        ParserCombinatoryResult::Unmatched,
+    );
 }
