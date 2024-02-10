@@ -104,6 +104,7 @@ pub type ParserResult = (Hir, Vec<ParserLog>);
 pub enum ParserLog {
     ExpectedItemDeclarationOrUseStatement(TokenPosition),
     ExpectedIdentifier(TokenPosition),
+    ExpectedSemicolon(TokenPosition),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -147,9 +148,11 @@ impl<T> ParserCombinatoryResult<T> {
     }
 }
 
+pub type ParserInput<'a> = Peekable<Iter<'a, (TokenPosition, Token)>>;
+
 pub struct Parser<'a> {
-    input: Peekable<Iter<'a, (TokenPosition, Token)>>,
-    logs: Vec<ParserLog>,
+    input: ParserInput<'a>,
+    pub(crate) logs: Vec<ParserLog>,
 }
 
 impl<'a> Parser<'a> {
@@ -204,12 +207,14 @@ impl<'a> Parser<'a> {
         let result = seq!(
             keyword!(i, Function)
             {
+                // todo: parse_identifier() に置換する
                 let result = id!(i);
 
                 match result {
                     ParserCombinatoryResult::Matched((_, token)) => id = Some(token.clone()),
                     _ => {
-                        let pos = i.peek().map(|v| v.0).unwrap_or(TokenPosition::default());
+                        // todo: 次の位置を拾う処理を関数化する
+                        let pos = i.peek().map(|v| v.0.set_len(1)).unwrap_or(TokenPosition::default());
                         self.logs.push(ParserLog::ExpectedIdentifier(pos))
                     },
                 }
@@ -219,6 +224,18 @@ impl<'a> Parser<'a> {
             symbol!(i, OpenParen)
             symbol!(i, ClosingParen)
             symbol!(i, OpenCurlyBracket)
+            // メモ
+            // {
+            //     let result = symbol!(i, Semicolon);
+            //     let unit_result = result.to_unit();
+
+            //     if result.is_unmatched() {
+            //         let pos = i.peek().map(|v| v.0.set_len(1)).unwrap_or(TokenPosition::default());
+            //         self.logs.push(ParserLog::ExpectedSemicolon(pos))
+            //     }
+
+            //     unit_result
+            // }
             symbol!(i, ClosingCurlyBracket)
         );
 
@@ -240,13 +257,37 @@ impl<'a> Parser<'a> {
         })
     }
 
-    pub fn parse_identifier(&mut self) -> ParserCombinatoryResult<HirIdentifier> {
-        let mut i = self.input.clone();
-        let result = id!(i);
+    pub fn parse_expression(&mut self) -> ParserCombinatoryResult<Option<HirExpression>> {
+        self.parse_function_call().map(|v| Some(HirExpression::FunctionCall(v)))
+    }
 
-        result.map(|(_, v)| {
+    pub fn parse_function_call(&mut self) -> ParserCombinatoryResult<HirFunctionCall> {
+        let mut i = self.input.clone();
+        let mut id = HirIdentifier(String::new());
+
+        let result = seq!(
+            {
+                let result = self.parse_identifier(&mut i);
+                let unit_result = result.to_unit();
+
+                if let ParserCombinatoryResult::Matched(v) = result {
+                    id = v;
+                }
+
+                unit_result
+            }
+            symbol!(i, OpenParen)
+            symbol!(i, ClosingParen)
+        );
+
+        result.map(|_| {
             self.input = i;
-            HirIdentifier(v.clone())
+            HirFunctionCall { id }
         })
+    }
+
+    pub fn parse_identifier(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<HirIdentifier> {
+        let result = id!(input);
+        result.map(|(_, v)| HirIdentifier(v.clone()))
     }
 }

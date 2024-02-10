@@ -43,3 +43,30 @@ fn ignores_function_definition_with_undefined_identifier() {
         ),
     );
 }
+
+#[test]
+fn parses_function_call() {
+    let tokens = vec![
+        (TokenPosition::default(), id!("f")),
+        (TokenPosition::default(), symbol!(OpenParen)),
+        (TokenPosition::default(), symbol!(ClosingParen)),
+        (TokenPosition::default(), symbol!(Semicolon)),
+    ];
+
+    let mut parser = Parser::new(&tokens);
+    let result = parser.parse_function_call();
+
+    assert_eq!(
+        result,
+        ParserCombinatoryResult::Matched(
+            HirFunctionCall {
+                id: HirIdentifier("f".to_string()),
+            },
+        ),
+    );
+
+    assert_eq!(
+        parser.logs,
+        Vec::new(),
+    );
+}

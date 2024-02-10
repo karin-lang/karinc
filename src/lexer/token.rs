@@ -11,13 +11,20 @@ impl TokenPosition {
         TokenPosition { index, line, column, len }
     }
 
-    pub fn add(&self, index: usize, len: usize) -> TokenPosition {
+    #[inline]
+    pub fn add(self, index: usize, len: usize) -> TokenPosition {
         TokenPosition {
             index: self.index + index,
             line: self.line,
             column: self.column + index,
             len,
         }
+    }
+
+    #[inline]
+    pub fn set_len(mut self, len: usize) -> TokenPosition {
+        self.len = len;
+        self
     }
 }
 

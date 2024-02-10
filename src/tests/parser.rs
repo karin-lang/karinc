@@ -90,7 +90,7 @@ fn matches_identifier() {
     ];
 
     assert_eq!(
-        Parser::new(&tokens).parse_identifier(),
+        Parser::new(&tokens).parse_identifier(&mut tokens.iter().peekable()),
         ParserCombinatoryResult::Matched(HirIdentifier("f".to_string())),
     );
 }
@@ -102,14 +102,14 @@ fn does_not_match_identifier() {
     ];
 
     assert_eq!(
-        Parser::new(&tokens).parse_identifier(),
+        Parser::new(&tokens).parse_identifier(&mut tokens.iter().peekable()),
         ParserCombinatoryResult::Unmatched,
     );
 
     let tokens = Vec::new();
 
     assert_eq!(
-        Parser::new(&tokens).parse_identifier(),
+        Parser::new(&tokens).parse_identifier(&mut tokens.iter().peekable()),
         ParserCombinatoryResult::Unmatched,
     );
 }
