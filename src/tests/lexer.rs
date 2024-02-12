@@ -50,6 +50,28 @@ fn generates_multiple_tokens() {
 }
 
 #[test]
+fn generates_single_digit_number() {
+    assert_eq!(
+        Lexer::tokenize("0"),
+        (
+            vec![Token::Number("0".to_string())],
+            Vec::new(),
+        ),
+    );
+}
+
+#[test]
+fn generates_multiple_digit_number() {
+    assert_eq!(
+        Lexer::tokenize("10"),
+        (
+            vec![Token::Number("10".to_string())],
+            Vec::new(),
+        ),
+    );
+}
+
+#[test]
 fn generates_single_character_identifier() {
     assert_eq!(
         Lexer::tokenize("a"),

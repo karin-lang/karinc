@@ -70,6 +70,28 @@ impl Lexer {
         while let Some((pos, char)) = input.next() {
             let new_token = match char {
                 ' ' | '\t' | '\n' => continue,
+                '0'..='9' => {
+                    let mut number = char.to_string();
+
+                    loop {
+                        let latest_input = input.clone();
+
+                        let number_char = match input.next() {
+                            Some((_, v)) => v,
+                            None => break,
+                        };
+
+                        match number_char {
+                            '0'..='9' | '_' => number.push(number_char),
+                            _ => {
+                                input = latest_input;
+                                break;
+                            },
+                        }
+                    }
+
+                    Token::Number(number)
+                },
                 'a'..='z' | 'A'..='Z' | '_' => {
                     let mut id = char.to_string();
 

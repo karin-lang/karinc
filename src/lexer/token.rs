@@ -36,6 +36,7 @@ impl Default for TokenPosition {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Token {
+    Number(String),
     Identifier(String),
     Keyword(KeywordToken),
     Symbol(SymbolToken),
