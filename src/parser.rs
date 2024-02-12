@@ -166,31 +166,30 @@ impl<T> ParserCombinatoryResult<T> {
 
 pub type ParserInput<'a> = Peekable<Iter<'a, (TokenPosition, Token)>>;
 
-pub struct Parser<'a> {
-    input: ParserInput<'a>,
+pub struct Parser {
     pub(crate) logs: Vec<ParserLog>,
 }
 
-impl<'a> Parser<'a> {
-    pub fn new(input: &Vec<(TokenPosition, Token)>) -> Parser {
+impl Parser {
+    pub fn new() -> Parser {
         Parser {
-            input: input.iter().peekable(),
             logs: Vec::new(),
         }
     }
 
-    pub fn parse(mut self) -> ParserResult {
+    pub fn parse(mut self, input: &Vec<(TokenPosition, Token)>) -> ParserResult {
         let mut items = Vec::new();
+        let input = &mut input.iter().peekable();
 
         loop {
-            let start_token_position = match self.input.peek() {
+            let start_token_position = match input.peek() {
                 Some(v) => v.0,
                 None => break,
             };
 
             let result = choice!(
                 {
-                    let result = self.parse_item_definition();
+                    let result = self.parse_item_definition(input);
                     let unit_result = result.to_unit();
 
                     if let ParserCombinatoryResult::Matched(Some(new_item)) = result {
@@ -203,7 +202,7 @@ impl<'a> Parser<'a> {
 
             if let ParserCombinatoryResult::Unmatched = result {
                 self.logs.push(ParserLog::ExpectedItemDeclarationOrUseStatement(start_token_position));
-                self.input.next();
+                input.next();
             }
         }
 
@@ -211,13 +210,13 @@ impl<'a> Parser<'a> {
         (hir, self.logs)
     }
 
-    pub fn parse_item_definition(&mut self) -> ParserCombinatoryResult<Option<HirItem>> {
-        let result = self.parse_function_definition();
+    pub fn parse_item_definition(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<Option<HirItem>> {
+        let result = self.parse_function_definition(input);
         result.map(|option| option.map(|f| HirItem::Function(f)))
     }
 
-    pub fn parse_function_definition(&mut self) -> ParserCombinatoryResult<Option<HirFunction>> {
-        let mut i = self.input.clone();
+    pub fn parse_function_definition(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<Option<HirFunction>> {
+        let mut i = input.clone();
         let mut id = None;
 
         let result = seq!(
@@ -258,12 +257,12 @@ impl<'a> Parser<'a> {
         let id = if let Some(v) = id {
             v
         } else {
-            self.input = i;
+            *input = i;
             return ParserCombinatoryResult::Matched(None);
         };
 
         result.map(|_| {
-            self.input = i;
+            *input = i;
 
             let f = HirFunction {
                 id: HirIdentifier(id),
@@ -273,14 +272,14 @@ impl<'a> Parser<'a> {
         })
     }
 
-    pub fn parse_expression(&mut self) -> ParserCombinatoryResult<Option<HirExpression>> {
-        let mut i = self.input.clone();
+    pub fn parse_expression(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<Option<HirExpression>> {
+        let mut i = input.clone();
         let mut expr = None;
 
         let result = choice!(
             // todo: unit_result を返すプロセスをマクロ化する
             {
-                let result = self.parse_function_call().map(|v| Some(HirExpression::FunctionCall(v)));
+                let result = self.parse_function_call(&mut i).map(|v| Some(HirExpression::FunctionCall(v)));
                 let unit_result = result.to_unit();
 
                 if let ParserCombinatoryResult::Matched(v) = result {
@@ -312,13 +311,13 @@ impl<'a> Parser<'a> {
         );
 
         result.map(|_| {
-            self.input = i;
+            *input = i;
             expr
         })
     }
 
-    pub fn parse_function_call(&mut self) -> ParserCombinatoryResult<HirFunctionCall> {
-        let mut i = self.input.clone();
+    pub fn parse_function_call(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<HirFunctionCall> {
+        let mut i = input.clone();
         let mut id = HirIdentifier(String::new());
 
         let result = seq!(
@@ -337,7 +336,7 @@ impl<'a> Parser<'a> {
         );
 
         result.map(|_| {
-            self.input = i;
+            *input = i;
             HirFunctionCall { id }
         })
     }

@@ -34,7 +34,7 @@ macro_rules! symbol {
 #[test]
 fn generates_empty_hir() {
     assert_eq!(
-        Parser::new(&Vec::new()).parse(),
+        Parser::new().parse(&Vec::new()),
         (Hir::new(), Vec::new()),
     );
 }
@@ -51,7 +51,7 @@ fn choices_single_item() {
     ];
 
     assert_eq!(
-        Parser::new(&tokens).parse(),
+        Parser::new().parse(&tokens),
         (
             Hir {
                 items: vec![
@@ -74,7 +74,7 @@ fn skips_unknown_syntax_token_with_error() {
     // ];
 
     // assert_eq!(
-    //     Parser::new(&tokens).parse(),
+    //     Parser::new().parse(),
     //     (
     //         Hir {
     //             items: vec![
@@ -97,7 +97,7 @@ fn choices_any_expression() {
     ];
 
     assert_eq!(
-        Parser::new(&tokens).parse_expression(),
+        Parser::new().parse_expression(&mut tokens.iter().peekable()),
         ParserCombinatoryResult::Matched(Some(HirExpression::Number(HirNumber("0".to_string())))),
     );
 
@@ -106,7 +106,7 @@ fn choices_any_expression() {
     ];
 
     assert_eq!(
-        Parser::new(&tokens).parse_expression(),
+        Parser::new().parse_expression(&mut tokens.iter().peekable()),
         ParserCombinatoryResult::Matched(Some(HirExpression::Identifier(HirIdentifier("id".to_string())))),
     );
 }
@@ -118,7 +118,7 @@ fn matches_number() {
     ];
 
     assert_eq!(
-        Parser::new(&tokens).parse_number(&mut tokens.iter().peekable()),
+        Parser::new().parse_number(&mut tokens.iter().peekable()),
         ParserCombinatoryResult::Matched(HirNumber("0".to_string())),
     );
 }
@@ -130,7 +130,7 @@ fn matches_identifier() {
     ];
 
     assert_eq!(
-        Parser::new(&tokens).parse_identifier(&mut tokens.iter().peekable()),
+        Parser::new().parse_identifier(&mut tokens.iter().peekable()),
         ParserCombinatoryResult::Matched(HirIdentifier("f".to_string())),
     );
 }
@@ -142,14 +142,14 @@ fn does_not_match_identifier() {
     ];
 
     assert_eq!(
-        Parser::new(&tokens).parse_identifier(&mut tokens.iter().peekable()),
+        Parser::new().parse_identifier(&mut tokens.iter().peekable()),
         ParserCombinatoryResult::Unmatched,
     );
 
     let tokens = Vec::new();
 
     assert_eq!(
-        Parser::new(&tokens).parse_identifier(&mut tokens.iter().peekable()),
+        Parser::new().parse_identifier(&mut tokens.iter().peekable()),
         ParserCombinatoryResult::Unmatched,
     );
 }

@@ -12,7 +12,7 @@ fn parses_function_definition() {
     ];
 
     assert_eq!(
-        Parser::new(&tokens).parse_item_definition(),
+        Parser::new().parse_item_definition(&mut tokens.iter().peekable()),
         ParserCombinatoryResult::Matched(
             Some(
                 HirItem::Function(
@@ -36,7 +36,7 @@ fn ignores_function_definition_with_undefined_identifier() {
     ];
 
     assert_eq!(
-        Parser::new(&tokens).parse(),
+        Parser::new().parse(&tokens),
         (
             Hir::new(),
             vec![ParserLog::ExpectedIdentifier(TokenPosition::new(0, 0, 0, 1))],
@@ -52,8 +52,8 @@ fn parses_function_call() {
         (TokenPosition::default(), symbol!(ClosingParen)),
     ];
 
-    let mut parser = Parser::new(&tokens);
-    let result = parser.parse_function_call();
+    let mut parser = Parser::new();
+    let result = parser.parse_function_call(&mut tokens.iter().peekable());
 
     assert_eq!(
         result,
