@@ -30,6 +30,22 @@ macro_rules! choice {
     };
 }
 
+macro_rules! number {
+    ($input:expr) => {
+        match $input.peek() {
+            Some((pos, token)) => {
+                if let Token::Number(number) = token {
+                    $input.next();
+                    ParserCombinatoryResult::Matched((pos, number))
+                } else {
+                    ParserCombinatoryResult::Unmatched
+                }
+            },
+            None => ParserCombinatoryResult::Unmatched,
+        }
+    };
+}
+
 macro_rules! id {
     ($input:expr) => {
         match $input.peek() {
@@ -258,7 +274,47 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_expression(&mut self) -> ParserCombinatoryResult<Option<HirExpression>> {
-        self.parse_function_call().map(|v| Some(HirExpression::FunctionCall(v)))
+        let mut i = self.input.clone();
+        let mut expr = None;
+
+        let result = choice!(
+            // todo: unit_result を返すプロセスをマクロ化する
+            {
+                let result = self.parse_function_call().map(|v| Some(HirExpression::FunctionCall(v)));
+                let unit_result = result.to_unit();
+
+                if let ParserCombinatoryResult::Matched(v) = result {
+                    expr = v;
+                }
+
+                unit_result
+            }
+            {
+                let result = self.parse_number(&mut i).map(|v| Some(HirExpression::Number(v)));
+                let unit_result = result.to_unit();
+
+                if let ParserCombinatoryResult::Matched(v) = result {
+                    expr = v;
+                }
+
+                unit_result
+            }
+            {
+                let result = self.parse_identifier(&mut i).map(|v| Some(HirExpression::Identifier(v)));
+                let unit_result = result.to_unit();
+
+                if let ParserCombinatoryResult::Matched(v) = result {
+                    expr = v;
+                }
+
+                unit_result
+            }
+        );
+
+        result.map(|_| {
+            self.input = i;
+            expr
+        })
     }
 
     pub fn parse_function_call(&mut self) -> ParserCombinatoryResult<HirFunctionCall> {
@@ -284,6 +340,11 @@ impl<'a> Parser<'a> {
             self.input = i;
             HirFunctionCall { id }
         })
+    }
+
+    pub fn parse_number(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<HirNumber> {
+        let result = number!(input);
+        result.map(|(_, v)| HirNumber(v.clone()))
     }
 
     pub fn parse_identifier(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<HirIdentifier> {

@@ -12,6 +12,9 @@ impl Hir {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct HirNumber(pub String);
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct HirIdentifier(pub String);
 
 #[derive(Clone, Debug, PartialEq)]
@@ -26,6 +29,8 @@ pub struct HirFunction {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum HirExpression {
+    Number(HirNumber),
+    Identifier(HirIdentifier),
     FunctionCall(HirFunctionCall),
 }
 

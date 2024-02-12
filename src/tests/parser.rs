@@ -4,6 +4,13 @@ mod item;
 use crate::{ir::hir::*, lexer::token::*, parser::{Parser, ParserCombinatoryResult}};
 
 #[macro_export]
+macro_rules! number {
+    ($number:expr) => {
+        Token::Number($number.to_string())
+    };
+}
+
+#[macro_export]
 macro_rules! id {
     ($id:expr) => {
         Token::Identifier($id.to_string())
@@ -81,6 +88,39 @@ fn skips_unknown_syntax_token_with_error() {
     //         Vec::new(),
     //     ),
     // );
+}
+
+#[test]
+fn choices_any_expression() {
+    let tokens = vec![
+        (TokenPosition::default(), number!("0")),
+    ];
+
+    assert_eq!(
+        Parser::new(&tokens).parse_expression(),
+        ParserCombinatoryResult::Matched(Some(HirExpression::Number(HirNumber("0".to_string())))),
+    );
+
+    let tokens = vec![
+        (TokenPosition::default(), id!("id")),
+    ];
+
+    assert_eq!(
+        Parser::new(&tokens).parse_expression(),
+        ParserCombinatoryResult::Matched(Some(HirExpression::Identifier(HirIdentifier("id".to_string())))),
+    );
+}
+
+#[test]
+fn matches_number() {
+    let tokens = vec![
+        (TokenPosition::default(), number!("0")),
+    ];
+
+    assert_eq!(
+        Parser::new(&tokens).parse_number(&mut tokens.iter().peekable()),
+        ParserCombinatoryResult::Matched(HirNumber("0".to_string())),
+    );
 }
 
 #[test]
