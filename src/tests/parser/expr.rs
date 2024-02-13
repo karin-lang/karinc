@@ -22,6 +22,24 @@ fn choices_any_expression() {
 }
 
 #[test]
+fn matches_single_actual_argument() {
+    let tokens = vec![
+        (TokenPosition::default(), number!("0")),
+    ];
+
+    assert_eq!(
+        Parser::new().parse_actual_arguments(&mut tokens.iter().peekable()),
+        ParserCombinatoryResult::Matched(
+            vec![
+                HirActualArgument {
+                    expr: HirExpression::Number(HirNumber("0".to_string())),
+                },
+            ],
+        ),
+    );
+}
+
+#[test]
 fn matches_number() {
     let tokens = vec![
         (TokenPosition::default(), number!("0")),

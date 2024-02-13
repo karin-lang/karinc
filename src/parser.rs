@@ -121,6 +121,7 @@ pub enum ParserLog {
     ExpectedItemDeclarationOrUseStatement(TokenPosition),
     ExpectedIdentifier(TokenPosition),
     ExpectedSemicolon(TokenPosition),
+    ExpectedActualParameter(TokenPosition),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -270,6 +271,53 @@ impl Parser {
 
             Some(f)
         })
+    }
+
+    pub fn parse_actual_arguments(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<Vec<HirActualArgument>> {
+        let i = &mut input.clone();
+        let mut args = Vec::new();
+
+        seq!(symbol!(i, OpenParen));
+
+        loop {
+            if let ParserCombinatoryResult::Matched(_) = symbol!(i, ClosingParen) {
+                return ParserCombinatoryResult::Matched(args);
+            };
+
+            let start_token_position = match input.peek() {
+                Some(v) => v.0,
+                None => break,
+            };
+
+            let result = choice!(
+                {
+                    let result = self.parse_expression(i);
+                    let unit_result = result.to_unit();
+
+                    if let ParserCombinatoryResult::Matched(Some(new_arg)) = result {
+                        let new_arg = HirActualArgument { expr: new_arg };
+                        args.push(new_arg);
+                    }
+
+                    unit_result
+                }
+            );
+
+            // ()
+            // (a)
+            // (a,b)
+
+            if let ParserCombinatoryResult::Matched(_) = result {
+            }
+
+            if let ParserCombinatoryResult::Unmatched = result {
+                self.logs.push(ParserLog::ExpectedActualParameter(start_token_position));
+                i.next();
+            }
+        }
+
+        *input = i.clone();
+        ParserCombinatoryResult::Matched(args)
     }
 
     pub fn parse_expression(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<Option<HirExpression>> {

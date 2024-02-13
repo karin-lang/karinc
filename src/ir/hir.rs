@@ -23,6 +23,11 @@ pub enum HirItem {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct HirActualArgument {
+    pub expr: HirExpression,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct HirFunction {
     pub id: HirIdentifier,
 }
