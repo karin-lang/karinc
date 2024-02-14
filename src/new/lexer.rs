@@ -115,6 +115,8 @@ impl Lexer {
             ';' => (1, SymbolToken::Semicolon),
             '(' => (1, SymbolToken::OpenParen),
             ')' => (1, SymbolToken::ClosingParen),
+            '{' => (1, SymbolToken::OpenCurlyBracket),
+            '}' => (1, SymbolToken::ClosingCurlyBracket),
             _ => return None,
         };
 

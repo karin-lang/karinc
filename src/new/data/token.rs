@@ -53,6 +53,7 @@ impl NumberToken {
 pub enum KeywordToken {
     Function,
     Public,
+    Struct,
 }
 
 impl KeywordToken {
@@ -60,6 +61,7 @@ impl KeywordToken {
         let keyword = match s {
             "fn" => KeywordToken::Function,
             "pub" => KeywordToken::Public,
+            "struct" => KeywordToken::Struct,
             _ => return None,
         };
 
@@ -74,4 +76,6 @@ pub enum SymbolToken {
     Semicolon,
     OpenParen,
     ClosingParen,
+    OpenCurlyBracket,
+    ClosingCurlyBracket,
 }
