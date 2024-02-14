@@ -1,4 +1,4 @@
-use crate::new::{data::token::{Token, TokenKind}, lexer::Lexer};
+use crate::new::{data::token::{SymbolToken, Token, TokenKind}, lexer::Lexer};
 
 #[test]
 fn tokenize_alphanumerics() {
@@ -62,6 +62,28 @@ fn matches_all_kinds_of_alphanumerics() {
     let input_chars = &mut input.char_indices().peekable();
 
     assert_eq!(lexer.tokenize_alphanumerics(input_chars), Some("0aA_".to_string()));
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(lexer.logs, Vec::new());
+}
+
+#[test]
+fn matches_any_symbol() {
+    let mut lexer = Lexer::new();
+    let input = ";";
+    let input_chars = &mut input.char_indices().peekable();
+
+    assert_eq!(lexer.tokenize_symbol(input_chars), Some((1, SymbolToken::Semicolon)));
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(lexer.logs, Vec::new());
+}
+
+#[test]
+fn matches_multiple_character_symbol() {
+    let mut lexer = Lexer::new();
+    let input = "::";
+    let input_chars = &mut input.char_indices().peekable();
+
+    assert_eq!(lexer.tokenize_symbol(input_chars), Some((2, SymbolToken::DoubleColon)));
     assert_eq!(input_chars.peek(), None);
     assert_eq!(lexer.logs, Vec::new());
 }

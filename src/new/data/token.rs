@@ -13,10 +13,10 @@ impl Token {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TokenKind {
-    Whitespace,
     Number(NumberToken),
     Identifier(String),
     Keyword(KeywordToken),
+    Symbol(SymbolToken),
 }
 
 impl TokenKind {
@@ -65,4 +65,13 @@ impl KeywordToken {
 
         Some(keyword)
     }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum SymbolToken {
+    Colon,
+    DoubleColon,
+    Semicolon,
+    OpenParen,
+    ClosingParen,
 }

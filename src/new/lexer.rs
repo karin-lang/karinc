@@ -1,5 +1,5 @@
 use std::{iter::Peekable, str::CharIndices};
-use crate::new::data::token::{Token, TokenKind};
+use crate::new::data::token::{SymbolToken, Token, TokenKind};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum LexerLog {
@@ -68,5 +68,37 @@ impl Lexer {
         } else {
             Some(alphanumerics)
         }
+    }
+
+    pub fn tokenize_symbol(&mut self, input: &mut Peekable<CharIndices>) -> Option<(usize, SymbolToken)> {
+        let first_char = if let Some((_, v)) = input.peek().cloned() {
+            input.next();
+            v
+        } else {
+            return None;
+        };
+
+        let symbol = match first_char {
+            ':' => {
+                let colon_symbol = (1, SymbolToken::Colon);
+
+                if let Some((_, second_char)) = input.peek().cloned() {
+                    if second_char == ':' {
+                        input.next();
+                        (2, SymbolToken::DoubleColon)
+                    } else {
+                        colon_symbol
+                    }
+                } else {
+                    colon_symbol
+                }
+            },
+            ';' => (1, SymbolToken::Semicolon),
+            '(' => (1, SymbolToken::OpenParen),
+            ')' => (1, SymbolToken::ClosingParen),
+            _ => return None,
+        };
+
+        Some(symbol)
     }
 }
