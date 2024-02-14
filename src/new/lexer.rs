@@ -31,6 +31,11 @@ impl Lexer {
                 None => break,
             };
 
+            if Lexer::is_whitespace(next_char) {
+                input.next();
+                continue;
+            }
+
             if let Some(alphanumerics) = self.tokenize_alphanumerics(input) {
                 let new_token_kind = TokenKind::from_alphanumerics(&alphanumerics);
                 let new_token = Token::new(new_token_kind, index, alphanumerics.len());
@@ -43,6 +48,13 @@ impl Lexer {
         }
 
         (tokens, self.logs)
+    }
+
+    pub fn is_whitespace(ch: char) -> bool {
+        match ch {
+            ' ' | '\t' | '\n' => true,
+            _ => false,
+        }
     }
 
     pub fn tokenize_alphanumerics(&mut self, input: &mut Peekable<CharIndices>) -> Option<String> {

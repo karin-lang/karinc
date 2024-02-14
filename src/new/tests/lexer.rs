@@ -1,6 +1,17 @@
 use crate::new::{data::token::{SymbolToken, Token, TokenKind}, lexer::Lexer};
 
 #[test]
+fn skips_whitespaces() {
+    let input = " \t\n";
+    let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+
+    assert_eq!(tokens, Vec::new());
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
 fn tokenize_alphanumerics() {
     let input = "id";
     let input_chars = &mut input.char_indices().peekable();
