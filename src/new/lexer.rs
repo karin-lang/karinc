@@ -43,6 +43,13 @@ impl Lexer {
                 continue;
             }
 
+            if let Some((len, symbol)) = self.tokenize_symbol(input) {
+                let new_token_kind = TokenKind::Symbol(symbol);
+                let new_token = Token::new(new_token_kind, index, len);
+                tokens.push(new_token);
+                continue;
+            }
+
             self.logs.push(LexerLog::UnexpectedToken(index, next_char.to_string()));
             input.next();
         }

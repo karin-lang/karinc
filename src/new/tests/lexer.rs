@@ -45,6 +45,17 @@ fn does_not_match_alphanumerics_of_zero_len() {
 }
 
 #[test]
+fn tokenize_symbols() {
+    let input = ";";
+    let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+
+    assert_eq!(tokens, vec![Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1)]);
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
 fn matches_single_alphanumeric() {
     let mut lexer = Lexer::new();
     let input = "0";
