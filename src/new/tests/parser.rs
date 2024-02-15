@@ -1,3 +1,5 @@
+use std::vec;
+
 use crate::*;
 use crate::new::{data::{ast::*, token::*}, parser::*};
 
@@ -112,6 +114,34 @@ fn does_not_choice_when_unmatched() {
         ParserResult::Unmatched,
     );
     assert!(input_iter.next().is_some());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
+fn matches_function_declaration() {
+    let input = vec![
+        Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),
+        Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+        Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::OpenCurlyBracket), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::ClosingCurlyBracket), 0, 0),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        parser.parse_function_declaration(input_iter),
+        ParserCombinatoryResult::Matched(
+            AstChild::node(
+                "fn_dec".to_string(),
+                vec![
+                    AstChild::leaf(Token::new(TokenKind::Identifier("f".to_string()), 0, 1)),
+                ],
+            ),
+        ),
+    );
+    assert!(input_iter.next().is_none());
     assert_eq!(parser.logs, Vec::new());
 }
 

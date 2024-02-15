@@ -98,6 +98,19 @@ impl Parser {
         ParserResult::Matched((Ast::new(root), self.logs))
     }
 
+    pub fn parse_function_declaration(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+        seq!(
+            name: "fn_dec";
+            input: *input;
+            self.parse_keyword(input, KeywordToken::Function);
+            self.parse_any_id(input) => true;
+            self.parse_symbol(input, SymbolToken::OpenParen);
+            self.parse_symbol(input, SymbolToken::ClosingParen);
+            self.parse_symbol(input, SymbolToken::OpenCurlyBracket);
+            self.parse_symbol(input, SymbolToken::ClosingCurlyBracket);
+        )
+    }
+
     pub fn parse_any_id(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
         match input.peek().cloned().cloned() {
             Some(token) => {
