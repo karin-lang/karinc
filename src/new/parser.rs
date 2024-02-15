@@ -56,6 +56,20 @@ macro_rules! choice {
     };
 }
 
+#[macro_export]
+macro_rules! optional {
+    ($result:expr $(,)?) => {
+        {
+            let parsed = $result;
+
+            match parsed {
+                ParserResult::Unmatched => ParserResult::Matched(None),
+                _ => parsed,
+            }
+        }
+    };
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParserResult<T> {
     Matched(T),
@@ -116,13 +130,6 @@ impl Parser {
         };
 
         ParserResult::Matched((Ast::new(root), self.logs))
-    }
-
-    pub fn optional(result: ParserCombinatoryResult) -> ParserCombinatoryResult {
-        match result {
-            ParserResult::Unmatched => ParserResult::Matched(None),
-            _ => result,
-        }
     }
 
     pub fn parse_any_number(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {

@@ -139,9 +139,7 @@ fn does_not_choice_when_unmatched() {
 #[test]
 fn keeps_matched_when_optional_element_matched() {
     assert_eq!(
-        Parser::optional(
-            ParserCombinatoryResult::Matched(Some(AstChild::Node(AstNode::default()))),
-        ),
+        optional!(ParserCombinatoryResult::Matched(Some(AstChild::Node(AstNode::default())))),
         ParserResult::Matched(Some(AstChild::Node(AstNode::default()))),
     );
 }
@@ -149,7 +147,7 @@ fn keeps_matched_when_optional_element_matched() {
 #[test]
 fn makes_matched_when_optional_element_unmatched() {
     assert_eq!(
-        Parser::optional(ParserCombinatoryResult::Unmatched),
+        optional!(ParserCombinatoryResult::Unmatched),
         ParserResult::Matched(None),
     );
 }

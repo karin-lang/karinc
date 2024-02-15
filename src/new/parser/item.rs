@@ -12,9 +12,7 @@ impl Parser {
         seq!(
             name: "fn_dec";
             input: *input;
-            Parser::optional(
-                self.parse_accessibility(input),
-            ) => true;
+            optional!(self.parse_accessibility(input)) => true;
             self.parse_keyword(input, KeywordToken::Function);
             self.parse_any_id(input) => true;
             self.parse_symbol(input, SymbolToken::OpenParen);
