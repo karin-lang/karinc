@@ -52,7 +52,12 @@ fn specifies_leaf_to_ast_in_sequence() {
             Some(
                 AstChild::node(
                     "seq".to_string(),
-                    vec![AstChild::leaf(Token::new(TokenKind::Identifier("id".to_string()), 0, 2))],
+                    vec![
+                        AstChild::leaf(
+                            "id".to_string(),
+                            Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
+                        ),
+                    ],
                 ),
             ),
         ),
@@ -97,7 +102,12 @@ fn choices_any_element() {
             parser.parse_any_symbol(input_iter);
         ),
         ParserResult::Matched(
-            Some(AstChild::leaf(Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1))),
+            Some(
+                AstChild::leaf(
+                    "symbol".to_string(),
+                    Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1),
+                ),
+            ),
         ),
     );
     assert!(input_iter.next().is_none());
@@ -143,7 +153,48 @@ fn matches_function_declaration() {
                 AstChild::node(
                     "fn_dec".to_string(),
                     vec![
-                        AstChild::leaf(Token::new(TokenKind::Identifier("f".to_string()), 0, 1)),
+                        AstChild::leaf(
+                            "id".to_string(),
+                            Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+    );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
+fn matches_function_declaration_accessibility_optionally() {
+    let input = vec![
+        Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 1),
+        Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),
+        Token::new(TokenKind::Identifier("f".to_string()), 1, 1),
+        Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::OpenCurlyBracket), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::ClosingCurlyBracket), 0, 0),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        parser.parse_function_declaration(input_iter),
+        ParserCombinatoryResult::Matched(
+            Some(
+                AstChild::node(
+                    "fn_dec".to_string(),
+                    vec![
+                        AstChild::leaf(
+                            "accessibility".to_string(),
+                            Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 1),
+                        ),
+                        AstChild::leaf(
+                            "id".to_string(),
+                            Token::new(TokenKind::Identifier("f".to_string()), 1, 1),
+                        ),
                     ],
                 ),
             ),
@@ -182,7 +233,12 @@ fn matches_any_id_token() {
     assert_eq!(
         parser.parse_any_id(input_iter),
         ParserResult::Matched(
-            Some(AstChild::leaf(Token::new(TokenKind::Identifier("id".to_string()), 0, 2))),
+            Some(
+                AstChild::leaf(
+                    "id".to_string(),
+                    Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
+                ),
+            ),
         ),
     );
     assert!(input_iter.next().is_none());
@@ -213,7 +269,12 @@ fn matches_keyword_token_completely() {
     assert_eq!(
         parser.parse_keyword(input_iter, KeywordToken::Public),
         ParserResult::Matched(
-            Some(AstChild::leaf(Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 3))),
+            Some(
+                AstChild::leaf(
+                    "keyword".to_string(),
+                    Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 3),
+                ),
+            ),
         ),
     );
     assert!(input_iter.next().is_none());
@@ -244,7 +305,12 @@ fn matches_any_symbol_token() {
     assert_eq!(
         parser.parse_any_symbol(input_iter),
         ParserResult::Matched(
-            Some(AstChild::leaf(Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1))),
+            Some(
+                AstChild::leaf(
+                    "symbol".to_string(),
+                    Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1),
+                ),
+            ),
         ),
     );
     assert!(input_iter.next().is_none());
@@ -276,7 +342,10 @@ fn matches_symbol_token_completely() {
         parser.parse_symbol(input_iter, SymbolToken::Semicolon),
         ParserResult::Matched(
             Some(
-                AstChild::leaf(Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1)),
+                AstChild::leaf(
+                    "symbol".to_string(),
+                    Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1),
+                ),
             ),
         ),
     );

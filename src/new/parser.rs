@@ -61,6 +61,18 @@ pub enum ParserResult<T> {
 
 pub type ParserCombinatoryResult = ParserResult<Option<AstChild>>;
 
+impl ParserResult<Option<AstChild>> {
+    pub fn rename(self, name: &str) -> Self {
+        match self {
+            ParserCombinatoryResult::Matched(option) => match option {
+                Some(child) => ParserCombinatoryResult::Matched(Some(child.rename(name))),
+                None => ParserCombinatoryResult::Matched(None),
+            },
+            _ => self,
+        }
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParserLog {}
 
@@ -108,8 +120,8 @@ impl Parser {
             name: "fn_dec";
             input: *input;
             Parser::optional(
-                self.parse_keyword(input, KeywordToken::Public),
-            );
+                self.parse_accessibility(input),
+            ) => true;
             self.parse_keyword(input, KeywordToken::Function);
             self.parse_any_id(input) => true;
             self.parse_symbol(input, SymbolToken::OpenParen);
@@ -117,6 +129,13 @@ impl Parser {
             self.parse_symbol(input, SymbolToken::OpenCurlyBracket);
             self.parse_symbol(input, SymbolToken::ClosingCurlyBracket);
         )
+    }
+
+    pub fn parse_accessibility(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+        choice!(
+            input: *input;
+            self.parse_keyword(input, KeywordToken::Public);
+        ).rename("accessibility")
     }
 
     pub fn optional(result: ParserCombinatoryResult) -> ParserCombinatoryResult {
@@ -131,7 +150,10 @@ impl Parser {
             Some(token) => {
                 if let TokenKind::Identifier(_) = token.kind {
                     input.next();
-                    ParserCombinatoryResult::Matched(Some(AstChild::Leaf(AstLeaf::new(token))))
+
+                    ParserCombinatoryResult::Matched(
+                        Some(AstChild::Leaf(AstLeaf::new("id".to_string(), token))),
+                    )
                 } else {
                     ParserCombinatoryResult::Unmatched
                 }
@@ -146,7 +168,10 @@ impl Parser {
                 match &token.kind {
                     TokenKind::Keyword(next_keyword) if keyword == *next_keyword => {
                         input.next();
-                        ParserCombinatoryResult::Matched(Some(AstChild::Leaf(AstLeaf::new(token))))
+
+                        ParserCombinatoryResult::Matched(
+                            Some(AstChild::Leaf(AstLeaf::new("keyword".to_string(), token))),
+                        )
                     },
                     _ => ParserCombinatoryResult::Unmatched,
                 }
@@ -161,7 +186,10 @@ impl Parser {
                 match &token.kind {
                     TokenKind::Symbol(next_symbol) if symbol == *next_symbol => {
                         input.next();
-                        ParserCombinatoryResult::Matched(Some(AstChild::Leaf(AstLeaf::new(token))))
+
+                        ParserCombinatoryResult::Matched(
+                            Some(AstChild::Leaf(AstLeaf::new("symbol".to_string(), token))),
+                        )
                     },
                     _ => ParserCombinatoryResult::Unmatched,
                 }
@@ -175,7 +203,9 @@ impl Parser {
             Some(token) => {
                 if let TokenKind::Symbol(_) = token.kind {
                     input.next();
-                    ParserCombinatoryResult::Matched(Some(AstChild::Leaf(AstLeaf::new(token))))
+                    ParserCombinatoryResult::Matched(
+                        Some(AstChild::Leaf(AstLeaf::new("symbol".to_string(), token))),
+                    )
                 } else {
                     ParserCombinatoryResult::Unmatched
                 }

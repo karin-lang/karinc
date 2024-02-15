@@ -23,9 +23,18 @@ impl AstChild {
         AstChild::Node(node)
     }
 
-    pub fn leaf(value: Token) -> AstChild {
-        let leaf = AstLeaf::new(value);
+    pub fn leaf(name: String, value: Token) -> AstChild {
+        let leaf = AstLeaf::new(name, value);
         AstChild::Leaf(leaf)
+    }
+
+    pub fn rename(mut self, name: &str) -> AstChild {
+        match &mut self {
+            AstChild::Node(node) => node.name = name.to_string(),
+            AstChild::Leaf(leaf) => leaf.name = name.to_string(),
+        }
+
+        self
     }
 }
 
@@ -49,11 +58,12 @@ impl Default for AstNode {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct AstLeaf {
+    pub name: String,
     pub value: Token,
 }
 
 impl AstLeaf {
-    pub fn new(value: Token) -> AstLeaf {
-        AstLeaf { value }
+    pub fn new(name: String, value: Token) -> AstLeaf {
+        AstLeaf { name, value }
     }
 }
