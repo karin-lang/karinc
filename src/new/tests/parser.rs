@@ -154,6 +154,24 @@ fn matches_function_declaration() {
 }
 
 #[test]
+fn keeps_matched_when_optional_element_matched() {
+    assert_eq!(
+        Parser::optional(
+            ParserCombinatoryResult::Matched(Some(AstChild::Node(AstNode::default()))),
+        ),
+        ParserResult::Matched(Some(AstChild::Node(AstNode::default()))),
+    );
+}
+
+#[test]
+fn makes_matched_when_optional_element_unmatched() {
+    assert_eq!(
+        Parser::optional(ParserCombinatoryResult::Unmatched),
+        ParserResult::Matched(None),
+    );
+}
+
+#[test]
 fn matches_any_id_token() {
     let input = vec![
         Token::new(TokenKind::Identifier("id".to_string()), 0, 2),

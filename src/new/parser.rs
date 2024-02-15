@@ -107,6 +107,9 @@ impl Parser {
         seq!(
             name: "fn_dec";
             input: *input;
+            Parser::optional(
+                self.parse_keyword(input, KeywordToken::Public),
+            );
             self.parse_keyword(input, KeywordToken::Function);
             self.parse_any_id(input) => true;
             self.parse_symbol(input, SymbolToken::OpenParen);
@@ -114,6 +117,13 @@ impl Parser {
             self.parse_symbol(input, SymbolToken::OpenCurlyBracket);
             self.parse_symbol(input, SymbolToken::ClosingCurlyBracket);
         )
+    }
+
+    pub fn optional(result: ParserCombinatoryResult) -> ParserCombinatoryResult {
+        match result {
+            ParserResult::Unmatched => ParserResult::Matched(None),
+            _ => result,
+        }
     }
 
     pub fn parse_any_id(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {

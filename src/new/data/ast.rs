@@ -41,6 +41,12 @@ impl AstNode {
     }
 }
 
+impl Default for AstNode {
+    fn default() -> Self {
+        AstNode::new(String::new(), Vec::new())
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct AstLeaf {
     pub value: Token,
