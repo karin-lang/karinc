@@ -1,4 +1,6 @@
 #[cfg(test)]
+mod expr;
+#[cfg(test)]
 mod item;
 
 use crate::*;
@@ -150,6 +152,29 @@ fn makes_matched_when_optional_element_unmatched() {
         Parser::optional(ParserCombinatoryResult::Unmatched),
         ParserResult::Matched(None),
     );
+}
+
+#[test]
+fn matches_any_number() {
+    let input = vec![
+        Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 1),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        parser.parse_any_number(input_iter),
+        ParserCombinatoryResult::Matched(
+            Some(
+                AstChild::leaf(
+                    "number".to_string(),
+                    Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 1),
+                ),
+            ),
+        ),
+    );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
 }
 
 #[test]

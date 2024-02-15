@@ -1,3 +1,4 @@
+pub mod expr;
 pub mod item;
 
 use std::{iter::Peekable, slice::Iter};
@@ -121,6 +122,23 @@ impl Parser {
         match result {
             ParserResult::Unmatched => ParserResult::Matched(None),
             _ => result,
+        }
+    }
+
+    pub fn parse_any_number(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+        match input.peek().cloned().cloned() {
+            Some(token) => {
+                if let TokenKind::Number(_) = token.kind {
+                    input.next();
+
+                    ParserCombinatoryResult::Matched(
+                        Some(AstChild::Leaf(AstLeaf::new("number".to_string(), token))),
+                    )
+                } else {
+                    ParserCombinatoryResult::Unmatched
+                }
+            },
+            None => ParserCombinatoryResult::Unmatched,
         }
     }
 
