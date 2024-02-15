@@ -14,8 +14,8 @@ fn matches_all_elements_in_sequence() {
         seq!(
             name: "seq";
             input: *input_iter;
-            parser.parse_id(input_iter);
-            parser.parse_symbol(input_iter);
+            parser.parse_any_id(input_iter);
+            parser.parse_any_symbol(input_iter);
         ),
         ParserResult::Matched(
             AstChild::node(
@@ -41,8 +41,8 @@ fn specifies_leaf_to_ast_in_sequence() {
         seq!(
             name: "seq";
             input: *input_iter;
-            parser.parse_id(input_iter) => true;
-            parser.parse_symbol(input_iter) => false;
+            parser.parse_any_id(input_iter) => true;
+            parser.parse_any_symbol(input_iter) => false;
         ),
         ParserResult::Matched(
             AstChild::node(
@@ -68,8 +68,8 @@ fn does_not_match_element_in_sequence() {
         seq!(
             name: "seq";
             input: *input_iter;
-            parser.parse_id(input_iter);
-            parser.parse_symbol(input_iter);
+            parser.parse_any_id(input_iter);
+            parser.parse_any_symbol(input_iter);
         ),
         ParserResult::Unmatched,
     );
@@ -88,7 +88,7 @@ fn choices_any_element() {
     assert_eq!(
         choice!(
             input: *input_iter;
-            parser.parse_symbol(input_iter);
+            parser.parse_any_symbol(input_iter);
         ),
         ParserResult::Matched(AstChild::leaf(Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1))),
     );
@@ -107,7 +107,7 @@ fn does_not_choice_when_unmatched() {
     assert_eq!(
         choice!(
             input: *input_iter;
-            parser.parse_id(input_iter);
+            parser.parse_any_id(input_iter);
         ),
         ParserResult::Unmatched,
     );
@@ -124,7 +124,7 @@ fn matches_id_token() {
     let mut parser = Parser::new();
 
     assert_eq!(
-        parser.parse_id(input_iter),
+        parser.parse_any_id(input_iter),
         ParserResult::Matched(AstChild::leaf(Token::new(TokenKind::Identifier("id".to_string()), 0, 2))),
     );
     assert!(input_iter.next().is_none());
@@ -139,7 +139,7 @@ fn does_not_match_non_id_token() {
     let input_iter = &mut input.iter().peekable();
     let mut parser = Parser::new();
 
-    assert_eq!(parser.parse_id(input_iter), ParserResult::Unmatched);
+    assert_eq!(parser.parse_any_id(input_iter), ParserResult::Unmatched);
     assert!(input_iter.next().is_some());
     assert_eq!(parser.logs, Vec::new());
 }
@@ -153,7 +153,7 @@ fn matches_symbol_token() {
     let mut parser = Parser::new();
 
     assert_eq!(
-        parser.parse_symbol(input_iter),
+        parser.parse_any_symbol(input_iter),
         ParserResult::Matched(AstChild::leaf(Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1))),
     );
     assert!(input_iter.next().is_none());
@@ -168,7 +168,7 @@ fn does_not_match_non_symbol_token() {
     let input_iter = &mut input.iter().peekable();
     let mut parser = Parser::new();
 
-    assert_eq!(parser.parse_symbol(input_iter), ParserResult::Unmatched);
+    assert_eq!(parser.parse_any_symbol(input_iter), ParserResult::Unmatched);
     assert!(input_iter.next().is_some());
     assert_eq!(parser.logs, Vec::new());
 }

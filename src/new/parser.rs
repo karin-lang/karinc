@@ -78,12 +78,12 @@ impl Parser {
 
         let result = choice!(
             input: *input;
-            self.parse_symbol(input);
+            self.parse_any_symbol(input);
             seq!(
                 name: "root";
                 input: *input;
-                self.parse_id(input) => true;
-                self.parse_id(input) => true;
+                self.parse_any_id(input) => true;
+                self.parse_any_id(input) => true;
             );
         );
 
@@ -98,7 +98,7 @@ impl Parser {
         ParserResult::Matched((Ast::new(root), self.logs))
     }
 
-    pub fn parse_id(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+    pub fn parse_any_id(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
         match input.peek().cloned().cloned() {
             Some(token) => {
                 if let TokenKind::Identifier(_) = token.kind {
@@ -112,7 +112,7 @@ impl Parser {
         }
     }
 
-    pub fn parse_symbol(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+    pub fn parse_any_symbol(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
         match input.peek().cloned().cloned() {
             Some(token) => {
                 if let TokenKind::Symbol(_) = token.kind {
