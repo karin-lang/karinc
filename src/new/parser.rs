@@ -112,6 +112,21 @@ impl Parser {
         }
     }
 
+    pub fn parse_symbol(&mut self, input: &mut Peekable<Iter<Token>>, symbol: SymbolToken) -> ParserCombinatoryResult {
+        match input.peek().cloned().cloned() {
+            Some(token) => {
+                match &token.kind {
+                    TokenKind::Symbol(next_symbol) if symbol == *next_symbol => {
+                        input.next();
+                        ParserCombinatoryResult::Matched(AstChild::Leaf(AstLeaf::new(token)))
+                    },
+                    _ => ParserCombinatoryResult::Unmatched,
+                }
+            },
+            None => ParserCombinatoryResult::Unmatched,
+        }
+    }
+
     pub fn parse_any_symbol(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
         match input.peek().cloned().cloned() {
             Some(token) => {
