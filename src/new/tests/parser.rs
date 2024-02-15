@@ -114,3 +114,61 @@ fn does_not_choice_when_unmatched() {
     assert!(input_iter.next().is_some());
     assert_eq!(parser.logs, Vec::new());
 }
+
+#[test]
+fn matches_id_token() {
+    let input = vec![
+        Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        parser.parse_id(input_iter),
+        ParserResult::Matched(AstChild::leaf(Token::new(TokenKind::Identifier("id".to_string()), 0, 2))),
+    );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
+fn does_not_match_non_id_token() {
+    let input = vec![
+        Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(parser.parse_id(input_iter), ParserResult::Unmatched);
+    assert!(input_iter.next().is_some());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
+fn matches_symbol_token() {
+    let input = vec![
+        Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        parser.parse_symbol(input_iter),
+        ParserResult::Matched(AstChild::leaf(Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1))),
+    );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
+fn does_not_match_non_symbol_token() {
+    let input = vec![
+        Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(parser.parse_symbol(input_iter), ParserResult::Unmatched);
+    assert!(input_iter.next().is_some());
+    assert_eq!(parser.logs, Vec::new());
+}
