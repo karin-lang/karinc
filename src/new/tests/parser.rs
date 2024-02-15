@@ -145,6 +145,35 @@ fn does_not_match_non_id_token() {
 }
 
 #[test]
+fn matches_keyword_token_completely() {
+    let input = vec![
+        Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 3),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        parser.parse_keyword(input_iter, KeywordToken::Public),
+        ParserResult::Matched(AstChild::leaf(Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 3))),
+    );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
+fn does_not_match_wrong_keyword_token() {
+    let input = vec![
+        Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 2),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(parser.parse_keyword(input_iter, KeywordToken::Public), ParserResult::Unmatched);
+    assert!(input_iter.next().is_some());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
 fn matches_any_symbol_token() {
     let input = vec![
         Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1),

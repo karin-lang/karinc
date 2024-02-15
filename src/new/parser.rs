@@ -112,6 +112,21 @@ impl Parser {
         }
     }
 
+    pub fn parse_keyword(&mut self, input: &mut Peekable<Iter<Token>>, keyword: KeywordToken) -> ParserCombinatoryResult {
+        match input.peek().cloned().cloned() {
+            Some(token) => {
+                match &token.kind {
+                    TokenKind::Keyword(next_keyword) if keyword == *next_keyword => {
+                        input.next();
+                        ParserCombinatoryResult::Matched(AstChild::Leaf(AstLeaf::new(token)))
+                    },
+                    _ => ParserCombinatoryResult::Unmatched,
+                }
+            },
+            None => ParserCombinatoryResult::Unmatched,
+        }
+    }
+
     pub fn parse_symbol(&mut self, input: &mut Peekable<Iter<Token>>, symbol: SymbolToken) -> ParserCombinatoryResult {
         match input.peek().cloned().cloned() {
             Some(token) => {
