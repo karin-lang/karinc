@@ -134,6 +134,29 @@ fn does_not_choice_when_unmatched() {
 }
 
 #[test]
+fn matches_accessibility() {
+    let input = vec![
+        Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 3),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        parser.parse_accessibility(input_iter),
+        ParserCombinatoryResult::Matched(
+            Some(
+                AstChild::leaf(
+                    "accessibility".to_string(),
+                    Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 3),
+                ),
+            ),
+        ),
+    );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
 fn matches_function_declaration() {
     let input = vec![
         Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),
