@@ -356,6 +356,19 @@ fn does_not_match_wrong_symbol_token() {
 }
 
 #[test]
+fn unmatches_when_has_remaining_input() {
+    let input = vec![
+        Token::new(TokenKind::Identifier("UNKNOWN_SYNTAX".to_string()), 0, 0),
+    ];
+    let parser = Parser::new();
+
+    assert_eq!(
+        parser.parse(&input),
+        (ParserResult::Unmatched, Vec::new()),
+    );
+}
+
+#[test]
 fn matches_single_item() {
     let input = vec![
         Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),

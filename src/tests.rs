@@ -48,21 +48,3 @@ fn generates_parser_result() {
         ),
     );
 }
-
-#[test]
-fn unmatches_when_has_remaining_input() {
-    let input = "unknown syntax";
-    let lexer = Lexer::new();
-    let (tokens, lexer_logs) = lexer.tokenize(input);
-
-    assert_eq!(lexer_logs, Vec::new());
-
-    let parser = Parser::new();
-    let (parser_result, parser_logs) = parser.parse(&tokens);
-
-    assert_eq!(parser_logs, Vec::new());
-    assert_eq!(
-        parser_result,
-        ParserResult::Unmatched,
-    );
-}
