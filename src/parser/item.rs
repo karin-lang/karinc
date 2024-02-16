@@ -18,7 +18,22 @@ impl Parser {
             self.parse_symbol(input, SymbolToken::OpenParen);
             self.parse_symbol(input, SymbolToken::ClosingParen);
             self.parse_symbol(input, SymbolToken::OpenCurlyBracket);
+            self.parse_function_exprs(input) => Visible;
             self.parse_symbol(input, SymbolToken::ClosingCurlyBracket);
+        )
+    }
+
+    pub fn parse_function_exprs(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+        min!(
+            min: 0;
+            name: "fn_exprs";
+            input: *input;
+            seq!(
+                name: "";
+                input: *input;
+                self.parse_expr(input) => Visible;
+                self.parse_symbol(input, SymbolToken::Semicolon);
+            );
         )
     }
 }
