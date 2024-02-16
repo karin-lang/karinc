@@ -1,4 +1,4 @@
-use crate::{*, new::parser::*};
+use crate::{*, parser::*};
 
 impl Parser {
     pub fn parse_expr(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {

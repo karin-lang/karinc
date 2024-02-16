@@ -1,135 +1,111 @@
-use crate::lexer::{token::*, Lexer};
+use crate::{data::token::{SymbolToken, Token, TokenKind}, lexer::Lexer};
 
 #[test]
-fn generates_empty_at_eof() {
-    assert_eq!(
-        Lexer::tokenize(""),
-        (Vec::new(), Vec::new()),
-    );
+fn skips_whitespaces() {
+    let input = " \t\n";
+    let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+
+    assert_eq!(tokens, Vec::new());
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(logs, Vec::new());
 }
 
 #[test]
-fn generates_single_token() {
-    assert_eq!(
-        Lexer::tokenize("("),
-        (
-            vec![Token::Symbol(SymbolToken::OpenParen)],
-            Vec::new(),
-        ),
-    );
+fn tokenize_alphanumerics() {
+    let input = "id";
+    let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+
+    assert_eq!(tokens, vec![Token::new(TokenKind::Identifier("id".to_string()), 0, 2)]);
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(logs, Vec::new());
 }
 
 #[test]
-fn ignores_spacing() {
-    assert_eq!(
-        Lexer::tokenize("id id"),
-        (
-            vec![
-                Token::Identifier("id".to_string()),
-                Token::Identifier("id".to_string()),
-            ],
-            Vec::new(),
-        ),
-    );
+fn does_not_match_non_alphanumerics() {
+    let mut lexer = Lexer::new();
+    let input = ";";
+    let input_chars = &mut input.char_indices().peekable();
+
+    assert_eq!(lexer.tokenize_alphanumerics(input_chars), None);
+    assert_eq!(input_chars.peek(), Some(&(0, ';')));
+    assert_eq!(lexer.logs, Vec::new());
 }
 
 #[test]
-fn generates_multiple_tokens() {
-    assert_eq!(
-        Lexer::tokenize("fn(id)"),
-        (
-            vec![
-                Token::Keyword(KeywordToken::Function),
-                Token::Symbol(SymbolToken::OpenParen),
-                Token::Identifier("id".to_string()),
-                Token::Symbol(SymbolToken::ClosingParen),
-            ],
-            Vec::new(),
-        ),
-    );
+fn does_not_match_alphanumerics_of_zero_len() {
+    let mut lexer = Lexer::new();
+    let input = "";
+    let input_chars = &mut input.char_indices().peekable();
+
+    assert_eq!(lexer.tokenize_alphanumerics(input_chars), None);
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(lexer.logs, Vec::new());
 }
 
 #[test]
-fn generates_single_digit_number() {
-    assert_eq!(
-        Lexer::tokenize("0"),
-        (
-            vec![Token::Number("0".to_string())],
-            Vec::new(),
-        ),
-    );
+fn tokenize_symbols() {
+    let input = ";";
+    let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+
+    assert_eq!(tokens, vec![Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1)]);
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(logs, Vec::new());
 }
 
 #[test]
-fn generates_multiple_digit_number() {
-    assert_eq!(
-        Lexer::tokenize("10"),
-        (
-            vec![Token::Number("10".to_string())],
-            Vec::new(),
-        ),
-    );
+fn matches_single_alphanumeric() {
+    let mut lexer = Lexer::new();
+    let input = "0";
+    let input_chars = &mut input.char_indices().peekable();
+
+    assert_eq!(lexer.tokenize_alphanumerics(input_chars), Some("0".to_string()));
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(lexer.logs, Vec::new());
 }
 
 #[test]
-fn generates_single_character_identifier() {
-    assert_eq!(
-        Lexer::tokenize("a"),
-        (
-            vec![Token::Identifier("a".to_string())],
-            Vec::new(),
-        ),
-    );
+fn matches_multiple_alphanumerics() {
+    let mut lexer = Lexer::new();
+    let input = "000";
+    let input_chars = &mut input.char_indices().peekable();
+
+    assert_eq!(lexer.tokenize_alphanumerics(input_chars), Some("000".to_string()));
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(lexer.logs, Vec::new());
 }
 
 #[test]
-fn generates_multiple_character_identifier() {
-    assert_eq!(
-        Lexer::tokenize("aA"),
-        (
-            vec![Token::Identifier("aA".to_string())],
-            Vec::new(),
-        ),
-    );
+fn matches_all_kinds_of_alphanumerics() {
+    let mut lexer = Lexer::new();
+    let input = "0aA_";
+    let input_chars = &mut input.char_indices().peekable();
+
+    assert_eq!(lexer.tokenize_alphanumerics(input_chars), Some("0aA_".to_string()));
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(lexer.logs, Vec::new());
 }
 
 #[test]
-fn does_not_match_identifier_starts_with_number() {
-    assert_ne!(
-        Lexer::tokenize("0").0,
-        vec![Token::Identifier("0".to_string())],
-    );
+fn matches_any_symbol() {
+    let mut lexer = Lexer::new();
+    let input = ";";
+    let input_chars = &mut input.char_indices().peekable();
+
+    assert_eq!(lexer.tokenize_symbol(input_chars), Some((1, SymbolToken::Semicolon)));
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(lexer.logs, Vec::new());
 }
 
 #[test]
-fn matches_identifier_containing_number_at_second() {
-    assert_eq!(
-        Lexer::tokenize("a0"),
-        (
-            vec![Token::Identifier("a0".to_string())],
-            Vec::new(),
-        ),
-    );
-}
+fn matches_multiple_character_symbol() {
+    let mut lexer = Lexer::new();
+    let input = "::";
+    let input_chars = &mut input.char_indices().peekable();
 
-#[test]
-fn matches_identifier_starts_and_ends_with_underbar() {
-    assert_eq!(
-        Lexer::tokenize("__"),
-        (
-            vec![Token::Identifier("__".to_string())],
-            Vec::new(),
-        ),
-    );
-}
-
-#[test]
-fn generates_symbol_token() {
-    assert_eq!(
-        Lexer::tokenize("("),
-        (
-            vec![Token::Symbol(SymbolToken::OpenParen)],
-            Vec::new(),
-        ),
-    );
+    assert_eq!(lexer.tokenize_symbol(input_chars), Some((2, SymbolToken::DoubleColon)));
+    assert_eq!(input_chars.peek(), None);
+    assert_eq!(lexer.logs, Vec::new());
 }

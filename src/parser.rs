@@ -1,27 +1,62 @@
-use std::{iter::Peekable, slice::Iter};
-use crate::{ir::hir::*, lexer::token::*};
+pub mod expr;
+pub mod item;
 
+use std::{iter::Peekable, slice::Iter};
+use crate::data::{ast::*, token::*};
+
+#[macro_export]
 macro_rules! seq {
-    ($($result:expr)*) => {
-        {
+    (name: $name:expr; input: $input:expr; $($result:expr $(=> $visibility:ident)?;)*) => {
+        'seq: {
+            use crate::{data::ast::*, parser::*};
+
+            let start_input = $input.clone();
+            #[allow(unused)]
+            let mut children = Vec::new();
+
             $(
                 match $result {
-                    ParserCombinatoryResult::Matched(_) => (),
-                    ParserCombinatoryResult::Unmatched => return ParserCombinatoryResult::Unmatched,
+                    #[allow(unused)]
+                    ParserCombinatoryResult::Matched(child) => {
+                        $(
+                            if let Some(child) = child {
+                                match AstVisibility::$visibility {
+                                    AstVisibility::Visible => children.push(child),
+                                    AstVisibility::Expanded => {
+                                        let mut new_children = match child {
+                                            AstChild::Node(node) => node.children,
+                                            AstChild::Leaf(leaf) => vec![AstChild::Leaf(leaf)],
+                                        };
+
+                                        children.append(&mut new_children);
+                                    },
+                                    AstVisibility::Hidden => (),
+                                }
+                            }
+                        )?
+                    },
+                    ParserCombinatoryResult::Unmatched => {
+                        $input = start_input;
+                        break 'seq ParserCombinatoryResult::Unmatched
+                    },
                 }
             )*
 
-            ParserCombinatoryResult::Matched(())
+            let node = AstNode::new($name.to_string(), children);
+            ParserCombinatoryResult::Matched(Some(AstChild::Node(node)))
         }
     };
 }
 
+#[macro_export]
 macro_rules! choice {
-    ($($result:expr)*) => {
+    (input: $input:expr; $($result:expr;)*) => {
         'choice: {
+            use crate::parser::*;
+
             $(
-                if let ParserCombinatoryResult::Matched(_) = $result {
-                    break 'choice ParserCombinatoryResult::Matched(());
+                if let ParserCombinatoryResult::Matched(child) = $result {
+                    break 'choice ParserCombinatoryResult::Matched(child);
                 };
             )*
 
@@ -30,142 +65,75 @@ macro_rules! choice {
     };
 }
 
-macro_rules! number {
-    ($input:expr) => {
-        match $input.peek() {
-            Some((pos, token)) => {
-                if let Token::Number(number) = token {
-                    $input.next();
-                    ParserCombinatoryResult::Matched((pos, number))
-                } else {
-                    ParserCombinatoryResult::Unmatched
-                }
-            },
-            None => ParserCombinatoryResult::Unmatched,
+#[macro_export]
+macro_rules! optional {
+    ($result:expr $(;)?) => {
+        {
+            use crate::parser::*;
+
+            let parsed = $result;
+
+            match parsed {
+                ParserResult::Unmatched => ParserResult::Matched(None),
+                _ => parsed,
+            }
         }
     };
 }
 
-macro_rules! id {
-    ($input:expr) => {
-        match $input.peek() {
-            Some((pos, token)) => {
-                if let Token::Identifier(id) = token {
-                    $input.next();
-                    ParserCombinatoryResult::Matched((pos, id))
-                } else {
-                    ParserCombinatoryResult::Unmatched
+#[macro_export]
+macro_rules! min {
+    (min: $min:expr; name: $name:expr; input: $input:expr; $result:expr $(;)?) => {
+        {
+            use crate::parser::*;
+
+            let start_input = $input.clone();
+            let mut children = Vec::new();
+
+            loop {
+                match $result {
+                    ParserCombinatoryResult::Matched(option) => match option {
+                        Some(child) => children.push(child),
+                        None => (),
+                    },
+                    ParserCombinatoryResult::Unmatched => break,
                 }
-            },
-            None => ParserCombinatoryResult::Unmatched,
+            }
+
+            #[allow(unused_comparisons)]
+            if $min <= children.len() {
+                let child = AstChild::node($name.to_string(), children);
+                ParserCombinatoryResult::Matched(Some(child))
+            } else {
+                $input = start_input;
+                ParserCombinatoryResult::Unmatched
+            }
         }
     };
-}
-
-macro_rules! keyword {
-    ($input:expr) => {
-        match $input.peek() {
-            Some((pos, token)) => {
-                if let Token::Keyword(keyword) = token {
-                    $input.next();
-                    ParserCombinatoryResult::Matched((pos, keyword))
-                } else {
-                    ParserCombinatoryResult::Unmatched
-                }
-            },
-            None => ParserCombinatoryResult::Unmatched,
-        }
-    };
-
-    ($input:expr, $keyword:ident) => {
-        match $input.peek() {
-            Some((pos, token)) if *token == Token::Keyword(KeywordToken::$keyword) => {
-                $input.next();
-                ParserCombinatoryResult::Matched((pos, KeywordToken::$keyword))
-            },
-            _ => ParserCombinatoryResult::Unmatched,
-        }
-    };
-}
-
-macro_rules! symbol {
-    ($input:expr) => {
-        match $input.peek() {
-            Some((pos, token)) => {
-                if let Token::Symbol(symbol) = token {
-                    $input.next();
-                    ParserCombinatoryResult::Matched((pos, symbol))
-                } else {
-                    ParserCombinatoryResult::Unmatched
-                }
-            },
-            None => ParserCombinatoryResult::Unmatched,
-        }
-    };
-
-    ($input:expr, $symbol:ident) => {
-        match $input.peek() {
-            Some((pos, token)) if *token == Token::Symbol(SymbolToken::$symbol) => {
-                $input.next();
-                ParserCombinatoryResult::Matched((pos, SymbolToken::$symbol))
-            },
-            _ => ParserCombinatoryResult::Unmatched,
-        }
-    };
-}
-
-pub type ParserResult = (Hir, Vec<ParserLog>);
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum ParserLog {
-    ExpectedItemDeclarationOrUseStatement(TokenPosition),
-    ExpectedIdentifier(TokenPosition),
-    ExpectedSemicolon(TokenPosition),
-    ExpectedActualParameter(TokenPosition),
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum ParserCombinatoryResult<T> {
+pub enum ParserResult<T> {
     Matched(T),
     Unmatched,
 }
 
-impl<T> ParserCombinatoryResult<T> {
-    pub fn is_matched(&self) -> bool {
-        if let ParserCombinatoryResult::Matched(_) = self {
-            true
-        } else {
-            false
-        }
-    }
+pub type ParserCombinatoryResult = ParserResult<Option<AstChild>>;
 
-    pub fn is_unmatched(&self) -> bool {
-        if let ParserCombinatoryResult::Unmatched = self {
-            true
-        } else {
-            false
-        }
-    }
-
-    pub fn to_unit(&self) -> ParserCombinatoryResult<()> {
+impl ParserResult<Option<AstChild>> {
+    pub fn rename(self, name: &str) -> Self {
         match self {
-            ParserCombinatoryResult::Matched(_) => ParserCombinatoryResult::Matched(()),
-            ParserCombinatoryResult::Unmatched => ParserCombinatoryResult::Unmatched,
-        }
-    }
-
-    pub fn map<O, F>(self, f: F) -> ParserCombinatoryResult<O>
-    where
-        F: FnOnce(T) -> O,
-    {
-        match self {
-            ParserCombinatoryResult::Matched(v) => ParserCombinatoryResult::Matched(f(v)),
-            ParserCombinatoryResult::Unmatched => ParserCombinatoryResult::Unmatched,
+            ParserCombinatoryResult::Matched(option) => match option {
+                Some(child) => ParserCombinatoryResult::Matched(Some(child.rename(name))),
+                None => ParserCombinatoryResult::Matched(None),
+            },
+            _ => self,
         }
     }
 }
 
-pub type ParserInput<'a> = Peekable<Iter<'a, (TokenPosition, Token)>>;
+#[derive(Clone, Debug, PartialEq)]
+pub enum ParserLog {}
 
 pub struct Parser {
     pub(crate) logs: Vec<ParserLog>,
@@ -178,224 +146,117 @@ impl Parser {
         }
     }
 
-    pub fn parse(mut self, input: &Vec<(TokenPosition, Token)>) -> ParserResult {
-        let mut items = Vec::new();
+    pub fn parse(mut self, input: &Vec<Token>) -> ParserResult<(Ast, Vec<ParserLog>)> {
         let input = &mut input.iter().peekable();
 
-        loop {
-            let start_token_position = match input.peek() {
-                Some(v) => v.0,
-                None => break,
-            };
-
-            let result = choice!(
-                {
-                    let result = self.parse_item_definition(input);
-                    let unit_result = result.to_unit();
-
-                    if let ParserCombinatoryResult::Matched(Some(new_item)) = result {
-                        items.push(new_item);
-                    }
-
-                    unit_result
-                }
+        let result = choice!(
+            input: *input;
+            self.parse_any_symbol(input);
+            seq!(
+                name: "root";
+                input: *input;
+                self.parse_any_id(input) => Visible;
+                self.parse_any_id(input) => Visible;
             );
-
-            if let ParserCombinatoryResult::Unmatched = result {
-                self.logs.push(ParserLog::ExpectedItemDeclarationOrUseStatement(start_token_position));
-                input.next();
-            }
-        }
-
-        let hir = Hir { items };
-        (hir, self.logs)
-    }
-
-    pub fn parse_item_definition(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<Option<HirItem>> {
-        let result = self.parse_function_definition(input);
-        result.map(|option| option.map(|f| HirItem::Function(f)))
-    }
-
-    pub fn parse_function_definition(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<Option<HirFunction>> {
-        let mut i = input.clone();
-        let mut id = None;
-
-        let result = seq!(
-            keyword!(i, Function)
-            {
-                // todo: parse_identifier() に置換する
-                let result = id!(i);
-
-                match result {
-                    ParserCombinatoryResult::Matched((_, token)) => id = Some(token.clone()),
-                    _ => {
-                        // todo: 次の位置を拾う処理を関数化する
-                        let pos = i.peek().map(|v| v.0.set_len(1)).unwrap_or(TokenPosition::default());
-                        self.logs.push(ParserLog::ExpectedIdentifier(pos))
-                    },
-                }
-
-                ParserCombinatoryResult::Matched(())
-            }
-            symbol!(i, OpenParen)
-            symbol!(i, ClosingParen)
-            symbol!(i, OpenCurlyBracket)
-            // メモ
-            // {
-            //     let result = symbol!(i, Semicolon);
-            //     let unit_result = result.to_unit();
-
-            //     if result.is_unmatched() {
-            //         let pos = i.peek().map(|v| v.0.set_len(1)).unwrap_or(TokenPosition::default());
-            //         self.logs.push(ParserLog::ExpectedSemicolon(pos))
-            //     }
-
-            //     unit_result
-            // }
-            symbol!(i, ClosingCurlyBracket)
         );
 
-        let id = if let Some(v) = id {
-            v
-        } else {
-            *input = i;
-            return ParserCombinatoryResult::Matched(None);
+        let root = match result {
+            ParserCombinatoryResult::Matched(child) => match child {
+                Some(child) => match child {
+                    AstChild::Node(node) => node,
+                    AstChild::Leaf(leaf) => AstNode::new("root".to_string(), vec![AstChild::Leaf(leaf)]),
+                },
+                None => AstNode::new("root".to_string(), Vec::new()),
+            },
+            ParserCombinatoryResult::Unmatched => return ParserResult::Unmatched,
         };
 
-        result.map(|_| {
-            *input = i;
-
-            let f = HirFunction {
-                id: HirIdentifier(id),
-            };
-
-            Some(f)
-        })
+        ParserResult::Matched((Ast::new(root), self.logs))
     }
 
-    pub fn parse_actual_arguments(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<Vec<HirActualArgument>> {
-        let i = &mut input.clone();
-        let mut args = Vec::new();
+    pub fn parse_any_number(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+        match input.peek().cloned().cloned() {
+            Some(token) => {
+                if let TokenKind::Number(_) = token.kind {
+                    input.next();
 
-        seq!(symbol!(i, OpenParen));
-
-        loop {
-            if let ParserCombinatoryResult::Matched(_) = symbol!(i, ClosingParen) {
-                return ParserCombinatoryResult::Matched(args);
-            };
-
-            let start_token_position = match input.peek() {
-                Some(v) => v.0,
-                None => break,
-            };
-
-            let result = choice!(
-                {
-                    let result = self.parse_expression(i);
-                    let unit_result = result.to_unit();
-
-                    if let ParserCombinatoryResult::Matched(Some(new_arg)) = result {
-                        let new_arg = HirActualArgument { expr: new_arg };
-                        args.push(new_arg);
-                    }
-
-                    unit_result
+                    ParserCombinatoryResult::Matched(
+                        Some(AstChild::Leaf(AstLeaf::new("number".to_string(), token))),
+                    )
+                } else {
+                    ParserCombinatoryResult::Unmatched
                 }
-            );
-
-            // ()
-            // (a)
-            // (a,b)
-
-            if let ParserCombinatoryResult::Matched(_) = result {
-            }
-
-            if let ParserCombinatoryResult::Unmatched = result {
-                self.logs.push(ParserLog::ExpectedActualParameter(start_token_position));
-                i.next();
-            }
+            },
+            None => ParserCombinatoryResult::Unmatched,
         }
-
-        *input = i.clone();
-        ParserCombinatoryResult::Matched(args)
     }
 
-    pub fn parse_expression(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<Option<HirExpression>> {
-        let mut i = input.clone();
-        let mut expr = None;
+    pub fn parse_any_id(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+        match input.peek().cloned().cloned() {
+            Some(token) => {
+                if let TokenKind::Identifier(_) = token.kind {
+                    input.next();
 
-        let result = choice!(
-            // todo: unit_result を返すプロセスをマクロ化する
-            {
-                let result = self.parse_function_call(&mut i).map(|v| Some(HirExpression::FunctionCall(v)));
-                let unit_result = result.to_unit();
-
-                if let ParserCombinatoryResult::Matched(v) = result {
-                    expr = v;
+                    ParserCombinatoryResult::Matched(
+                        Some(AstChild::Leaf(AstLeaf::new("id".to_string(), token))),
+                    )
+                } else {
+                    ParserCombinatoryResult::Unmatched
                 }
-
-                unit_result
-            }
-            {
-                let result = self.parse_number(&mut i).map(|v| Some(HirExpression::Number(v)));
-                let unit_result = result.to_unit();
-
-                if let ParserCombinatoryResult::Matched(v) = result {
-                    expr = v;
-                }
-
-                unit_result
-            }
-            {
-                let result = self.parse_identifier(&mut i).map(|v| Some(HirExpression::Identifier(v)));
-                let unit_result = result.to_unit();
-
-                if let ParserCombinatoryResult::Matched(v) = result {
-                    expr = v;
-                }
-
-                unit_result
-            }
-        );
-
-        result.map(|_| {
-            *input = i;
-            expr
-        })
+            },
+            None => ParserCombinatoryResult::Unmatched,
+        }
     }
 
-    pub fn parse_function_call(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<HirFunctionCall> {
-        let mut i = input.clone();
-        let mut id = HirIdentifier(String::new());
+    pub fn parse_keyword(&mut self, input: &mut Peekable<Iter<Token>>, keyword: KeywordToken) -> ParserCombinatoryResult {
+        match input.peek().cloned().cloned() {
+            Some(token) => {
+                match &token.kind {
+                    TokenKind::Keyword(next_keyword) if keyword == *next_keyword => {
+                        input.next();
 
-        let result = seq!(
-            {
-                let result = self.parse_identifier(&mut i);
-                let unit_result = result.to_unit();
-
-                if let ParserCombinatoryResult::Matched(v) = result {
-                    id = v;
+                        ParserCombinatoryResult::Matched(
+                            Some(AstChild::Leaf(AstLeaf::new("keyword".to_string(), token))),
+                        )
+                    },
+                    _ => ParserCombinatoryResult::Unmatched,
                 }
-
-                unit_result
-            }
-            symbol!(i, OpenParen)
-            symbol!(i, ClosingParen)
-        );
-
-        result.map(|_| {
-            *input = i;
-            HirFunctionCall { id }
-        })
+            },
+            None => ParserCombinatoryResult::Unmatched,
+        }
     }
 
-    pub fn parse_number(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<HirNumber> {
-        let result = number!(input);
-        result.map(|(_, v)| HirNumber(v.clone()))
+    pub fn parse_symbol(&mut self, input: &mut Peekable<Iter<Token>>, symbol: SymbolToken) -> ParserCombinatoryResult {
+        match input.peek().cloned().cloned() {
+            Some(token) => {
+                match &token.kind {
+                    TokenKind::Symbol(next_symbol) if symbol == *next_symbol => {
+                        input.next();
+
+                        ParserCombinatoryResult::Matched(
+                            Some(AstChild::Leaf(AstLeaf::new("symbol".to_string(), token))),
+                        )
+                    },
+                    _ => ParserCombinatoryResult::Unmatched,
+                }
+            },
+            None => ParserCombinatoryResult::Unmatched,
+        }
     }
 
-    pub fn parse_identifier(&mut self, input: &mut ParserInput) -> ParserCombinatoryResult<HirIdentifier> {
-        let result = id!(input);
-        result.map(|(_, v)| HirIdentifier(v.clone()))
+    pub fn parse_any_symbol(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+        match input.peek().cloned().cloned() {
+            Some(token) => {
+                if let TokenKind::Symbol(_) = token.kind {
+                    input.next();
+                    ParserCombinatoryResult::Matched(
+                        Some(AstChild::Leaf(AstLeaf::new("symbol".to_string(), token))),
+                    )
+                } else {
+                    ParserCombinatoryResult::Unmatched
+                }
+            },
+            None => ParserCombinatoryResult::Unmatched,
+        }
     }
 }

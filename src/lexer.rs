@@ -1,143 +1,126 @@
-pub mod token;
-
-use std::str::Chars;
-use token::*;
-
-pub type LexerResult = (Vec<Token>, Vec<LexerLog>);
+use std::{iter::Peekable, str::CharIndices};
+use crate::data::token::{SymbolToken, Token, TokenKind};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum LexerLog {
-    UnknownToken(TokenPosition, String),
+    UnexpectedToken(usize, String),
 }
 
-#[derive(Clone, Debug)]
-pub struct LexerInput<'a> {
-    input: Chars<'a>,
-    index: usize,
-    line: usize,
-    column: usize,
+pub struct Lexer {
+    pub(crate) logs: Vec<LexerLog>,
 }
-
-impl<'a> LexerInput<'a> {
-    pub fn new(input: &str, index: usize, line: usize, column: usize) -> LexerInput {
-        LexerInput {
-            input: input.chars(),
-            index,
-            line,
-            column,
-        }
-    }
-
-    pub fn next(&mut self) -> Option<(TokenPosition, char)> {
-        if let Some(char) = self.input.next() {
-            let pos = TokenPosition::new(self.index, self.line, self.column, 1);
-
-            self.index += 1;
-
-            if char == '\n' {
-                self.line += 1;
-                self.column = 0;
-            } else {
-                self.column += 1;
-            }
-
-            Some((pos, char))
-        } else {
-            None
-        }
-    }
-}
-
-impl<'a> From<&'a str> for LexerInput<'a> {
-    fn from(input: &'a str) -> Self {
-        LexerInput {
-            input: input.chars(),
-            index: 0,
-            line: 0,
-            column: 0,
-        }
-    }
-}
-
-pub struct Lexer;
 
 impl Lexer {
-    pub fn tokenize(input: &str) -> LexerResult {
-        let mut input = LexerInput::from(input);
-        let mut logs = Vec::new();
-        let mut tokens = Vec::new();
-
-        while let Some((pos, char)) = input.next() {
-            let new_token = match char {
-                ' ' | '\t' | '\n' => continue,
-                '0'..='9' => {
-                    let mut number = char.to_string();
-
-                    loop {
-                        let latest_input = input.clone();
-
-                        let number_char = match input.next() {
-                            Some((_, v)) => v,
-                            None => break,
-                        };
-
-                        match number_char {
-                            '0'..='9' | '_' => number.push(number_char),
-                            _ => {
-                                input = latest_input;
-                                break;
-                            },
-                        }
-                    }
-
-                    Token::Number(number)
-                },
-                'a'..='z' | 'A'..='Z' | '_' => {
-                    let mut id = char.to_string();
-
-                    loop {
-                        let latest_input = input.clone();
-
-                        let id_char = match input.next() {
-                            Some((_, v)) => v,
-                            None => break,
-                        };
-
-                        match id_char {
-                            '0'..='9' | 'a'..='z' | 'A'..='Z' | '_' => id.push(id_char),
-                            _ => {
-                                input = latest_input;
-                                break;
-                            },
-                        }
-                    }
-
-                    Lexer::to_keyword_or_identifier(id)
-                },
-                ';' => Token::Symbol(SymbolToken::Semicolon),
-                '(' => Token::Symbol(SymbolToken::OpenParen),
-                ')' => Token::Symbol(SymbolToken::ClosingParen),
-                '{' => Token::Symbol(SymbolToken::OpenCurlyBracket),
-                '}' => Token::Symbol(SymbolToken::ClosingCurlyBracket),
-                _ => {
-                    logs.push(LexerLog::UnknownToken(pos, char.to_string()));
-                    continue;
-                },
-            };
-
-            tokens.push(new_token);
+    pub fn new() -> Lexer {
+        Lexer {
+            logs: Vec::new(),
         }
-
-        (tokens, logs)
     }
 
-    fn to_keyword_or_identifier(id: String) -> Token {
-        let keyword = match id.as_str() {
-            "fn" => KeywordToken::Function,
-            "pub" => KeywordToken::Public,
-            _ => return Token::Identifier(id),
+    pub fn tokenize(self, input: &str) -> (Vec<Token>, Vec<LexerLog>) {
+        let input = &mut input.char_indices().peekable();
+        self.tokenize_(input)
+    }
+
+    pub(crate) fn tokenize_(mut self, input: &mut Peekable<CharIndices>) -> (Vec<Token>, Vec<LexerLog>) {
+        let mut tokens = Vec::new();
+
+        loop {
+            let (index, next_char) = match input.peek() {
+                Some(v) => *v,
+                None => break,
+            };
+
+            if Lexer::is_whitespace(next_char) {
+                input.next();
+                continue;
+            }
+
+            if let Some(alphanumerics) = self.tokenize_alphanumerics(input) {
+                let new_token_kind = TokenKind::from_alphanumerics(&alphanumerics);
+                let new_token = Token::new(new_token_kind, index, alphanumerics.len());
+                tokens.push(new_token);
+                continue;
+            }
+
+            if let Some((len, symbol)) = self.tokenize_symbol(input) {
+                let new_token_kind = TokenKind::Symbol(symbol);
+                let new_token = Token::new(new_token_kind, index, len);
+                tokens.push(new_token);
+                continue;
+            }
+
+            self.logs.push(LexerLog::UnexpectedToken(index, next_char.to_string()));
+            input.next();
+        }
+
+        (tokens, self.logs)
+    }
+
+    pub fn is_whitespace(ch: char) -> bool {
+        match ch {
+            ' ' | '\t' | '\n' => true,
+            _ => false,
+        }
+    }
+
+    pub fn tokenize_alphanumerics(&mut self, input: &mut Peekable<CharIndices>) -> Option<String> {
+        let mut alphanumerics = String::new();
+
+        loop {
+            let next_char = match input.peek() {
+                Some((_, v)) => *v,
+                None => break,
+            };
+
+            match next_char {
+                '0'..='9' | 'a'..='z' | 'A'..='Z' | '_' => {
+                    input.next();
+                    alphanumerics.push(next_char);
+                },
+                _ => break,
+            }
+        }
+
+        if alphanumerics.len() == 0 {
+            None
+        } else {
+            Some(alphanumerics)
+        }
+    }
+
+    pub fn tokenize_symbol(&mut self, input: &mut Peekable<CharIndices>) -> Option<(usize, SymbolToken)> {
+        let first_char = if let Some((_, v)) = input.peek().cloned() {
+            input.next();
+            v
+        } else {
+            return None;
         };
 
-        Token::Keyword(keyword)
+        let symbol = match first_char {
+            ',' => (1, SymbolToken::Colon),
+            ':' => {
+                let colon_symbol = (1, SymbolToken::Colon);
+
+                if let Some((_, second_char)) = input.peek().cloned() {
+                    if second_char == ':' {
+                        input.next();
+                        (2, SymbolToken::DoubleColon)
+                    } else {
+                        colon_symbol
+                    }
+                } else {
+                    colon_symbol
+                }
+            },
+            ';' => (1, SymbolToken::Semicolon),
+            '(' => (1, SymbolToken::OpenParen),
+            ')' => (1, SymbolToken::ClosingParen),
+            '{' => (1, SymbolToken::OpenCurlyBracket),
+            '}' => (1, SymbolToken::ClosingCurlyBracket),
+            _ => return None,
+        };
+
+        Some(symbol)
     }
 }

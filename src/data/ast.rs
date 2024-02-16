@@ -1,4 +1,4 @@
-use crate::new::data::token::Token;
+use crate::data::token::Token;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ast {

@@ -1,9 +1,7 @@
-pub mod ir;
+pub mod data;
 pub mod lexer;
 pub mod parser;
-// #[cfg(test)]
-// mod tests;
-
-pub mod new;
+#[cfg(test)]
+mod tests;
 
 pub struct JsCompiler;

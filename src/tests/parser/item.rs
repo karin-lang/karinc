@@ -1,71 +1,95 @@
-use crate::{*, ir::hir::*, lexer::token::*, parser::{Parser, ParserCombinatoryResult, ParserLog}};
+use crate::{data::{ast::*, token::*}, parser::*};
 
 #[test]
-fn parses_function_definition() {
-    let tokens = vec![
-        (TokenPosition::default(), keyword!(Function)),
-        (TokenPosition::default(), id!("f")),
-        (TokenPosition::default(), symbol!(OpenParen)),
-        (TokenPosition::default(), symbol!(ClosingParen)),
-        (TokenPosition::default(), symbol!(OpenCurlyBracket)),
-        (TokenPosition::default(), symbol!(ClosingCurlyBracket)),
+fn matches_accessibility() {
+    let input = vec![
+        Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 3),
     ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
 
     assert_eq!(
-        Parser::new().parse_item_definition(&mut tokens.iter().peekable()),
+        parser.parse_accessibility(input_iter),
         ParserCombinatoryResult::Matched(
             Some(
-                HirItem::Function(
-                    HirFunction {
-                        id: HirIdentifier("f".to_string()),
-                    },
+                AstChild::leaf(
+                    "accessibility".to_string(),
+                    Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 3),
                 ),
             ),
         ),
     );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
 }
 
 #[test]
-fn ignores_function_definition_with_undefined_identifier() {
-    let tokens = vec![
-        (TokenPosition::default(), keyword!(Function)),
-        (TokenPosition::new(0, 0, 0, 1), symbol!(OpenParen)),
-        (TokenPosition::default(), symbol!(ClosingParen)),
-        (TokenPosition::default(), symbol!(OpenCurlyBracket)),
-        (TokenPosition::default(), symbol!(ClosingCurlyBracket)),
+fn matches_function_declaration() {
+    let input = vec![
+        Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),
+        Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+        Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::OpenCurlyBracket), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::ClosingCurlyBracket), 0, 0),
     ];
-
-    assert_eq!(
-        Parser::new().parse(&tokens),
-        (
-            Hir::new(),
-            vec![ParserLog::ExpectedIdentifier(TokenPosition::new(0, 0, 0, 1))],
-        ),
-    );
-}
-
-#[test]
-fn parses_function_call() {
-    let tokens = vec![
-        (TokenPosition::default(), id!("f")),
-        (TokenPosition::default(), symbol!(OpenParen)),
-        (TokenPosition::default(), symbol!(ClosingParen)),
-    ];
-
+    let input_iter = &mut input.iter().peekable();
     let mut parser = Parser::new();
-    let result = parser.parse_function_call(&mut tokens.iter().peekable());
 
     assert_eq!(
-        result,
+        parser.parse_function_declaration(input_iter),
         ParserCombinatoryResult::Matched(
-            HirFunctionCall {
-                id: HirIdentifier("f".to_string()),
-            },
+            Some(
+                AstChild::node(
+                    "fn_dec".to_string(),
+                    vec![
+                        AstChild::leaf(
+                            "id".to_string(),
+                            Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+                        ),
+                    ],
+                ),
+            ),
         ),
     );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
+fn matches_function_declaration_accessibility_optionally() {
+    let input = vec![
+        Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 1),
+        Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),
+        Token::new(TokenKind::Identifier("f".to_string()), 1, 1),
+        Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::OpenCurlyBracket), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::ClosingCurlyBracket), 0, 0),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
 
     assert_eq!(
-        parser.logs,
-        Vec::new(),
+        parser.parse_function_declaration(input_iter),
+        ParserCombinatoryResult::Matched(
+            Some(
+                AstChild::node(
+                    "fn_dec".to_string(),
+                    vec![
+                        AstChild::leaf(
+                            "accessibility".to_string(),
+                            Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 1),
+                        ),
+                        AstChild::leaf(
+                            "id".to_string(),
+                            Token::new(TokenKind::Identifier("f".to_string()), 1, 1),
+                        ),
+                    ],
+                ),
+            ),
+        ),
     );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
 }
