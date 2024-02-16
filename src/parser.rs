@@ -146,32 +146,28 @@ impl Parser {
         }
     }
 
-    pub fn parse(mut self, input: &Vec<Token>) -> ParserResult<(Ast, Vec<ParserLog>)> {
+    pub fn parse(mut self, input: &Vec<Token>) -> (ParserResult<Option<Ast>>, Vec<ParserLog>) {
         let input = &mut input.iter().peekable();
 
-        let result = choice!(
+        let result = min!(
+            min: 0;
+            name: "root";
             input: *input;
-            self.parse_any_symbol(input);
-            seq!(
-                name: "root";
-                input: *input;
-                self.parse_any_id(input) => Visible;
-                self.parse_any_id(input) => Visible;
-            );
+            self.parse_item(input);
         );
 
         let root = match result {
             ParserCombinatoryResult::Matched(child) => match child {
                 Some(child) => match child {
-                    AstChild::Node(node) => node,
-                    AstChild::Leaf(leaf) => AstNode::new("root".to_string(), vec![AstChild::Leaf(leaf)]),
+                    AstChild::Node(node) => Some(Ast::new(node)),
+                    AstChild::Leaf(_) => None,
                 },
-                None => AstNode::new("root".to_string(), Vec::new()),
+                None => None,
             },
-            ParserCombinatoryResult::Unmatched => return ParserResult::Unmatched,
+            ParserCombinatoryResult::Unmatched => return (ParserResult::Unmatched, self.logs),
         };
 
-        ParserResult::Matched((Ast::new(root), self.logs))
+        (ParserResult::Matched(root), self.logs)
     }
 
     pub fn parse_any_number(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {

@@ -1,6 +1,13 @@
 use crate::{*, parser::*};
 
 impl Parser {
+    pub fn parse_item(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+        choice!(
+            input: *input;
+            self.parse_function_declaration(input);
+        )
+    }
+
     pub fn parse_accessibility(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
         choice!(
             input: *input;
