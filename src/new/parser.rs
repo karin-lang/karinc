@@ -6,7 +6,7 @@ use crate::new::data::{ast::*, token::*};
 
 #[macro_export]
 macro_rules! seq {
-    (name: $name:expr; input: $input:expr; $($result:expr $(=> $reflect:expr)?;)*) => {
+    (name: $name:expr; input: $input:expr; $($result:expr $(=> $visibility:ident)?;)*) => {
         'seq: {
             use crate::new::{data::ast::*, parser::*};
 
@@ -19,9 +19,18 @@ macro_rules! seq {
                     #[allow(unused)]
                     ParserCombinatoryResult::Matched(child) => {
                         $(
-                            if $reflect {
-                                if let Some(child) = child {
-                                    children.push(child)
+                            if let Some(child) = child {
+                                match AstVisibility::$visibility {
+                                    AstVisibility::Visible => children.push(child),
+                                    AstVisibility::Expanded => {
+                                        let mut new_children = match child {
+                                            AstChild::Node(node) => node.children,
+                                            AstChild::Leaf(leaf) => vec![AstChild::Leaf(leaf)],
+                                        };
+
+                                        children.append(&mut new_children);
+                                    },
+                                    AstVisibility::Hidden => (),
                                 }
                             }
                         )?
@@ -58,13 +67,46 @@ macro_rules! choice {
 
 #[macro_export]
 macro_rules! optional {
-    ($result:expr $(,)?) => {
+    ($result:expr $(;)?) => {
         {
+            use crate::new::parser::*;
+
             let parsed = $result;
 
             match parsed {
                 ParserResult::Unmatched => ParserResult::Matched(None),
                 _ => parsed,
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! min {
+    (min: $min:expr; name: $name:expr; input: $input:expr; $result:expr $(;)?) => {
+        {
+            use crate::new::parser::*;
+
+            let start_input = $input.clone();
+            let mut children = Vec::new();
+
+            loop {
+                match $result {
+                    ParserCombinatoryResult::Matched(option) => match option {
+                        Some(child) => children.push(child),
+                        None => (),
+                    },
+                    ParserCombinatoryResult::Unmatched => break,
+                }
+            }
+
+            #[allow(unused_comparisons)]
+            if $min <= children.len() {
+                let child = AstChild::node($name.to_string(), children);
+                ParserCombinatoryResult::Matched(Some(child))
+            } else {
+                $input = start_input;
+                ParserCombinatoryResult::Unmatched
             }
         }
     };
@@ -113,8 +155,8 @@ impl Parser {
             seq!(
                 name: "root";
                 input: *input;
-                self.parse_any_id(input) => true;
-                self.parse_any_id(input) => true;
+                self.parse_any_id(input) => Visible;
+                self.parse_any_id(input) => Visible;
             );
         );
 

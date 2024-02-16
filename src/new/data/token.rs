@@ -71,6 +71,7 @@ impl KeywordToken {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum SymbolToken {
+    Comma,
     Colon,
     DoubleColon,
     Semicolon,

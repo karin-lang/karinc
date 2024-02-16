@@ -48,8 +48,8 @@ fn specifies_leaf_to_ast_in_sequence() {
         seq!(
             name: "seq";
             input: *input_iter;
-            parser.parse_any_id(input_iter) => true;
-            parser.parse_any_symbol(input_iter) => false;
+            parser.parse_any_id(input_iter) => Visible;
+            parser.parse_any_symbol(input_iter) => Hidden;
         ),
         ParserResult::Matched(
             Some(
@@ -73,7 +73,7 @@ fn specifies_leaf_to_ast_in_sequence() {
 fn does_not_match_element_in_sequence() {
     let input = vec![
         Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
-        Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
+        Token::new(TokenKind::Identifier("id".to_string()), 2, 2),
     ];
     let input_iter = &mut input.iter().peekable();
     let mut parser = Parser::new();
@@ -88,6 +88,42 @@ fn does_not_match_element_in_sequence() {
         ParserResult::Unmatched,
     );
     assert!(input_iter.next().is_some());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
+fn expands_node_in_sequence() {
+    let input = vec![
+        Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
+        Token::new(TokenKind::Identifier("id".to_string()), 2, 2),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        seq!(
+            name: "seq";
+            input: *input_iter;
+            seq!(
+                name: "";
+                input: *input_iter;
+                parser.parse_any_id(input_iter) => Visible;
+                parser.parse_any_id(input_iter) => Visible;
+            ) => Expanded;
+        ),
+        ParserResult::Matched(
+            Some(
+                AstChild::node(
+                    "seq".to_string(),
+                    vec![
+                        AstChild::leaf("id".to_string(), Token::new(TokenKind::Identifier("id".to_string()), 0, 2)),
+                        AstChild::leaf("id".to_string(), Token::new(TokenKind::Identifier("id".to_string()), 2, 2)),
+                    ],
+                ),
+            ),
+        ),
+    );
+    assert!(input_iter.next().is_none());
     assert_eq!(parser.logs, Vec::new());
 }
 

@@ -67,3 +67,10 @@ impl AstLeaf {
         AstLeaf { name, value }
     }
 }
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum AstVisibility {
+    Visible,
+    Expanded,
+    Hidden,
+}

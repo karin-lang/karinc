@@ -98,6 +98,7 @@ impl Lexer {
         };
 
         let symbol = match first_char {
+            ',' => (1, SymbolToken::Colon),
             ':' => {
                 let colon_symbol = (1, SymbolToken::Colon);
 
