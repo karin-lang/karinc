@@ -77,7 +77,7 @@ fn matches_function_call() {
 }
 
 #[test]
-fn matches_function_call_with_actual_argument() {
+fn matches_function_call_with_actual_arg() {
     let input = vec![
         Token::new(TokenKind::Identifier("id".to_string()), 0, 1),
         Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
@@ -117,13 +117,13 @@ fn matches_function_call_with_actual_argument() {
 }
 
 #[test]
-fn matches_actual_function_arguments_of_zero_len() {
+fn matches_actual_function_args_of_zero_len() {
     let input = Vec::new();
     let input_iter = &mut input.iter().peekable();
     let mut parser = Parser::new();
 
     assert_eq!(
-        parser.parse_actual_function_arguments(input_iter),
+        parser.parse_actual_function_args(input_iter),
         ParserCombinatoryResult::Matched(None),
     );
     assert!(input_iter.next().is_none());
@@ -131,7 +131,7 @@ fn matches_actual_function_arguments_of_zero_len() {
 }
 
 #[test]
-fn matches_single_actual_function_argument() {
+fn matches_single_actual_function_arg() {
     let input = vec![
         Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 1),
     ];
@@ -139,7 +139,7 @@ fn matches_single_actual_function_argument() {
     let mut parser = Parser::new();
 
     assert_eq!(
-        parser.parse_actual_function_arguments(input_iter),
+        parser.parse_actual_function_args(input_iter),
         ParserCombinatoryResult::Matched(
             Some(
                 AstChild::node(
@@ -159,7 +159,7 @@ fn matches_single_actual_function_argument() {
 }
 
 #[test]
-fn allows_comma_after_actual_function_argument() {
+fn allows_comma_after_actual_function_arg() {
     let input = vec![
         Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 1),
         Token::new(TokenKind::Symbol(SymbolToken::Comma), 0, 0),
@@ -168,7 +168,7 @@ fn allows_comma_after_actual_function_argument() {
     let mut parser = Parser::new();
 
     assert_eq!(
-        parser.parse_actual_function_arguments(input_iter),
+        parser.parse_actual_function_args(input_iter),
         ParserCombinatoryResult::Matched(
             Some(
                 AstChild::node(
@@ -188,7 +188,7 @@ fn allows_comma_after_actual_function_argument() {
 }
 
 #[test]
-fn matches_two_actual_function_arguments() {
+fn matches_two_actual_function_args() {
     let input = vec![
         Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 1),
         Token::new(TokenKind::Symbol(SymbolToken::Comma), 0, 0),
@@ -198,7 +198,7 @@ fn matches_two_actual_function_arguments() {
     let mut parser = Parser::new();
 
     assert_eq!(
-        parser.parse_actual_function_arguments(input_iter),
+        parser.parse_actual_function_args(input_iter),
         ParserCombinatoryResult::Matched(
             Some(
                 AstChild::node(
@@ -227,7 +227,7 @@ fn matches_two_actual_function_arguments() {
 }
 
 #[test]
-fn matches_three_actual_function_arguments() {
+fn matches_three_actual_function_args() {
     let input = vec![
         Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 1),
         Token::new(TokenKind::Symbol(SymbolToken::Comma), 0, 0),
@@ -239,7 +239,7 @@ fn matches_three_actual_function_arguments() {
     let mut parser = Parser::new();
 
     assert_eq!(
-        parser.parse_actual_function_arguments(input_iter),
+        parser.parse_actual_function_args(input_iter),
         ParserCombinatoryResult::Matched(
             Some(
                 AstChild::node(

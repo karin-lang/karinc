@@ -19,12 +19,12 @@ impl Parser {
             input: *input;
             self.parse_any_id(input) => Visible;
             self.parse_symbol(input, SymbolToken::OpenParen);
-            self.parse_actual_function_arguments(input) => Visible;
+            self.parse_actual_function_args(input) => Visible;
             self.parse_symbol(input, SymbolToken::ClosingParen);
         )
     }
 
-    pub fn parse_actual_function_arguments(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+    pub fn parse_actual_function_args(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
         optional!(
             seq!(
                 name: "actual_fn_args";
