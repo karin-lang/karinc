@@ -28,6 +28,13 @@ impl AstChild {
         AstChild::Leaf(leaf)
     }
 
+    pub fn get_name(&self) -> &str {
+        match self {
+            AstChild::Node(node) => &node.name,
+            AstChild::Leaf(leaf) => &leaf.name,
+        }
+    }
+
     pub fn rename(mut self, name: &str) -> AstChild {
         match &mut self {
             AstChild::Node(node) => node.name = name.to_string(),
@@ -35,6 +42,28 @@ impl AstChild {
         }
 
         self
+    }
+
+    pub fn to_node(&self) -> Option<&AstNode> {
+        match self {
+            AstChild::Node(node) => Some(node),
+            _ => None,
+        }
+    }
+
+    pub fn to_leaf(&self) -> Option<&AstLeaf> {
+        match self {
+            AstChild::Leaf(leaf) => Some(leaf),
+            _ => None,
+        }
+    }
+
+    pub fn expect_node(&self) -> &AstNode {
+        self.to_node().unwrap()
+    }
+
+    pub fn expect_leaf(&self) -> &AstLeaf {
+        self.to_leaf().unwrap()
     }
 }
 
@@ -47,6 +76,20 @@ pub struct AstNode {
 impl AstNode {
     pub fn new(name: String, children: Vec<AstChild>) -> AstNode {
         AstNode { name, children }
+    }
+
+    pub fn get(&self, index: usize) -> Option<&AstChild> {
+        self.children.get(index)
+    }
+
+    pub fn find(&self, id: &str) -> Option<&AstChild> {
+        for each_child in &self.children {
+            if id == each_child.get_name() {
+                return Some(each_child);
+            }
+        }
+
+        None
     }
 }
 

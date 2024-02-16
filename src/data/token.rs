@@ -31,6 +31,20 @@ impl TokenKind {
 
         TokenKind::Identifier(s.to_string())
     }
+
+    pub fn expect_number(&self) -> &NumberToken {
+        match self {
+            TokenKind::Number(value) => value,
+            _ => panic!("expected id token"),
+        }
+    }
+
+    pub fn expect_id(&self) -> &String {
+        match self {
+            TokenKind::Identifier(id) => id,
+            _ => panic!("expected id token"),
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
