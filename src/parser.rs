@@ -156,6 +156,10 @@ impl Parser {
             self.parse_item(input);
         );
 
+        if input.peek().is_some() {
+            return (ParserResult::Unmatched, self.logs);
+        }
+
         let root = match result {
             ParserCombinatoryResult::Matched(child) => match child {
                 Some(child) => match child {
