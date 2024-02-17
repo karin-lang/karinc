@@ -9,6 +9,11 @@ impl Ast {
     pub fn new(root: AstNode) -> Ast {
         Ast { root }
     }
+
+    pub fn normalize(mut self) -> Ast {
+        self.root = self.root.normalize();
+        self
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -84,6 +89,21 @@ pub struct AstNode {
 impl AstNode {
     pub fn new(name: String, children: Vec<AstChild>) -> AstNode {
         AstNode { name, children }
+    }
+
+    pub fn normalize(mut self) -> AstNode {
+        let mut normalized_children = Vec::new();
+
+        for each_child in self.children {
+            match each_child {
+                AstChild::Node(mut node) if node.name == "" =>
+                    normalized_children.append(&mut node.children),
+                _ => normalized_children.push(each_child),
+            }
+        }
+
+        self.children = normalized_children;
+        self
     }
 
     #[inline]

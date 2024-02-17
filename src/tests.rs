@@ -1,4 +1,6 @@
 #[cfg(test)]
+mod ast;
+#[cfg(test)]
 mod hir;
 #[cfg(test)]
 mod lexer;
