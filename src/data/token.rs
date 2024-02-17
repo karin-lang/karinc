@@ -14,7 +14,7 @@ impl Token {
 #[derive(Clone, Debug, PartialEq)]
 pub enum TokenKind {
     Number(NumberToken),
-    Identifier(String),
+    Id(String),
     Keyword(KeywordToken),
     Symbol(SymbolToken),
 }
@@ -29,7 +29,7 @@ impl TokenKind {
             return TokenKind::Keyword(keyword);
         };
 
-        TokenKind::Identifier(s.to_string())
+        TokenKind::Id(s.to_string())
     }
 
     pub fn expect_number(&self) -> &NumberToken {
@@ -41,7 +41,7 @@ impl TokenKind {
 
     pub fn expect_id(&self) -> &String {
         match self {
-            TokenKind::Identifier(id) => id,
+            TokenKind::Id(id) => id,
             _ => panic!("expected id token"),
         }
     }

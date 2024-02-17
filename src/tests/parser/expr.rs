@@ -49,7 +49,7 @@ fn matches_number_literal() {
 #[test]
 fn matches_function_call() {
     let input = vec![
-        Token::new(TokenKind::Identifier("id".to_string()), 0, 1),
+        Token::new(TokenKind::Id("id".to_string()), 0, 1),
         Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
     ];
@@ -65,7 +65,7 @@ fn matches_function_call() {
                     vec![
                         AstChild::leaf(
                             "id".to_string(),
-                            Token::new(TokenKind::Identifier("id".to_string()), 0, 1),
+                            Token::new(TokenKind::Id("id".to_string()), 0, 1),
                         ),
                     ],
                 ),
@@ -79,7 +79,7 @@ fn matches_function_call() {
 #[test]
 fn matches_function_call_with_actual_arg() {
     let input = vec![
-        Token::new(TokenKind::Identifier("id".to_string()), 0, 1),
+        Token::new(TokenKind::Id("id".to_string()), 0, 1),
         Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
         Token::new(TokenKind::Number(NumberToken("0".to_string())), 1, 1),
         Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
@@ -96,7 +96,7 @@ fn matches_function_call_with_actual_arg() {
                     vec![
                         AstChild::leaf(
                             "id".to_string(),
-                            Token::new(TokenKind::Identifier("id".to_string()), 0, 1),
+                            Token::new(TokenKind::Id("id".to_string()), 0, 1),
                         ),
                         AstChild::node(
                             "actual_fn_args".to_string(),

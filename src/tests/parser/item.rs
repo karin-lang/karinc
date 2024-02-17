@@ -4,7 +4,7 @@ use crate::{data::{ast::*, token::*}, parser::*};
 fn matches_any_item() {
     let input = vec![
         Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),
-        Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+        Token::new(TokenKind::Id("f".to_string()), 0, 1),
         Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::OpenCurlyBracket), 0, 0),
@@ -22,7 +22,7 @@ fn matches_any_item() {
                     vec![
                         AstChild::leaf(
                             "id".to_string(),
-                            Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+                            Token::new(TokenKind::Id("f".to_string()), 0, 1),
                         ),
                         AstChild::node(
                             "fn_exprs".to_string(),
@@ -64,7 +64,7 @@ fn matches_accessibility() {
 fn matches_function_declaration() {
     let input = vec![
         Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),
-        Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+        Token::new(TokenKind::Id("f".to_string()), 0, 1),
         Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::OpenCurlyBracket), 0, 0),
@@ -82,7 +82,7 @@ fn matches_function_declaration() {
                     vec![
                         AstChild::leaf(
                             "id".to_string(),
-                            Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+                            Token::new(TokenKind::Id("f".to_string()), 0, 1),
                         ),
                         AstChild::node(
                             "fn_exprs".to_string(),
@@ -102,7 +102,7 @@ fn matches_function_declaration_accessibility_optionally() {
     let input = vec![
         Token::new(TokenKind::Keyword(KeywordToken::Public), 0, 1),
         Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),
-        Token::new(TokenKind::Identifier("f".to_string()), 1, 1),
+        Token::new(TokenKind::Id("f".to_string()), 1, 1),
         Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::OpenCurlyBracket), 0, 0),
@@ -124,7 +124,7 @@ fn matches_function_declaration_accessibility_optionally() {
                         ),
                         AstChild::leaf(
                             "id".to_string(),
-                            Token::new(TokenKind::Identifier("f".to_string()), 1, 1),
+                            Token::new(TokenKind::Id("f".to_string()), 1, 1),
                         ),
                         AstChild::node(
                             "fn_exprs".to_string(),
@@ -143,7 +143,7 @@ fn matches_function_declaration_accessibility_optionally() {
 fn matches_function_declaration_with_expression() {
     let input = vec![
         Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),
-        Token::new(TokenKind::Identifier("f".to_string()), 1, 1),
+        Token::new(TokenKind::Id("f".to_string()), 1, 1),
         Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::OpenCurlyBracket), 0, 0),
@@ -163,7 +163,7 @@ fn matches_function_declaration_with_expression() {
                     vec![
                         AstChild::leaf(
                             "id".to_string(),
-                            Token::new(TokenKind::Identifier("f".to_string()), 1, 1),
+                            Token::new(TokenKind::Id("f".to_string()), 1, 1),
                         ),
                         AstChild::node(
                             "fn_exprs".to_string(),

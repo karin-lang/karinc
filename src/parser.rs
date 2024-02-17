@@ -194,7 +194,7 @@ impl Parser {
     pub fn parse_any_id(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
         match input.peek().cloned().cloned() {
             Some(token) => {
-                if let TokenKind::Identifier(_) = token.kind {
+                if let TokenKind::Id(_) = token.kind {
                     input.next();
 
                     ParserCombinatoryResult::Matched(

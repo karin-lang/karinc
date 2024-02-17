@@ -11,7 +11,7 @@ fn normalizes_ast() {
                     vec![
                         AstChild::leaf(
                             "leaf".to_string(),
-                            Token::new(TokenKind::Identifier("id".to_string()), 0, 0),
+                            Token::new(TokenKind::Id("id".to_string()), 0, 0),
                         ),
                     ],
                 ),
@@ -27,7 +27,7 @@ fn normalizes_ast() {
                 vec![
                     AstChild::leaf(
                         "leaf".to_string(),
-                        Token::new(TokenKind::Identifier("id".to_string()), 0, 0),
+                        Token::new(TokenKind::Id("id".to_string()), 0, 0),
                     ),
                 ],
             ),
@@ -45,7 +45,7 @@ fn normalizes_node_children() {
                 vec![
                     AstChild::leaf(
                         "leaf".to_string(),
-                        Token::new(TokenKind::Identifier("id".to_string()), 0, 0),
+                        Token::new(TokenKind::Id("id".to_string()), 0, 0),
                     ),
                 ],
             ),
@@ -59,7 +59,7 @@ fn normalizes_node_children() {
             vec![
                 AstChild::leaf(
                     "leaf".to_string(),
-                    Token::new(TokenKind::Identifier("id".to_string()), 0, 0),
+                    Token::new(TokenKind::Id("id".to_string()), 0, 0),
                 ),
             ],
         ),
@@ -76,7 +76,7 @@ fn does_not_normalize_node_with_id() {
                 vec![
                     AstChild::leaf(
                         "leaf".to_string(),
-                        Token::new(TokenKind::Identifier("id".to_string()), 0, 0),
+                        Token::new(TokenKind::Id("id".to_string()), 0, 0),
                     ),
                 ],
             ),
@@ -93,7 +93,7 @@ fn does_not_normalize_node_with_id() {
                     vec![
                         AstChild::leaf(
                             "leaf".to_string(),
-                            Token::new(TokenKind::Identifier("id".to_string()), 0, 0),
+                            Token::new(TokenKind::Id("id".to_string()), 0, 0),
                         ),
                     ],
                 ),
@@ -115,7 +115,7 @@ fn normalizes_grandchild_nodes_recursively() {
                         vec![
                             AstChild::leaf(
                                 "leaf".to_string(),
-                                Token::new(TokenKind::Identifier("id".to_string()), 0, 0),
+                                Token::new(TokenKind::Id("id".to_string()), 0, 0),
                             ),
                         ],
                     ),
@@ -131,7 +131,7 @@ fn normalizes_grandchild_nodes_recursively() {
             vec![
                 AstChild::leaf(
                     "leaf".to_string(),
-                    Token::new(TokenKind::Identifier("id".to_string()), 0, 0),
+                    Token::new(TokenKind::Id("id".to_string()), 0, 0),
                 ),
             ],
         ),

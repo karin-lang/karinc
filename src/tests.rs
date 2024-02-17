@@ -37,7 +37,7 @@ fn generates_parser_result() {
                                 vec![
                                     AstChild::leaf(
                                         "id".to_string(),
-                                        Token::new(TokenKind::Identifier("f".to_string()), 3, 1),
+                                        Token::new(TokenKind::Id("f".to_string()), 3, 1),
                                     ),
                                     AstChild::node(
                                         "fn_exprs".to_string(),

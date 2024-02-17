@@ -9,7 +9,7 @@ fn lowers_any_item() {
         vec![
             AstChild::leaf(
                 "id".to_string(),
-                Token::new(TokenKind::Identifier("f".to_string()), 0, 0),
+                Token::new(TokenKind::Id("f".to_string()), 0, 0),
             ),
             AstChild::node(
                 "fn_exprs".to_string(),
@@ -57,7 +57,7 @@ fn lowers_function_declaration() {
         vec![
             AstChild::leaf(
                 "id".to_string(),
-                Token::new(TokenKind::Identifier("f".to_string()), 0, 0),
+                Token::new(TokenKind::Id("f".to_string()), 0, 0),
             ),
             AstChild::node(
                 "fn_exprs".to_string(),
@@ -86,7 +86,7 @@ fn lowers_function_declaration_with_expression() {
         vec![
             AstChild::leaf(
                 "id".to_string(),
-                Token::new(TokenKind::Identifier("f".to_string()), 0, 0),
+                Token::new(TokenKind::Id("f".to_string()), 0, 0),
             ),
             AstChild::node(
                 "fn_exprs".to_string(),

@@ -11,7 +11,7 @@ use crate::{data::{ast::*, token::*}, parser::*};
 #[test]
 fn matches_all_elements_in_sequence() {
     let input = vec![
-        Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
+        Token::new(TokenKind::Id("id".to_string()), 0, 2),
         Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 2, 1),
     ];
     let input_iter = &mut input.iter().peekable();
@@ -40,7 +40,7 @@ fn matches_all_elements_in_sequence() {
 #[test]
 fn specifies_leaf_to_ast_in_sequence() {
     let input = vec![
-        Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
+        Token::new(TokenKind::Id("id".to_string()), 0, 2),
         Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 2, 1),
     ];
     let input_iter = &mut input.iter().peekable();
@@ -60,7 +60,7 @@ fn specifies_leaf_to_ast_in_sequence() {
                     vec![
                         AstChild::leaf(
                             "id".to_string(),
-                            Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
+                            Token::new(TokenKind::Id("id".to_string()), 0, 2),
                         ),
                     ],
                 ),
@@ -74,8 +74,8 @@ fn specifies_leaf_to_ast_in_sequence() {
 #[test]
 fn does_not_match_element_in_sequence() {
     let input = vec![
-        Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
-        Token::new(TokenKind::Identifier("id".to_string()), 2, 2),
+        Token::new(TokenKind::Id("id".to_string()), 0, 2),
+        Token::new(TokenKind::Id("id".to_string()), 2, 2),
     ];
     let input_iter = &mut input.iter().peekable();
     let mut parser = Parser::new();
@@ -96,8 +96,8 @@ fn does_not_match_element_in_sequence() {
 #[test]
 fn expands_node_in_sequence() {
     let input = vec![
-        Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
-        Token::new(TokenKind::Identifier("id".to_string()), 2, 2),
+        Token::new(TokenKind::Id("id".to_string()), 0, 2),
+        Token::new(TokenKind::Id("id".to_string()), 2, 2),
     ];
     let input_iter = &mut input.iter().peekable();
     let mut parser = Parser::new();
@@ -118,8 +118,8 @@ fn expands_node_in_sequence() {
                 AstChild::node(
                     "seq".to_string(),
                     vec![
-                        AstChild::leaf("id".to_string(), Token::new(TokenKind::Identifier("id".to_string()), 0, 2)),
-                        AstChild::leaf("id".to_string(), Token::new(TokenKind::Identifier("id".to_string()), 2, 2)),
+                        AstChild::leaf("id".to_string(), Token::new(TokenKind::Id("id".to_string()), 0, 2)),
+                        AstChild::leaf("id".to_string(), Token::new(TokenKind::Id("id".to_string()), 2, 2)),
                     ],
                 ),
             ),
@@ -216,7 +216,7 @@ fn matches_any_number() {
 #[test]
 fn matches_any_id_token() {
     let input = vec![
-        Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
+        Token::new(TokenKind::Id("id".to_string()), 0, 2),
     ];
     let input_iter = &mut input.iter().peekable();
     let mut parser = Parser::new();
@@ -227,7 +227,7 @@ fn matches_any_id_token() {
             Some(
                 AstChild::leaf(
                     "id".to_string(),
-                    Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
+                    Token::new(TokenKind::Id("id".to_string()), 0, 2),
                 ),
             ),
         ),
@@ -311,7 +311,7 @@ fn matches_any_symbol_token() {
 #[test]
 fn does_not_match_non_symbol_token() {
     let input = vec![
-        Token::new(TokenKind::Identifier("id".to_string()), 0, 2),
+        Token::new(TokenKind::Id("id".to_string()), 0, 2),
     ];
     let input_iter = &mut input.iter().peekable();
     let mut parser = Parser::new();
@@ -360,7 +360,7 @@ fn does_not_match_wrong_symbol_token() {
 #[test]
 fn unmatches_when_has_remaining_input() {
     let input = vec![
-        Token::new(TokenKind::Identifier("UNKNOWN_SYNTAX".to_string()), 0, 0),
+        Token::new(TokenKind::Id("UNKNOWN_SYNTAX".to_string()), 0, 0),
     ];
     let parser = Parser::new();
 
@@ -376,7 +376,7 @@ fn unmatches_when_has_remaining_input() {
 fn matches_single_item() {
     let input = vec![
         Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),
-        Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+        Token::new(TokenKind::Id("f".to_string()), 0, 1),
         Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::OpenCurlyBracket), 0, 0),
@@ -398,7 +398,7 @@ fn matches_single_item() {
                                     vec![
                                         AstChild::leaf(
                                             "id".to_string(),
-                                            Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+                                            Token::new(TokenKind::Id("f".to_string()), 0, 1),
                                         ),
                                         AstChild::node(
                                             "fn_exprs".to_string(),
@@ -420,7 +420,7 @@ fn matches_single_item() {
 fn normalizes_generated_ast() {
     let input = vec![
         Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),
-        Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+        Token::new(TokenKind::Id("f".to_string()), 0, 1),
         Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
         Token::new(TokenKind::Symbol(SymbolToken::OpenCurlyBracket), 0, 0),
@@ -444,7 +444,7 @@ fn normalizes_generated_ast() {
                                     vec![
                                         AstChild::leaf(
                                             "id".to_string(),
-                                            Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+                                            Token::new(TokenKind::Id("f".to_string()), 0, 1),
                                         ),
                                         AstChild::node(
                                             "fn_exprs".to_string(),

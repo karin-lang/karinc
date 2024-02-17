@@ -17,7 +17,7 @@ fn lowers_to_hir() {
                     vec![
                         AstChild::leaf(
                             "id".to_string(),
-                            Token::new(TokenKind::Identifier("f".to_string()), 0, 0),
+                            Token::new(TokenKind::Id("f".to_string()), 0, 0),
                         ),
                         AstChild::node(
                             "fn_exprs".to_string(),

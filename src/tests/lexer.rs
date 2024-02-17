@@ -17,7 +17,7 @@ fn tokenize_alphanumerics() {
     let input_chars = &mut input.char_indices().peekable();
     let (tokens, logs) = Lexer::new().tokenize_(input_chars);
 
-    assert_eq!(tokens, vec![Token::new(TokenKind::Identifier("id".to_string()), 0, 2)]);
+    assert_eq!(tokens, vec![Token::new(TokenKind::Id("id".to_string()), 0, 2)]);
     assert_eq!(input_chars.peek(), None);
     assert_eq!(logs, Vec::new());
 }

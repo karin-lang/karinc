@@ -12,7 +12,7 @@ fn converts_alphanumerics_to_number_token() {
 fn converts_alphanumerics_to_id_token() {
     assert_eq!(
         TokenKind::from_alphanumerics("id"),
-        TokenKind::Identifier("id".to_string()),
+        TokenKind::Id("id".to_string()),
     );
 }
 
@@ -20,7 +20,7 @@ fn converts_alphanumerics_to_id_token() {
 fn converts_non_alphanumerics_to_id_token_instead() {
     assert_eq!(
         TokenKind::from_alphanumerics(";"),
-        TokenKind::Identifier(";".to_string()),
+        TokenKind::Id(";".to_string()),
     );
 }
 
