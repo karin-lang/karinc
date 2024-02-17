@@ -55,8 +55,7 @@ impl HirLowering {
     pub fn lower_function_expressions(&mut self, node: &AstNode) -> Vec<HirExpression> {
         let mut exprs = Vec::new();
 
-        for each_child in &node.children {
-            let expr_child = each_child.expect_node().get(0).unwrap();
+        for expr_child in &node.children {
             let new_expr = self.lower_expression(expr_child);
 
             if let Some(v) = new_expr {

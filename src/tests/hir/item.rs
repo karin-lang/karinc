@@ -79,7 +79,6 @@ fn lowers_function_declaration() {
     assert_eq!(lowering.logs, Vec::new());
 }
 
-// TODO: exprを追加
 #[test]
 fn lowers_function_declaration_with_expression() {
     let node = AstNode::new(
@@ -92,7 +91,10 @@ fn lowers_function_declaration_with_expression() {
             AstChild::node(
                 "fn_exprs".to_string(),
                 vec![
-
+                    AstChild::leaf(
+                        "number".to_string(),
+                        Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 0),
+                    ),
                 ],
             ),
         ],
@@ -105,10 +107,40 @@ fn lowers_function_declaration_with_expression() {
             HirFunctionDeclaration {
                 id: HirId("f".to_string()),
                 exprs: vec![
-
+                    HirExpression::Number(
+                        HirNumberLiteral {
+                            value: "0".to_string(),
+                        },
+                    ),
                 ],
             },
         ),
+    );
+    assert_eq!(lowering.logs, Vec::new());
+}
+
+#[test]
+fn lowers_function_expressions() {
+    let node = AstNode::new(
+        "fn_exprs".to_string(),
+        vec![
+            AstChild::leaf(
+                "number".to_string(),
+                Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 0),
+            ),
+        ],
+    );
+    let mut lowering = HirLowering::new();
+
+    assert_eq!(
+        lowering.lower_function_expressions(&node),
+        vec![
+            HirExpression::Number(
+                HirNumberLiteral {
+                    value: "0".to_string(),
+                },
+            ),
+        ],
     );
     assert_eq!(lowering.logs, Vec::new());
 }
