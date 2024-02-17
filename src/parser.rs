@@ -118,6 +118,15 @@ pub enum ParserResult<T> {
     Unmatched,
 }
 
+impl<T> ParserResult<T> {
+    pub fn unwrap(self) -> T {
+        match self {
+            ParserResult::Matched(v) => v,
+            ParserResult::Unmatched => panic!("called `ParserResult::<T>::unwrap()` on a `Unmatched` value"),
+        }
+    }
+}
+
 pub type ParserCombinatoryResult = ParserResult<Option<AstChild>>;
 
 impl ParserResult<Option<AstChild>> {
