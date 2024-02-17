@@ -96,8 +96,15 @@ impl AstNode {
 
         for each_child in self.children {
             match each_child {
-                AstChild::Node(mut node) if node.name == "" =>
-                    normalized_children.append(&mut node.children),
+                AstChild::Node(node) => {
+                    let mut normalized_node = node.normalize();
+
+                    if normalized_node.name == "" {
+                        normalized_children.append(&mut normalized_node.children);
+                    } else {
+                        normalized_children.push(AstChild::Node(normalized_node));
+                    }
+                },
                 _ => normalized_children.push(each_child),
             }
         }

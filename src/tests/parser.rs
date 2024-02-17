@@ -6,6 +6,8 @@ mod item;
 use crate::*;
 use crate::{data::{ast::*, token::*}, parser::*};
 
+/* Primitive Features */
+
 #[test]
 fn matches_all_elements_in_sequence() {
     let input = vec![
@@ -368,6 +370,8 @@ fn unmatches_when_has_remaining_input() {
     );
 }
 
+/* Extended Features */
+
 #[test]
 fn matches_single_item() {
     let input = vec![
@@ -399,6 +403,57 @@ fn matches_single_item() {
                                         AstChild::node(
                                             "fn_exprs".to_string(),
                                             Vec::new(),
+                                        ),
+                                    ],
+                                ),
+                            ],
+                        ),
+                    ),
+                ),
+            ),
+            Vec::new(),
+        ),
+    );
+}
+
+#[test]
+fn normalizes_generated_ast() {
+    let input = vec![
+        Token::new(TokenKind::Keyword(KeywordToken::Function), 0, 0),
+        Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+        Token::new(TokenKind::Symbol(SymbolToken::OpenParen), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::ClosingParen), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::OpenCurlyBracket), 0, 0),
+        Token::new(TokenKind::Number(NumberToken("0".to_string())), 1, 1),
+        Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 0),
+        Token::new(TokenKind::Symbol(SymbolToken::ClosingCurlyBracket), 0, 0),
+    ];
+    let parser = Parser::new();
+
+    assert_eq!(
+        parser.parse(&input),
+        (
+            ParserResult::Matched(
+                Some(
+                    Ast::new(
+                        AstNode::new(
+                            "root".to_string(),
+                            vec![
+                                AstChild::node(
+                                    "fn_dec".to_string(),
+                                    vec![
+                                        AstChild::leaf(
+                                            "id".to_string(),
+                                            Token::new(TokenKind::Identifier("f".to_string()), 0, 1),
+                                        ),
+                                        AstChild::node(
+                                            "fn_exprs".to_string(),
+                                            vec![
+                                                AstChild::leaf(
+                                                    "number".to_string(),
+                                                    Token::new(TokenKind::Number(NumberToken("0".to_string())), 1, 1),
+                                                ),
+                                            ],
                                         ),
                                     ],
                                 ),

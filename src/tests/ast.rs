@@ -101,3 +101,39 @@ fn does_not_normalize_node_with_id() {
         ),
     );
 }
+
+#[test]
+fn normalizes_grandchild_nodes_recursively() {
+    let node = AstNode::new(
+        "parent".to_string(),
+        vec![
+            AstChild::node(
+                "".to_string(),
+                vec![
+                    AstChild::node(
+                        "".to_string(),
+                        vec![
+                            AstChild::leaf(
+                                "leaf".to_string(),
+                                Token::new(TokenKind::Identifier("id".to_string()), 0, 0),
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ],
+    );
+
+    assert_eq!(
+        node.normalize(),
+        AstNode::new(
+            "parent".to_string(),
+            vec![
+                AstChild::leaf(
+                    "leaf".to_string(),
+                    Token::new(TokenKind::Identifier("id".to_string()), 0, 0),
+                ),
+            ],
+        ),
+    );
+}

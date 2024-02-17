@@ -163,7 +163,7 @@ impl Parser {
         let root = match result {
             ParserCombinatoryResult::Matched(child) => match child {
                 Some(child) => match child {
-                    AstChild::Node(node) => Some(Ast::new(node)),
+                    AstChild::Node(node) => Some(Ast::new(node).normalize()),
                     AstChild::Leaf(_) => None,
                 },
                 None => None,
