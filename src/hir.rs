@@ -69,7 +69,7 @@ impl HirLowering {
 
     pub fn lower_expression(&mut self, child: &AstChild) -> Option<HirExpression> {
         match child.get_name() {
-            "number" => self.lower_number_literal(child).map(|v| HirExpression::Number(v)),
+            "number" => self.lower_number_literal(child.expect_leaf()).map(|v| HirExpression::Number(v)),
             "fn_call" => unimplemented!(),
             _ => {
                 self.logs.push(HirLoweringLog::UnknownNodeId(child.get_name().to_string()));
@@ -78,8 +78,35 @@ impl HirLowering {
         }
     }
 
-    pub fn lower_number_literal(&mut self, child: &AstChild) -> Option<HirNumberLiteral> {
-        let value = child.expect_leaf().value.kind.expect_number().0.clone();
+    pub fn lower_number_literal(&mut self, leaf: &AstLeaf) -> Option<HirNumberLiteral> {
+        let value = leaf.value.kind.expect_number().0.clone();
         Some(HirNumberLiteral { value })
+    }
+
+    pub fn lower_function_call(&mut self, node: &AstNode) -> Option<HirFunctionCall> {
+        let id_leaf = node.find("id").unwrap().expect_leaf();
+        let id = HirId(id_leaf.value.kind.expect_id().clone());
+
+        let args = node
+            .find("actual_fn_args")
+            .map(|v| self.lower_actual_function_args(v.expect_node()))
+            .unwrap_or(Vec::new());
+
+        let function_call = HirFunctionCall { id, args };
+        Some(function_call)
+    }
+
+    pub fn lower_actual_function_args(&mut self, node: &AstNode) -> Vec<HirActualFunctionArgument> {
+        let mut args = Vec::new();
+
+        for each_child in &node.children {
+            let new_arg = self.lower_expression(each_child).map(|v| HirActualFunctionArgument::Expression(v));
+
+            if let Some(v) = new_arg {
+                args.push(v);
+            }
+        }
+
+        args
     }
 }
