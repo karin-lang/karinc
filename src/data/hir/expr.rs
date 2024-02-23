@@ -1,5 +1,4 @@
-#[derive(Clone, Debug, PartialEq)]
-pub struct HirId(pub String);
+use super::path::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum HirExpression {
@@ -14,7 +13,7 @@ pub struct HirNumberLiteral {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct HirFunctionCall {
-    pub id: HirId,
+    pub id: HirRefPath,
     pub args: Vec<HirActualFunctionArgument>,
 }
 

@@ -1,5 +1,5 @@
 use crate::data::{ast::*, token::*};
-use crate::data::hir::expr::*;
+use crate::data::hir::{expr::*, path::*};
 use crate::hir::*;
 
 #[test]
@@ -59,7 +59,10 @@ fn lowers_function_call() {
         lowering.lower_function_call(&node),
         Some(
             HirFunctionCall {
-                id: HirId("f".to_string()),
+                id: HirRefPath {
+                    segments: vec!["f".to_string()],
+                    name_resolution_status: HirNameResolutionStatus::Unresolved,
+                },
                 args: Vec::new(),
             },
         ),
@@ -98,7 +101,10 @@ fn lowers_function_call_with_args() {
         lowering.lower_function_call(&node),
         Some(
             HirFunctionCall {
-                id: HirId("f".to_string()),
+                id: HirRefPath {
+                    segments: vec!["f".to_string()],
+                    name_resolution_status: HirNameResolutionStatus::Unresolved,
+                },
                 args: vec![
                     HirActualFunctionArgument::Expression(
                         HirExpression::Number(

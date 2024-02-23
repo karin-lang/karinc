@@ -1,9 +1,18 @@
 pub mod expr;
 pub mod item;
+pub mod path;
 
-use self::item::*;
+use std::collections::HashMap;
+
+use self::{item::*, path::*};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hir {
-    pub items: Vec<HirItem>,
+    pub modules: HashMap<HirDefPath, HirModule>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct HirModule {
+    pub items: HashMap<HirDefId, HirItem>,
+    pub submodules: Vec<HirDefPath>,
 }

@@ -1,6 +1,18 @@
 use crate::data::token::Token;
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct AstContainer {
+    pub roots: Vec<AstModule>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct AstModule {
+    pub path: Vec<String>,
+    pub ast: Ast,
+    pub submodules: Vec<AstModule>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Ast {
     pub root: AstNode,
 }

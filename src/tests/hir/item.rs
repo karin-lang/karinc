@@ -1,3 +1,4 @@
+use crate::hir_def_id;
 use crate::data::{ast::*, token::*};
 use crate::data::hir::{expr::*, item::*};
 use crate::hir::*;
@@ -21,14 +22,14 @@ fn lowers_any_item() {
 
     assert_eq!(
         lowering.lower_item(&node),
-        Some(
+        Some((
+            hir_def_id!("f"),
             HirItem::FunctionDeclaration(
                 HirFunctionDeclaration {
-                    id: HirId("f".to_string()),
                     exprs: Vec::new(),
                 },
             ),
-        ),
+        )),
     );
     assert_eq!(lowering.logs, Vec::new());
 }
@@ -69,12 +70,12 @@ fn lowers_function_declaration() {
 
     assert_eq!(
         lowering.lower_function_declaration(&node),
-        Some(
+        Some((
+            hir_def_id!("f"),
             HirFunctionDeclaration {
-                id: HirId("f".to_string()),
                 exprs: Vec::new(),
             },
-        ),
+        )),
     );
     assert_eq!(lowering.logs, Vec::new());
 }
@@ -103,9 +104,9 @@ fn lowers_function_declaration_with_expression() {
 
     assert_eq!(
         lowering.lower_function_declaration(&node),
-        Some(
+        Some((
+            hir_def_id!("f"),
             HirFunctionDeclaration {
-                id: HirId("f".to_string()),
                 exprs: vec![
                     HirExpression::Number(
                         HirNumberLiteral {
@@ -114,7 +115,7 @@ fn lowers_function_declaration_with_expression() {
                     ),
                 ],
             },
-        ),
+        )),
     );
     assert_eq!(lowering.logs, Vec::new());
 }

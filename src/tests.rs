@@ -9,10 +9,30 @@ mod parser;
 #[cfg(test)]
 mod token;
 
+use maplit::hashmap;
+
 use crate::hir::HirLowering;
 use crate::{lexer::*, parser::*};
 use crate::data::{ast::*, token::*};
 use crate::data::hir::{*, expr::*, item::*};
+
+#[macro_export]
+macro_rules! hir_def_id {
+    ($id:expr$(,)?) => {
+        crate::data::hir::path::HirDefId($id.to_string())
+    };
+}
+
+#[macro_export]
+macro_rules! hir_def_path {
+    ($($segment:expr,)+) => {
+        def_path!($($segment),+)
+    };
+
+    ($($segment:expr),*) => {
+        crate::data::hir::path::HirDefPath(vec![$($segment.to_string()),*])
+    };
+}
 
 #[test]
 fn generates_parser_result() {
@@ -60,26 +80,45 @@ fn generates_parser_result() {
     assert_eq!(parser_logs, Vec::new());
 
     let ast = parser_result.unwrap().unwrap();
+
+    let ast_container = AstContainer {
+        roots: vec![
+            AstModule {
+                path: vec!["my_hako".to_string()],
+                ast,
+                submodules: Vec::new(),
+            },
+        ],
+    };
+
     let hir_lowering = HirLowering::new();
-    let (hir, hir_lowering_logs) = hir_lowering.lower(&ast);
+    let (hir, hir_lowering_logs) = hir_lowering.lower(&ast_container);
 
     assert_eq!(
         hir,
         Hir {
-            items: vec![
-                HirItem::FunctionDeclaration(
-                    HirFunctionDeclaration {
-                        id: HirId("f".to_string()),
-                        exprs: vec![
-                            HirExpression::Number(
-                                HirNumberLiteral {
-                                    value: "0".to_string(),
-                                },
+            modules: hashmap! {
+                hir_def_path!("my_hako") => (
+                    HirModule {
+                        items: hashmap! {
+                            hir_def_id!("f") => (
+                                HirItem::FunctionDeclaration(
+                                    HirFunctionDeclaration {
+                                        exprs: vec![
+                                            HirExpression::Number(
+                                                HirNumberLiteral {
+                                                    value: "0".to_string(),
+                                                },
+                                            ),
+                                        ],
+                                    },
+                                )
                             ),
-                        ],
-                    },
+                        },
+                        submodules: Vec::new(),
+                    }
                 ),
-            ],
+            },
         },
     );
     assert_eq!(
