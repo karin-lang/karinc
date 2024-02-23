@@ -268,7 +268,124 @@ fn matches_three_actual_function_args() {
                             ],
                         ),
                     ],
-                )
+                ),
+            ),
+        ),
+    );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
+fn matches_single_id() {
+    let input = vec![
+        Token::new(TokenKind::Id("segment".to_string()), 0, 1),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        parser.parse_id_or_path(input_iter),
+        ParserCombinatoryResult::Matched(
+            Some(
+                AstChild::node(
+                    "id_or_path".to_string(),
+                    vec![
+                        AstChild::leaf(
+                            "id".to_string(),
+                            Token::new(TokenKind::Id("segment".to_string()), 0, 1),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+    );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
+fn matches_two_path_segments() {
+    let input = vec![
+        Token::new(TokenKind::Id("segment1".to_string()), 0, 1),
+        Token::new(TokenKind::Symbol(SymbolToken::DoubleColon), 0, 0),
+        Token::new(TokenKind::Id("segment2".to_string()), 1, 1),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        parser.parse_id_or_path(input_iter),
+        ParserCombinatoryResult::Matched(
+            Some(
+                AstChild::node(
+                    "id_or_path".to_string(),
+                    vec![
+                        AstChild::leaf(
+                            "id".to_string(),
+                            Token::new(TokenKind::Id("segment1".to_string()), 0, 1),
+                        ),
+                        AstChild::node(
+                            "".to_string(),
+                            vec![
+                                AstChild::leaf(
+                                    "id".to_string(),
+                                    Token::new(TokenKind::Id("segment2".to_string()), 1, 1),
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+            ),
+        ),
+    );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
+fn matches_three_path_segments() {
+    let input = vec![
+        Token::new(TokenKind::Id("segment1".to_string()), 0, 1),
+        Token::new(TokenKind::Symbol(SymbolToken::DoubleColon), 0, 0),
+        Token::new(TokenKind::Id("segment2".to_string()), 1, 1),
+        Token::new(TokenKind::Symbol(SymbolToken::DoubleColon), 0, 0),
+        Token::new(TokenKind::Id("segment3".to_string()), 2, 1),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        parser.parse_id_or_path(input_iter),
+        ParserCombinatoryResult::Matched(
+            Some(
+                AstChild::node(
+                    "id_or_path".to_string(),
+                    vec![
+                        AstChild::leaf(
+                            "id".to_string(),
+                            Token::new(TokenKind::Id("segment1".to_string()), 0, 1),
+                        ),
+                        AstChild::node(
+                            "".to_string(),
+                            vec![
+                                AstChild::leaf(
+                                    "id".to_string(),
+                                    Token::new(TokenKind::Id("segment2".to_string()), 1, 1),
+                                ),
+                            ],
+                        ),
+                        AstChild::node(
+                            "".to_string(),
+                            vec![
+                                AstChild::leaf(
+                                    "id".to_string(),
+                                    Token::new(TokenKind::Id("segment3".to_string()), 2, 1),
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
             ),
         ),
     );

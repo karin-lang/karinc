@@ -103,6 +103,7 @@ impl HirLowering {
         match child.get_name() {
             "number" => self.lower_number_literal(child.expect_leaf()).map(|v| HirExpression::Number(v)),
             "fn_call" => unimplemented!(),
+            "id_or_path" => unimplemented!(),
             _ => {
                 self.logs.push(HirLoweringLog::UnknownNodeId(child.get_name().to_string()));
                 None

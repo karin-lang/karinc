@@ -6,6 +6,7 @@ impl Parser {
             input: *input;
             self.parse_number_literal(input);
             self.parse_function_call(input);
+            self.parse_id_or_path(input);
         )
     }
 
@@ -43,6 +44,25 @@ impl Parser {
                 ) => Expanded;
                 optional!(self.parse_symbol(input, SymbolToken::Comma));
             );
+        )
+    }
+
+    pub fn parse_id_or_path(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+        seq!(
+            name: "id_or_path";
+            input: *input;
+            self.parse_any_id(input) => Visible;
+            min!(
+                min: 0;
+                name: "";
+                input: *input;
+                seq!(
+                    name: "";
+                    input: *input;
+                    self.parse_symbol(input, SymbolToken::DoubleColon);
+                    self.parse_any_id(input) => Visible;
+                );
+            ) => Expanded;
         )
     }
 }
