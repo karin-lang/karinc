@@ -95,10 +95,10 @@ fn lowers_module() {
         submodules: Vec::new(),
     };
     let mut lowering = HirLowering::new();
-    let module = lowering.lower_module(&ast_module);
+    let modules = lowering.lower_module(&ast_module);
 
     assert_eq!(
-        module,
+        modules,
         (
             (
                 hir_def_path!("my_hako"),
@@ -116,7 +116,179 @@ fn lowers_module() {
                 },
             ),
             Vec::new(),
-        )
+        ),
+    );
+    assert_eq!(lowering.logs, Vec::new());
+}
+
+#[test]
+fn separates_submodule_result_into_first_and_the_following() {
+    let ast = Ast::new(
+        AstNode::new(
+            "root".to_string(),
+            vec![
+                AstChild::node(
+                    "fn_dec".to_string(),
+                    vec![
+                        AstChild::leaf(
+                            "id".to_string(),
+                            Token::new(TokenKind::Id("f".to_string()), 0, 0),
+                        ),
+                        AstChild::node(
+                            "fn_exprs".to_string(),
+                            Vec::new(),
+                        ),
+                    ],
+                ),
+            ],
+        ),
+    );
+    let ast_module = AstModule {
+        path: vec!["my_hako".to_string()],
+        ast: ast.clone(),
+        submodules: vec![
+            AstModule {
+                path: vec!["my_hako".to_string(), "submodule1".to_string()],
+                ast: ast.clone(),
+                submodules: Vec::new(),
+            },
+            AstModule {
+                path: vec!["my_hako".to_string(), "submodule2".to_string()],
+                ast,
+                submodules: Vec::new(),
+            },
+        ],
+    };
+    let mut lowering = HirLowering::new();
+    let modules = lowering.lower_module(&ast_module);
+
+    let expected_items = hashmap! {
+        hir_def_id!("f") => (
+            HirItem::FunctionDeclaration(
+                HirFunctionDeclaration {
+                    exprs: Vec::new(),
+                },
+            )
+        ),
+    };
+
+    assert_eq!(
+        modules,
+        (
+            (
+                hir_def_path!("my_hako"),
+                HirModule {
+                    items: expected_items.clone(),
+                    submodules: vec![
+                        hir_def_path!("my_hako", "submodule1"),
+                        hir_def_path!("my_hako", "submodule2"),
+                    ],
+                },
+            ),
+            vec![
+                (
+                    hir_def_path!("my_hako", "submodule1"),
+                    HirModule {
+                        items: expected_items.clone(),
+                        submodules: Vec::new(),
+                    },
+                ),
+                (
+                    hir_def_path!("my_hako", "submodule2"),
+                    HirModule {
+                        items: expected_items,
+                        submodules: Vec::new(),
+                    },
+                ),
+            ],
+        ),
+    );
+    assert_eq!(lowering.logs, Vec::new());
+}
+
+#[test]
+fn lowers_modules_in_all_layers_of_hierarchy() {
+    let ast = Ast::new(
+        AstNode::new(
+            "root".to_string(),
+            vec![
+                AstChild::node(
+                    "fn_dec".to_string(),
+                    vec![
+                        AstChild::leaf(
+                            "id".to_string(),
+                            Token::new(TokenKind::Id("f".to_string()), 0, 0),
+                        ),
+                        AstChild::node(
+                            "fn_exprs".to_string(),
+                            Vec::new(),
+                        ),
+                    ],
+                ),
+            ],
+        ),
+    );
+    let ast_module = AstModule {
+        path: vec!["my_hako".to_string()],
+        ast: ast.clone(),
+        submodules: vec![
+            AstModule {
+                path: vec!["my_hako".to_string(), "submodule1".to_string()],
+                ast: ast.clone(),
+                submodules: vec![
+                    AstModule {
+                        path: vec!["my_hako".to_string(), "submodule1".to_string(), "submodule1_1".to_string()],
+                        ast,
+                        submodules: Vec::new(),
+                    },
+                ],
+            },
+        ],
+    };
+    let mut lowering = HirLowering::new();
+    let modules = lowering.lower_module(&ast_module);
+
+    let expected_items = hashmap! {
+        hir_def_id!("f") => (
+            HirItem::FunctionDeclaration(
+                HirFunctionDeclaration {
+                    exprs: Vec::new(),
+                },
+            )
+        ),
+    };
+
+    assert_eq!(
+        modules,
+        (
+            (
+                hir_def_path!("my_hako"),
+                HirModule {
+                    items: expected_items.clone(),
+                    submodules: vec![
+                        hir_def_path!("my_hako", "submodule1"),
+                    ],
+                },
+            ),
+            vec![
+                (
+                    hir_def_path!("my_hako", "submodule1"),
+                    HirModule {
+                        items: expected_items.clone(),
+                        submodules: vec![
+                            hir_def_path!("my_hako", "submodule1", "submodule1_1"),
+                        ],
+                    },
+                ),
+                (
+                    hir_def_path!("my_hako", "submodule1", "submodule1_1"),
+                    HirModule {
+                        items: expected_items,
+                        submodules: Vec::new(),
+                    },
+                ),
+            ],
+        ),
     );
     assert_eq!(lowering.logs, Vec::new());
 }
