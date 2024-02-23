@@ -113,6 +113,7 @@ impl Lexer {
                     colon_symbol
                 }
             },
+            '=' => (1, SymbolToken::Equal),
             ';' => (1, SymbolToken::Semicolon),
             '(' => (1, SymbolToken::OpenParen),
             ')' => (1, SymbolToken::ClosingParen),

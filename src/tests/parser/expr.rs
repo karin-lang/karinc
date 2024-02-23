@@ -47,6 +47,75 @@ fn matches_number_literal() {
 }
 
 #[test]
+fn matches_variable_declaration() {
+    let input = vec![
+        Token::new(TokenKind::Keyword(KeywordToken::Let), 0, 0),
+        Token::new(TokenKind::Id("id".to_string()), 0, 1),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        parser.parse_variable_declaration(input_iter),
+        ParserCombinatoryResult::Matched(
+            Some(
+                AstChild::node(
+                    "var_dec".to_string(),
+                    vec![
+                        AstChild::leaf(
+                            "id".to_string(),
+                            Token::new(TokenKind::Id("id".to_string()), 0, 1),
+                        ),
+                    ],
+                ),
+            ),
+        ),
+    );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
+fn matches_variable_declaration_with_initial_value() {
+    let input = vec![
+        Token::new(TokenKind::Keyword(KeywordToken::Let), 0, 0),
+        Token::new(TokenKind::Id("id".to_string()), 0, 1),
+        Token::new(TokenKind::Symbol(SymbolToken::Equal), 0, 0),
+        Token::new(TokenKind::Number(NumberToken("0".to_string())), 1, 1),
+    ];
+    let input_iter = &mut input.iter().peekable();
+    let mut parser = Parser::new();
+
+    assert_eq!(
+        parser.parse_variable_declaration(input_iter),
+        ParserCombinatoryResult::Matched(
+            Some(
+                AstChild::node(
+                    "var_dec".to_string(),
+                    vec![
+                        AstChild::leaf(
+                            "id".to_string(),
+                            Token::new(TokenKind::Id("id".to_string()), 0, 1),
+                        ),
+                        AstChild::node(
+                            "var_dec_init".to_string(),
+                            vec![
+                                AstChild::leaf(
+                                    "number".to_string(),
+                                    Token::new(TokenKind::Number(NumberToken("0".to_string())), 1, 1),
+                                ),
+                            ],
+                        ),
+                    ],
+                ),
+            ),
+        ),
+    );
+    assert!(input_iter.next().is_none());
+    assert_eq!(parser.logs, Vec::new());
+}
+
+#[test]
 fn matches_function_call() {
     let input = vec![
         Token::new(TokenKind::Id("id".to_string()), 0, 1),

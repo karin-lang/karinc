@@ -66,6 +66,7 @@ impl NumberToken {
 #[derive(Clone, Debug, PartialEq)]
 pub enum KeywordToken {
     Function,
+    Let,
     Public,
     Struct,
 }
@@ -74,6 +75,7 @@ impl KeywordToken {
     pub fn from(s: &str) -> Option<KeywordToken> {
         let keyword = match s {
             "fn" => KeywordToken::Function,
+            "let" => KeywordToken::Let,
             "pub" => KeywordToken::Public,
             "struct" => KeywordToken::Struct,
             _ => return None,
@@ -88,6 +90,7 @@ pub enum SymbolToken {
     Comma,
     Colon,
     DoubleColon,
+    Equal,
     Semicolon,
     OpenParen,
     ClosingParen,

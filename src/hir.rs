@@ -102,6 +102,7 @@ impl HirLowering {
     pub fn lower_expression(&mut self, child: &AstChild) -> Option<HirExpression> {
         match child.get_name() {
             "number" => self.lower_number_literal(child.expect_leaf()).map(|v| HirExpression::Number(v)),
+            "var_dec" => unimplemented!(),
             "fn_call" => unimplemented!(),
             "id_or_path" => unimplemented!(),
             _ => {

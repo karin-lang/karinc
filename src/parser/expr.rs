@@ -14,6 +14,23 @@ impl Parser {
         self.parse_any_number(input)
     }
 
+    pub fn parse_variable_declaration(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
+        seq!(
+            name: "var_dec";
+            input: *input;
+            self.parse_keyword(input, KeywordToken::Let);
+            self.parse_any_id(input) => Visible;
+            optional!(
+                seq!(
+                    name: "var_dec_init";
+                    input: *input;
+                    self.parse_symbol(input, SymbolToken::Equal);
+                    self.parse_expr(input) => Visible;
+                );
+            ) => Visible;
+        )
+    }
+
     pub fn parse_function_call(&mut self, input: &mut Peekable<Iter<Token>>) -> ParserCombinatoryResult {
         seq!(
             name: "fn_call";
