@@ -1,24 +1,27 @@
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct HirDefId(pub String);
-
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct HirDefPath(pub Vec<String>);
-
 #[derive(Clone, Debug, PartialEq)]
-pub struct HirRefPath {
+pub struct HirNameResolutionTarget {
     pub segments: Vec<String>,
     pub name_resolution_status: HirNameResolutionStatus,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum HirNameResolutionStatus {
-    Resolved(HirDefPath), // todo: パスと局所変数の両方に対応する
+    ResolvedAsPath(HirDefPath),
+    ResolvedAsLocalCode(HirLocalCode),
     NotFoundInScope,
     Unresolved,
 }
 
-// todo: ローカル識別子への利用を検討する
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct HirDefId(pub String);
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct HirDefPath(pub Vec<String>);
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct HirDefLocalCode(pub HirLocalCode);
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct HirLocalCode(pub usize);
 
 #[derive(Clone, Debug, PartialEq)]

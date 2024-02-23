@@ -118,7 +118,7 @@ impl HirLowering {
     pub fn lower_function_call(&mut self, node: &AstNode) -> Option<HirFunctionCall> {
         let id_leaf = node.find("id").unwrap().expect_leaf();
 
-        let id = HirRefPath {
+        let id = HirNameResolutionTarget {
             segments: vec![id_leaf.value.kind.expect_id().clone()],
             name_resolution_status: HirNameResolutionStatus::Unresolved,
         };

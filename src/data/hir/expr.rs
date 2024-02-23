@@ -13,7 +13,7 @@ pub struct HirNumberLiteral {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct HirFunctionCall {
-    pub id: HirRefPath,
+    pub id: HirNameResolutionTarget,
     pub args: Vec<HirActualFunctionArgument>,
 }
 

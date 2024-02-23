@@ -59,7 +59,7 @@ fn lowers_function_call() {
         lowering.lower_function_call(&node),
         Some(
             HirFunctionCall {
-                id: HirRefPath {
+                id: HirNameResolutionTarget {
                     segments: vec!["f".to_string()],
                     name_resolution_status: HirNameResolutionStatus::Unresolved,
                 },
@@ -101,7 +101,7 @@ fn lowers_function_call_with_args() {
         lowering.lower_function_call(&node),
         Some(
             HirFunctionCall {
-                id: HirRefPath {
+                id: HirNameResolutionTarget {
                     segments: vec!["f".to_string()],
                     name_resolution_status: HirNameResolutionStatus::Unresolved,
                 },
