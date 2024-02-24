@@ -1,6 +1,6 @@
+use crate::{*, hir::*};
 use crate::data::{ast::*, token::*};
-use crate::data::hir::{expr::*, path::*};
-use crate::{hir::*, hir_def_id, hir_def_local_code};
+use crate::data::hir::expr::*;
 
 #[test]
 fn lowers_function_expressions() {
@@ -13,7 +13,7 @@ fn lowers_function_expressions() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
         lowering.lower_function_expressions(&node),
@@ -53,20 +53,20 @@ fn increments_local_code_in_function_expressions() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
         lowering.lower_function_expressions(&node),
         vec![
             HirExpression::VariableDeclaration(
                 HirVariableDeclaration {
-                    code: hir_def_local_code!("id1", 0),
+                    symbol: hir_symbol!(["id1"], 0),
                     initial_expr: None,
                 },
             ),
             HirExpression::VariableDeclaration(
                 HirVariableDeclaration {
-                    code: hir_def_local_code!("id2", 1),
+                    symbol: hir_symbol!(["id2"], 1),
                     initial_expr: None,
                 },
             ),
@@ -81,11 +81,10 @@ fn lowers_any_expression() {
         "number".to_string(),
         Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 0),
     );
-    let mut lowering = HirLowering::new();
-    let local_code_generator = &mut HirLocalCodeGenerator::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
-        lowering.lower_expression(&child, local_code_generator),
+        lowering.lower_expression(&child),
         Some(
             HirExpression::Number(
                 HirNumberLiteral {
@@ -103,7 +102,7 @@ fn lowers_number_literal() {
         "number".to_string(),
         Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 0),
     );
-    let mut lowering = HirLowering::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
         lowering.lower_number_literal(&leaf),
@@ -131,7 +130,7 @@ fn lowers_id_or_path() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
         lowering.lower_id_or_path(&node),
@@ -154,17 +153,13 @@ fn lowers_variable_declaration() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new();
-    let local_code_generator = &mut HirLocalCodeGenerator::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
-        lowering.lower_variable_declaration(&node, local_code_generator),
+        lowering.lower_variable_declaration(&node),
         Some(
             HirVariableDeclaration {
-                code: HirDefLocalCode {
-                    id: hir_def_id!("id"),
-                    code: HirLocalCode(0),
-                },
+                symbol: hir_symbol!(["id"], 0),
                 initial_expr: None,
             },
         ),
@@ -192,17 +187,13 @@ fn lowers_variable_declaration_with_initializer() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new();
-    let local_code_generator = &mut HirLocalCodeGenerator::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
-        lowering.lower_variable_declaration(&node, local_code_generator),
+        lowering.lower_variable_declaration(&node),
         Some(
             HirVariableDeclaration {
-                code: HirDefLocalCode {
-                    id: hir_def_id!("id"),
-                    code: HirLocalCode(0),
-                },
+                symbol: hir_symbol!(["id"], 0),
                 initial_expr: Some(
                     Box::new(
                         HirExpression::Number(HirNumberLiteral { value: "0".to_string() }),
@@ -225,17 +216,13 @@ fn lowers_function_call() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new();
-    let local_code_generator = &mut HirLocalCodeGenerator::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
-        lowering.lower_function_call(&node, local_code_generator),
+        lowering.lower_function_call(&node),
         Some(
             HirFunctionCall {
-                id: HirRefIdOrPath {
-                    segments: vec!["f".to_string()],
-                    name_resolution_status: HirNameResolutionStatus::Unresolved,
-                },
+                symbol: hir_symbol!(["f"], 0),
                 args: Vec::new(),
             },
         ),
@@ -268,17 +255,13 @@ fn lowers_function_call_with_args() {
         ],
         
     );
-    let mut lowering = HirLowering::new();
-    let local_code_generator = &mut HirLocalCodeGenerator::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
-        lowering.lower_function_call(&node, local_code_generator),
+        lowering.lower_function_call(&node),
         Some(
             HirFunctionCall {
-                id: HirRefIdOrPath {
-                    segments: vec!["f".to_string()],
-                    name_resolution_status: HirNameResolutionStatus::Unresolved,
-                },
+                symbol: hir_symbol!(["f"], 0),
                 args: vec![
                     HirActualFunctionArgument::Expression(
                         HirExpression::Number(
@@ -316,11 +299,10 @@ fn lowers_actual_function_args() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new();
-    let local_code_generator = &mut HirLocalCodeGenerator::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
-        lowering.lower_actual_function_args(&node, local_code_generator),
+        lowering.lower_actual_function_args(&node),
         vec![
             HirActualFunctionArgument::Expression(
                 HirExpression::Number(

@@ -1,51 +1,32 @@
-#[derive(Clone, Debug, PartialEq)]
-pub enum HirNameResolutionStatus {
-    ResolvedAsPath(HirDefPath),
-    ResolvedAsLocalCode(HirLocalCode),
-    NotFoundInScope,
-    Unresolved,
-}
-
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct HirDefId(pub String);
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct HirDefPath(pub Vec<String>);
 
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct HirSymbolCode(pub usize);
+
+// note: 参照用シンボル
 #[derive(Clone, Debug, PartialEq)]
-pub struct HirRefIdOrPath {
+pub struct HirSymbol {
     pub segments: Vec<String>,
-    pub name_resolution_status: HirNameResolutionStatus,
-}
-
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct HirLocalCode(pub usize);
-
-#[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct HirDefLocalCode {
-    pub id: HirDefId,
-    pub code: HirLocalCode,
+    pub code: HirSymbolCode,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct HirRefLocalCode {
-    pub code: HirLocalCode,
-    pub name_resolution_status: HirNameResolutionStatus,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct HirLocalCodeGenerator {
+pub struct HirSymbolCodeGenerator {
     next: usize,
 }
 
-impl HirLocalCodeGenerator {
-    pub fn new() -> HirLocalCodeGenerator {
-        HirLocalCodeGenerator { next: 0 }
+impl HirSymbolCodeGenerator {
+    pub fn new() -> HirSymbolCodeGenerator {
+        HirSymbolCodeGenerator { next: 0 }
     }
 
-    pub fn generate(&mut self) -> HirLocalCode {
+    pub fn generate(&mut self) -> HirSymbolCode {
         let next = self.next;
         self.next += 1;
-        HirLocalCode(next)
+        HirSymbolCode(next)
     }
 }

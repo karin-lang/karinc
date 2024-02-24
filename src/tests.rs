@@ -35,9 +35,16 @@ macro_rules! hir_def_path {
 }
 
 #[macro_export]
-macro_rules! hir_def_local_code {
-    ($id:expr, $code:expr$(,)?) => {
-        HirDefLocalCode { id: HirDefId($id.to_string()), code: HirLocalCode($code) }
+macro_rules! hir_symbol {
+    ([$($segment:expr,)+], $code:expr$(,)?) => {
+        hir_symbol!($($segment),+)
+    };
+
+    ([$($segment:expr),*], $code:expr$(,)?) => {
+        crate::data::hir::path::HirSymbol {
+            segments: vec![$($segment.to_string()),*],
+            code: crate::data::hir::path::HirSymbolCode($code),
+        }
     };
 }
 

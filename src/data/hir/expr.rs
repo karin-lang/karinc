@@ -3,7 +3,7 @@ use super::path::*;
 #[derive(Clone, Debug, PartialEq)]
 pub enum HirExpression {
     Number(HirNumberLiteral),
-    NameResolutionTarget(HirRefIdOrPath),
+    Symbol(HirSymbol),
     VariableDeclaration(HirVariableDeclaration),
     FunctionCall(HirFunctionCall),
 }
@@ -15,13 +15,13 @@ pub struct HirNumberLiteral {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct HirVariableDeclaration {
-    pub code: HirDefLocalCode,
+    pub symbol: HirSymbol,
     pub initial_expr: Option<Box<HirExpression>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct HirFunctionCall {
-    pub id: HirRefIdOrPath,
+    pub symbol: HirSymbol,
     pub args: Vec<HirActualFunctionArgument>,
 }
 

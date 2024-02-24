@@ -18,7 +18,7 @@ fn lowers_any_item() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
         lowering.lower_item(&node),
@@ -40,7 +40,7 @@ fn fails_to_lower_unknown_item_node() {
         "UNKNOWN_NODE".to_string(),
         Vec::new(),
     );
-    let mut lowering = HirLowering::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(lowering.lower_item(&node), None);
     assert_eq!(
@@ -66,7 +66,7 @@ fn lowers_function_declaration() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
         lowering.lower_function_declaration(&node),
@@ -100,7 +100,7 @@ fn lowers_function_declaration_with_expression() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new();
+    let mut lowering = HirLowering::new_l1_context();
 
     assert_eq!(
         lowering.lower_function_declaration(&node),
