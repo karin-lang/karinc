@@ -34,6 +34,13 @@ macro_rules! hir_def_path {
     };
 }
 
+#[macro_export]
+macro_rules! hir_def_local_code {
+    ($id:expr, $code:expr$(,)?) => {
+        HirDefLocalCode { id: HirDefId($id.to_string()), code: HirLocalCode($code) }
+    };
+}
+
 #[test]
 fn generates_parser_result() {
     let input = "fn f(){0;}";

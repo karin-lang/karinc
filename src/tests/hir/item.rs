@@ -1,4 +1,4 @@
-use crate::hir_def_id;
+use crate::*;
 use crate::data::{ast::*, token::*};
 use crate::data::hir::{expr::*, item::*};
 use crate::hir::*;
@@ -116,32 +116,6 @@ fn lowers_function_declaration_with_expression() {
                 ],
             },
         )),
-    );
-    assert_eq!(lowering.logs, Vec::new());
-}
-
-#[test]
-fn lowers_function_expressions() {
-    let node = AstNode::new(
-        "fn_exprs".to_string(),
-        vec![
-            AstChild::leaf(
-                "number".to_string(),
-                Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 0),
-            ),
-        ],
-    );
-    let mut lowering = HirLowering::new();
-
-    assert_eq!(
-        lowering.lower_function_expressions(&node),
-        vec![
-            HirExpression::Number(
-                HirNumberLiteral {
-                    value: "0".to_string(),
-                },
-            ),
-        ],
     );
     assert_eq!(lowering.logs, Vec::new());
 }

@@ -76,7 +76,7 @@ fn matches_variable_declaration() {
 }
 
 #[test]
-fn matches_variable_declaration_with_initial_value() {
+fn matches_variable_declaration_with_initializer() {
     let input = vec![
         Token::new(TokenKind::Keyword(KeywordToken::Let), 0, 0),
         Token::new(TokenKind::Id("id".to_string()), 0, 1),
