@@ -2,7 +2,9 @@ use super::*;
 use crate::data::{ast::*, token::*};
 
 impl HirLowering {
-    pub fn lower_function_expressions(&mut self, node: &AstNode) -> Vec<HirExpression> {
+    pub fn lower_function_body(&mut self, node: &AstNode) -> Vec<HirExpression> {
+        self.enter_function_context();
+
         let mut exprs = Vec::new();
 
         for expr_child in &node.children {
@@ -13,6 +15,8 @@ impl HirLowering {
             }
         }
 
+        self.exit_function_context();
+
         exprs
     }
 
@@ -20,11 +24,10 @@ impl HirLowering {
         match child.get_name() {
             "number" => self.lower_number_literal(child.expect_leaf()).map(|v| HirExpression::Number(v)),
             "id_or_path" => {
-                let symbol = HirSymbol {
+                let symbol = HirSymbolAccessor {
                     segments: self.lower_id_or_path(child.expect_node()),
-                    code: self.generate_symbol_code(),
+                    index: self.generate_symbol_index(),
                 };
-
                 Some(HirExpression::Symbol(symbol))
             },
             "var_dec" => self.lower_variable_declaration(child.expect_node()).map(|v| HirExpression::VariableDeclaration(v)),
@@ -67,7 +70,7 @@ impl HirLowering {
         });
 
         let variable_declaration = HirVariableDeclaration {
-            symbol: HirSymbol { segments: vec![id], code },
+            symbol: HirLocalSymbol { id, code },
             initial_expr,
         };
 
@@ -77,8 +80,8 @@ impl HirLowering {
     pub fn lower_function_call(&mut self, node: &AstNode) -> Option<HirFunctionCall> {
         let id_leaf = node.find("id").unwrap().expect_leaf();
         let id = id_leaf.value.kind.expect_id().clone();
-        let code = self.generate_symbol_code();
-        let symbol = HirSymbol { segments: vec![id], code };
+        let index = self.generate_symbol_index();
+        let symbol = HirSymbolAccessor { segments: vec![id], index };
 
         let args = node
             .find("actual_fn_args")
@@ -93,7 +96,9 @@ impl HirLowering {
         let mut args = Vec::new();
 
         for each_child in &node.children {
-            let new_arg = self.lower_expression(each_child).map(|v| HirActualFunctionArgument::Expression(v));
+            let new_arg = self
+                .lower_expression(each_child)
+                .map(|v| HirActualFunctionArgument::Expression(v));
 
             if let Some(v) = new_arg {
                 args.push(v);

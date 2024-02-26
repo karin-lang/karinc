@@ -17,33 +17,50 @@ use crate::data::{ast::*, token::*};
 use crate::data::hir::{*, expr::*, item::*};
 
 #[macro_export]
-macro_rules! hir_def_id {
-    ($id:expr$(,)?) => {
-        crate::data::hir::path::HirDefId($id.to_string())
-    };
-}
-
-#[macro_export]
-macro_rules! hir_def_path {
+macro_rules! hir_global_symbol {
     ($($segment:expr,)+) => {
         def_path!($($segment),+)
     };
 
     ($($segment:expr),*) => {
-        crate::data::hir::path::HirDefPath(vec![$($segment.to_string()),*])
+        {
+            use crate::data::hir::symbol::*;
+
+            HirGlobalSymbol {
+                segments: vec![$($segment.to_string()),*],
+            }
+        }
     };
 }
 
 #[macro_export]
-macro_rules! hir_symbol {
+macro_rules! hir_local_symbol {
+    ($id:expr, $code:expr$(,)?) => {
+        {
+            use crate::data::hir::symbol::*;
+
+            HirLocalSymbol {
+                id: $id.to_string(),
+                code: HirSymbolCode::new($code),
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! hir_symbol_accessor {
     ([$($segment:expr,)+], $code:expr$(,)?) => {
         hir_symbol!($($segment),+)
     };
 
     ([$($segment:expr),*], $code:expr$(,)?) => {
-        crate::data::hir::path::HirSymbol {
-            segments: vec![$($segment.to_string()),*],
-            code: crate::data::hir::path::HirSymbolCode($code),
+        {
+            use crate::data::hir::symbol::*;
+
+            HirSymbolAccessor {
+                segments: vec![$($segment.to_string()),*],
+                index: HirSymbolIndex::new($code),
+            }
         }
     };
 }
@@ -112,10 +129,10 @@ fn generates_parser_result() {
         hir,
         Hir {
             modules: hashmap! {
-                hir_def_path!("my_hako") => (
+                hir_global_symbol!("my_hako") => (
                     HirModule {
                         items: hashmap! {
-                            hir_def_id!("f") => (
+                            hir_global_symbol!("my_hako", "f") => (
                                 HirItem::FunctionDeclaration(
                                     HirFunctionDeclaration {
                                         exprs: vec![

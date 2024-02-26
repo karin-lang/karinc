@@ -3,7 +3,7 @@ use crate::data::{ast::*, token::*};
 use crate::data::hir::expr::*;
 
 #[test]
-fn lowers_function_expressions() {
+fn lowers_function_body() {
     let node = AstNode::new(
         "fn_exprs".to_string(),
         vec![
@@ -13,10 +13,10 @@ fn lowers_function_expressions() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new().add_module_context_layer();
 
     assert_eq!(
-        lowering.lower_function_expressions(&node),
+        lowering.lower_function_body(&node),
         vec![
             HirExpression::Number(
                 HirNumberLiteral {
@@ -29,7 +29,7 @@ fn lowers_function_expressions() {
 }
 
 #[test]
-fn increments_local_code_in_function_expressions() {
+fn increments_symbol_code_for_each_function_body() {
     let node = AstNode::new(
         "fn_exprs".to_string(),
         vec![
@@ -53,20 +53,20 @@ fn increments_local_code_in_function_expressions() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new().add_module_context_layer();
 
     assert_eq!(
-        lowering.lower_function_expressions(&node),
+        lowering.lower_function_body(&node),
         vec![
             HirExpression::VariableDeclaration(
                 HirVariableDeclaration {
-                    symbol: hir_symbol!(["id1"], 0),
+                    symbol: hir_local_symbol!("id1", 0),
                     initial_expr: None,
                 },
             ),
             HirExpression::VariableDeclaration(
                 HirVariableDeclaration {
-                    symbol: hir_symbol!(["id2"], 1),
+                    symbol: hir_local_symbol!("id2", 1),
                     initial_expr: None,
                 },
             ),
@@ -81,7 +81,9 @@ fn lowers_any_expression() {
         "number".to_string(),
         Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 0),
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new()
+        .add_module_context_layer()
+        .add_function_context_layer();
 
     assert_eq!(
         lowering.lower_expression(&child),
@@ -102,7 +104,9 @@ fn lowers_number_literal() {
         "number".to_string(),
         Token::new(TokenKind::Number(NumberToken("0".to_string())), 0, 0),
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new()
+        .add_module_context_layer()
+        .add_function_context_layer();
 
     assert_eq!(
         lowering.lower_number_literal(&leaf),
@@ -130,7 +134,9 @@ fn lowers_id_or_path() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new()
+        .add_module_context_layer()
+        .add_function_context_layer();
 
     assert_eq!(
         lowering.lower_id_or_path(&node),
@@ -153,13 +159,15 @@ fn lowers_variable_declaration() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new()
+        .add_module_context_layer()
+        .add_function_context_layer();
 
     assert_eq!(
         lowering.lower_variable_declaration(&node),
         Some(
             HirVariableDeclaration {
-                symbol: hir_symbol!(["id"], 0),
+                symbol: hir_local_symbol!("id", 0),
                 initial_expr: None,
             },
         ),
@@ -187,13 +195,15 @@ fn lowers_variable_declaration_with_initializer() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new()
+        .add_module_context_layer()
+        .add_function_context_layer();
 
     assert_eq!(
         lowering.lower_variable_declaration(&node),
         Some(
             HirVariableDeclaration {
-                symbol: hir_symbol!(["id"], 0),
+                symbol: hir_local_symbol!("id", 0),
                 initial_expr: Some(
                     Box::new(
                         HirExpression::Number(HirNumberLiteral { value: "0".to_string() }),
@@ -216,13 +226,15 @@ fn lowers_function_call() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new()
+        .add_module_context_layer()
+        .add_function_context_layer();
 
     assert_eq!(
         lowering.lower_function_call(&node),
         Some(
             HirFunctionCall {
-                symbol: hir_symbol!(["f"], 0),
+                symbol: hir_symbol_accessor!(["f"], 0),
                 args: Vec::new(),
             },
         ),
@@ -255,13 +267,15 @@ fn lowers_function_call_with_args() {
         ],
         
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new()
+        .add_module_context_layer()
+        .add_function_context_layer();
 
     assert_eq!(
         lowering.lower_function_call(&node),
         Some(
             HirFunctionCall {
-                symbol: hir_symbol!(["f"], 0),
+                symbol: hir_symbol_accessor!(["f"], 0),
                 args: vec![
                     HirActualFunctionArgument::Expression(
                         HirExpression::Number(
@@ -299,7 +313,9 @@ fn lowers_actual_function_args() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new()
+        .add_module_context_layer()
+        .add_function_context_layer();
 
     assert_eq!(
         lowering.lower_actual_function_args(&node),

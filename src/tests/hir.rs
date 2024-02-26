@@ -1,13 +1,15 @@
 #[cfg(test)]
 mod expr;
+#[cfg(test)]
 mod item;
+
+use std::collections::HashMap;
 
 use maplit::hashmap;
 
-use crate::tests::{HirExpression, HirVariableDeclaration};
-use crate::{hir_def_id, hir_def_path, hir_symbol};
+use crate::*;
 use crate::data::{ast::*, token::*};
-use crate::data::hir::{*, item::*};
+use crate::data::hir::{*, expr::*, item::*, symbol::*};
 use crate::hir::*;
 
 #[test]
@@ -48,10 +50,10 @@ fn lowers_to_hir() {
         hir,
         Hir {
             modules: hashmap! {
-                hir_def_path!("my_hako") => (
+                hir_global_symbol!("my_hako") => (
                     HirModule {
                         items: hashmap! {
-                            hir_def_id!("f") => (
+                            hir_global_symbol!("my_hako", "f") => (
                                 HirItem::FunctionDeclaration(
                                     HirFunctionDeclaration {
                                         exprs: Vec::new(),
@@ -102,10 +104,10 @@ fn lowers_module() {
         modules,
         (
             (
-                hir_def_path!("my_hako"),
+                hir_global_symbol!("my_hako"),
                 HirModule {
                     items: hashmap! {
-                        hir_def_id!("f") => (
+                        hir_global_symbol!("my_hako", "f") => (
                             HirItem::FunctionDeclaration(
                                 HirFunctionDeclaration {
                                     exprs: Vec::new(),
@@ -163,41 +165,46 @@ fn separates_submodule_result_into_first_and_the_following() {
     let mut lowering = HirLowering::new();
     let modules = lowering.lower_module(&ast_module);
 
-    let expected_items = hashmap! {
-        hir_def_id!("f") => (
+    let expected_items = |symbol: HirGlobalSymbol| {
+        let mut items = HashMap::new();
+
+        items.insert(
+            symbol,
             HirItem::FunctionDeclaration(
                 HirFunctionDeclaration {
                     exprs: Vec::new(),
                 },
-            )
-        ),
+            ),
+        );
+
+        items
     };
 
     assert_eq!(
         modules,
         (
             (
-                hir_def_path!("my_hako"),
+                hir_global_symbol!("my_hako"),
                 HirModule {
-                    items: expected_items.clone(),
+                    items: expected_items(hir_global_symbol!("my_hako", "f")),
                     submodules: vec![
-                        hir_def_path!("my_hako", "submodule1"),
-                        hir_def_path!("my_hako", "submodule2"),
+                        hir_global_symbol!("my_hako", "submodule1"),
+                        hir_global_symbol!("my_hako", "submodule2"),
                     ],
                 },
             ),
             vec![
                 (
-                    hir_def_path!("my_hako", "submodule1"),
+                    hir_global_symbol!("my_hako", "submodule1"),
                     HirModule {
-                        items: expected_items.clone(),
+                        items: expected_items(hir_global_symbol!("my_hako", "submodule1", "f")),
                         submodules: Vec::new(),
                     },
                 ),
                 (
-                    hir_def_path!("my_hako", "submodule2"),
+                    hir_global_symbol!("my_hako", "submodule2"),
                     HirModule {
-                        items: expected_items,
+                        items: expected_items(hir_global_symbol!("my_hako", "submodule2", "f")),
                         submodules: Vec::new(),
                     },
                 ),
@@ -208,7 +215,7 @@ fn separates_submodule_result_into_first_and_the_following() {
 }
 
 #[test]
-fn increments_symbol_code_for_each_module_context() {
+fn increments_symbol_index_for_each_module_context() {
     let function_declaration_node = AstChild::node(
         "fn_dec".to_string(),
         vec![
@@ -220,20 +227,20 @@ fn increments_symbol_code_for_each_module_context() {
                 "fn_exprs".to_string(),
                 vec![
                     AstChild::node(
-                        "var_dec".to_string(),
+                        "id_or_path".to_string(),
                         vec![
                             AstChild::leaf(
                                 "id".to_string(),
-                                Token::new(TokenKind::Id("id1".to_string()), 1, 1),
+                                Token::new(TokenKind::Id("id1".to_string()), 0, 1),
                             ),
                         ],
                     ),
                     AstChild::node(
-                        "var_dec".to_string(),
+                        "id_or_path".to_string(),
                         vec![
                             AstChild::leaf(
                                 "id".to_string(),
-                                Token::new(TokenKind::Id("id2".to_string()), 2, 1),
+                                Token::new(TokenKind::Id("id2".to_string()), 1, 1),
                             ),
                         ],
                     ),
@@ -261,46 +268,41 @@ fn increments_symbol_code_for_each_module_context() {
     let mut lowering = HirLowering::new();
     let modules = lowering.lower_module(&ast_module);
 
-    let expected_items = hashmap! {
-        hir_def_id!("f") => (
+    let expected_items = |symbol: HirGlobalSymbol| {
+        let mut items = HashMap::new();
+
+        items.insert(
+            symbol,
             HirItem::FunctionDeclaration(
                 HirFunctionDeclaration {
                     exprs: vec![
-                        HirExpression::VariableDeclaration(
-                            HirVariableDeclaration {
-                                symbol: hir_symbol!(["id1"], 0),
-                                initial_expr: None,
-                            },
-                        ),
-                        HirExpression::VariableDeclaration(
-                            HirVariableDeclaration {
-                                symbol: hir_symbol!(["id2"], 1),
-                                initial_expr: None,
-                            },
-                        ),
+                        HirExpression::Symbol(hir_symbol_accessor!(["id1"], 0)),
+                        HirExpression::Symbol(hir_symbol_accessor!(["id2"], 1)),
                     ],
                 },
-            )
-        ),
+            ),
+        );
+
+        items
     };
 
     assert_eq!(
         modules,
         (
             (
-                hir_def_path!("my_hako"),
+                hir_global_symbol!("my_hako"),
                 HirModule {
-                    items: expected_items.clone(),
+                    items: expected_items(hir_global_symbol!("my_hako", "f")),
                     submodules: vec![
-                        hir_def_path!("my_hako", "submodule"),
+                        hir_global_symbol!("my_hako", "submodule"),
                     ],
                 },
             ),
             vec![
                 (
-                    hir_def_path!("my_hako", "submodule"),
+                    hir_global_symbol!("my_hako", "submodule"),
                     HirModule {
-                        items: expected_items,
+                        items: expected_items(hir_global_symbol!("my_hako", "submodule", "f")),
                         submodules: Vec::new(),
                     },
                 ),
@@ -352,42 +354,47 @@ fn lowers_modules_in_all_layers_of_hierarchy() {
     let mut lowering = HirLowering::new();
     let modules = lowering.lower_module(&ast_module);
 
-    let expected_items = hashmap! {
-        hir_def_id!("f") => (
+    let expected_items = |symbol: HirGlobalSymbol| {
+        let mut items = HashMap::new();
+
+        items.insert(
+            symbol,
             HirItem::FunctionDeclaration(
                 HirFunctionDeclaration {
                     exprs: Vec::new(),
                 },
-            )
-        ),
+            ),
+        );
+
+        items
     };
 
     assert_eq!(
         modules,
         (
             (
-                hir_def_path!("my_hako"),
+                hir_global_symbol!("my_hako"),
                 HirModule {
-                    items: expected_items.clone(),
+                    items: expected_items(hir_global_symbol!("my_hako", "f")),
                     submodules: vec![
-                        hir_def_path!("my_hako", "submodule1"),
+                        hir_global_symbol!("my_hako", "submodule1"),
                     ],
                 },
             ),
             vec![
                 (
-                    hir_def_path!("my_hako", "submodule1"),
+                    hir_global_symbol!("my_hako", "submodule1"),
                     HirModule {
-                        items: expected_items.clone(),
+                        items: expected_items(hir_global_symbol!("my_hako", "submodule1", "f")),
                         submodules: vec![
-                            hir_def_path!("my_hako", "submodule1", "submodule1_1"),
+                            hir_global_symbol!("my_hako", "submodule1", "submodule1_1"),
                         ],
                     },
                 ),
                 (
-                    hir_def_path!("my_hako", "submodule1", "submodule1_1"),
+                    hir_global_symbol!("my_hako", "submodule1", "submodule1_1"),
                     HirModule {
-                        items: expected_items,
+                        items: expected_items(hir_global_symbol!("my_hako", "submodule1", "submodule1_1", "f")),
                         submodules: Vec::new(),
                     },
                 ),

@@ -18,12 +18,12 @@ fn lowers_any_item() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new().add_module_context_layer();
 
     assert_eq!(
-        lowering.lower_item(&node),
+        lowering.lower_item(Vec::new(), &node),
         Some((
-            hir_def_id!("f"),
+            hir_global_symbol!("f"),
             HirItem::FunctionDeclaration(
                 HirFunctionDeclaration {
                     exprs: Vec::new(),
@@ -40,9 +40,9 @@ fn fails_to_lower_unknown_item_node() {
         "UNKNOWN_NODE".to_string(),
         Vec::new(),
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new().add_module_context_layer();
 
-    assert_eq!(lowering.lower_item(&node), None);
+    assert_eq!(lowering.lower_item(Vec::new(), &node), None);
     assert_eq!(
         lowering.logs,
         vec![
@@ -66,12 +66,12 @@ fn lowers_function_declaration() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new().add_module_context_layer();
 
     assert_eq!(
-        lowering.lower_function_declaration(&node),
+        lowering.lower_function_declaration(Vec::new(), &node),
         Some((
-            hir_def_id!("f"),
+            hir_global_symbol!("f"),
             HirFunctionDeclaration {
                 exprs: Vec::new(),
             },
@@ -81,7 +81,36 @@ fn lowers_function_declaration() {
 }
 
 #[test]
-fn lowers_function_declaration_with_expression() {
+fn joins_function_declaration_id_to_parent_module_path() {
+    let node = AstNode::new(
+        "fn_dec".to_string(),
+        vec![
+            AstChild::leaf(
+                "id".to_string(),
+                Token::new(TokenKind::Id("f".to_string()), 0, 0),
+            ),
+            AstChild::node(
+                "fn_exprs".to_string(),
+                Vec::new(),
+            ),
+        ],
+    );
+    let mut lowering = HirLowering::new().add_module_context_layer();
+
+    assert_eq!(
+        lowering.lower_function_declaration(vec!["my_hako".to_string()], &node),
+        Some((
+            hir_global_symbol!("my_hako", "f"),
+            HirFunctionDeclaration {
+                exprs: Vec::new(),
+            },
+        )),
+    );
+    assert_eq!(lowering.logs, Vec::new());
+}
+
+#[test]
+fn lowers_function_declaration_with_body() {
     let node = AstNode::new(
         "fn_dec".to_string(),
         vec![
@@ -100,12 +129,12 @@ fn lowers_function_declaration_with_expression() {
             ),
         ],
     );
-    let mut lowering = HirLowering::new_l1_context();
+    let mut lowering = HirLowering::new().add_module_context_layer();
 
     assert_eq!(
-        lowering.lower_function_declaration(&node),
+        lowering.lower_function_declaration(Vec::new(), &node),
         Some((
-            hir_def_id!("f"),
+            hir_global_symbol!("f"),
             HirFunctionDeclaration {
                 exprs: vec![
                     HirExpression::Number(

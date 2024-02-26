@@ -1,18 +1,18 @@
 pub mod expr;
 pub mod item;
-pub mod path;
+pub mod symbol;
 
 use std::collections::HashMap;
 
-use self::{item::*, path::*};
+use self::{item::*, symbol::*};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hir {
-    pub modules: HashMap<HirDefPath, HirModule>,
+    pub modules: HashMap<HirGlobalSymbol, HirModule>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct HirModule {
-    pub items: HashMap<HirDefId, HirItem>,
-    pub submodules: Vec<HirDefPath>,
+    pub items: HashMap<HirGlobalSymbol, HirItem>,
+    pub submodules: Vec<HirGlobalSymbol>,
 }

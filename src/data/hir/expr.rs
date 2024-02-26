@@ -1,9 +1,9 @@
-use super::path::*;
+use super::symbol::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum HirExpression {
     Number(HirNumberLiteral),
-    Symbol(HirSymbol),
+    Symbol(HirSymbolAccessor),
     VariableDeclaration(HirVariableDeclaration),
     FunctionCall(HirFunctionCall),
 }
@@ -15,13 +15,13 @@ pub struct HirNumberLiteral {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct HirVariableDeclaration {
-    pub symbol: HirSymbol,
+    pub symbol: HirLocalSymbol,
     pub initial_expr: Option<Box<HirExpression>>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct HirFunctionCall {
-    pub symbol: HirSymbol,
+    pub symbol: HirSymbolAccessor,
     pub args: Vec<HirActualFunctionArgument>,
 }
 
