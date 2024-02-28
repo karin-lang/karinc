@@ -23,7 +23,7 @@ fn lowers_any_item() {
     assert_eq!(
         lowering.lower_item(Vec::new(), &node),
         Some((
-            hir_global_symbol!("f"),
+            hir_divided_global_symbol!([], ["f"]),
             HirItem::FunctionDeclaration(
                 HirFunctionDeclaration {
                     exprs: Vec::new(),
@@ -71,7 +71,7 @@ fn lowers_function_declaration() {
     assert_eq!(
         lowering.lower_function_declaration(Vec::new(), &node),
         Some((
-            hir_global_symbol!("f"),
+            hir_divided_global_symbol!([], ["f"]),
             HirFunctionDeclaration {
                 exprs: Vec::new(),
             },
@@ -100,7 +100,7 @@ fn joins_function_declaration_id_to_parent_module_path() {
     assert_eq!(
         lowering.lower_function_declaration(vec!["my_hako".to_string()], &node),
         Some((
-            hir_global_symbol!("my_hako", "f"),
+            hir_divided_global_symbol!([], ["my_hako", "f"]),
             HirFunctionDeclaration {
                 exprs: Vec::new(),
             },
@@ -134,7 +134,7 @@ fn lowers_function_declaration_with_body() {
     assert_eq!(
         lowering.lower_function_declaration(Vec::new(), &node),
         Some((
-            hir_global_symbol!("f"),
+            hir_divided_global_symbol!([], ["f"]),
             HirFunctionDeclaration {
                 exprs: vec![
                     HirExpression::Number(

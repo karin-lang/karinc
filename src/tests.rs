@@ -19,7 +19,7 @@ use crate::data::hir::{*, expr::*, item::*};
 #[macro_export]
 macro_rules! hir_global_symbol {
     ($($segment:expr,)+) => {
-        def_path!($($segment),+)
+        hir_global_symbol!($($segment),+)
     };
 
     ($($segment:expr),*) => {
@@ -28,6 +28,24 @@ macro_rules! hir_global_symbol {
 
             HirGlobalSymbol {
                 segments: vec![$($segment.to_string()),*],
+            }
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! hir_divided_global_symbol {
+    ([$($parent_module_segment:expr,)+], [$($following_segment:expr,)+]$(,)?) => {
+        hir_divided_global_symbol!([$($parent_module_segment:expr),+], [$($following_segment),+])
+    };
+
+    ([$($parent_module_segment:expr),*], [$($following_segment:expr),*$(,)?]) => {
+        {
+            use crate::data::hir::symbol::*;
+
+            HirDividedGlobalSymbol {
+                parent_module_path_segments: vec![$($parent_module_segment.to_string()),*],
+                following_segments: vec![$($following_segment.to_string()),*],
             }
         }
     };
@@ -129,10 +147,10 @@ fn generates_parser_result() {
         hir,
         Hir {
             modules: hashmap! {
-                hir_global_symbol!("my_hako") => (
+                hir_divided_global_symbol!([], ["my_hako"]) => (
                     HirModule {
                         items: hashmap! {
-                            hir_global_symbol!("my_hako", "f") => (
+                            hir_divided_global_symbol!([], ["my_hako", "f"]) => (
                                 HirItem::FunctionDeclaration(
                                     HirFunctionDeclaration {
                                         exprs: vec![

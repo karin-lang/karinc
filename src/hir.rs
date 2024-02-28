@@ -1,5 +1,6 @@
 pub mod expr;
 pub mod item;
+pub mod symbol;
 
 use std::collections::HashMap;
 
@@ -36,17 +37,17 @@ pub enum HirLoweringLog {
 }
 
 pub struct HirLowering {
-    pub(crate) logs: Vec<HirLoweringLog>,
     pub(crate) module_context_hierarchy: Vec<HirModuleContextLayer>,
     pub(crate) function_context_hierarchy: Vec<HirFunctionContextLayer>,
+    pub(crate) logs: Vec<HirLoweringLog>,
 }
 
 impl HirLowering {
     pub fn new() -> HirLowering {
         HirLowering {
-            logs: Vec::new(),
             module_context_hierarchy: Vec::new(),
             function_context_hierarchy: Vec::new(),
+            logs: Vec::new(),
         }
     }
 
@@ -79,7 +80,7 @@ impl HirLowering {
     }
 
     // note: モジュール木の走査結果を先行順に見せかけるため対象モジュールと子モジュールを分割して返す
-    pub fn lower_module(&mut self, ast_module: &AstModule) -> ((HirGlobalSymbol, HirModule), Vec<(HirGlobalSymbol, HirModule)>) {
+    pub fn lower_module(&mut self, ast_module: &AstModule) -> ((HirDividedGlobalSymbol, HirModule), Vec<(HirDividedGlobalSymbol, HirModule)>) {
         self.enter_module_context();
 
         let mut submodules = Vec::new();
@@ -93,9 +94,7 @@ impl HirLowering {
         }
 
         for each_submodule in &ast_module.submodules {
-            let new_submodule_symbol = HirGlobalSymbol {
-                segments: each_submodule.path.clone(),
-            };
+            let new_submodule_symbol = HirDividedGlobalSymbol::from_module_path(each_submodule.path.clone());
             submodule_symbols.push(new_submodule_symbol);
 
             let (new_child_module, new_grandchild_modules) = self.lower_module(each_submodule);
@@ -106,9 +105,7 @@ impl HirLowering {
             }
         }
 
-        let target_module_symbol = HirGlobalSymbol {
-            segments: ast_module.path.clone(),
-        };
+        let target_module_symbol = HirDividedGlobalSymbol::from_module_path(ast_module.path.clone());
         let target_module = HirModule { items, submodules: submodule_symbols };
 
         self.exit_module_context();

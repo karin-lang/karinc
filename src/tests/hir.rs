@@ -50,10 +50,10 @@ fn lowers_to_hir() {
         hir,
         Hir {
             modules: hashmap! {
-                hir_global_symbol!("my_hako") => (
+                hir_divided_global_symbol!([], ["my_hako"]) => (
                     HirModule {
                         items: hashmap! {
-                            hir_global_symbol!("my_hako", "f") => (
+                            hir_divided_global_symbol!([], ["my_hako", "f"]) => (
                                 HirItem::FunctionDeclaration(
                                     HirFunctionDeclaration {
                                         exprs: Vec::new(),
@@ -104,10 +104,10 @@ fn lowers_module() {
         modules,
         (
             (
-                hir_global_symbol!("my_hako"),
+                hir_divided_global_symbol!([], ["my_hako"]),
                 HirModule {
                     items: hashmap! {
-                        hir_global_symbol!("my_hako", "f") => (
+                        hir_divided_global_symbol!([], ["my_hako", "f"]) => (
                             HirItem::FunctionDeclaration(
                                 HirFunctionDeclaration {
                                     exprs: Vec::new(),
@@ -165,7 +165,7 @@ fn separates_submodule_result_into_first_and_the_following() {
     let mut lowering = HirLowering::new();
     let modules = lowering.lower_module(&ast_module);
 
-    let expected_items = |symbol: HirGlobalSymbol| {
+    let expected_items = |symbol: HirDividedGlobalSymbol| {
         let mut items = HashMap::new();
 
         items.insert(
@@ -184,27 +184,27 @@ fn separates_submodule_result_into_first_and_the_following() {
         modules,
         (
             (
-                hir_global_symbol!("my_hako"),
+                hir_divided_global_symbol!([], ["my_hako"]),
                 HirModule {
-                    items: expected_items(hir_global_symbol!("my_hako", "f")),
+                    items: expected_items(hir_divided_global_symbol!([], ["my_hako", "f"])),
                     submodules: vec![
-                        hir_global_symbol!("my_hako", "submodule1"),
-                        hir_global_symbol!("my_hako", "submodule2"),
+                        hir_divided_global_symbol!(["my_hako"], ["submodule1"]),
+                        hir_divided_global_symbol!(["my_hako"], ["submodule2"]),
                     ],
                 },
             ),
             vec![
                 (
-                    hir_global_symbol!("my_hako", "submodule1"),
+                    hir_divided_global_symbol!(["my_hako"], ["submodule1"]),
                     HirModule {
-                        items: expected_items(hir_global_symbol!("my_hako", "submodule1", "f")),
+                        items: expected_items(hir_divided_global_symbol!(["my_hako"], ["submodule1", "f"])),
                         submodules: Vec::new(),
                     },
                 ),
                 (
-                    hir_global_symbol!("my_hako", "submodule2"),
+                    hir_divided_global_symbol!(["my_hako"], ["submodule2"]),
                     HirModule {
-                        items: expected_items(hir_global_symbol!("my_hako", "submodule2", "f")),
+                        items: expected_items(hir_divided_global_symbol!(["my_hako"], ["submodule2", "f"])),
                         submodules: Vec::new(),
                     },
                 ),
@@ -268,7 +268,7 @@ fn increments_symbol_index_for_each_module_context() {
     let mut lowering = HirLowering::new();
     let modules = lowering.lower_module(&ast_module);
 
-    let expected_items = |symbol: HirGlobalSymbol| {
+    let expected_items = |symbol: HirDividedGlobalSymbol| {
         let mut items = HashMap::new();
 
         items.insert(
@@ -290,19 +290,19 @@ fn increments_symbol_index_for_each_module_context() {
         modules,
         (
             (
-                hir_global_symbol!("my_hako"),
+                hir_divided_global_symbol!([], ["my_hako"]),
                 HirModule {
-                    items: expected_items(hir_global_symbol!("my_hako", "f")),
+                    items: expected_items(hir_divided_global_symbol!([], ["my_hako", "f"])),
                     submodules: vec![
-                        hir_global_symbol!("my_hako", "submodule"),
+                        hir_divided_global_symbol!(["my_hako"], ["submodule"]),
                     ],
                 },
             ),
             vec![
                 (
-                    hir_global_symbol!("my_hako", "submodule"),
+                    hir_divided_global_symbol!(["my_hako"], ["submodule"]),
                     HirModule {
-                        items: expected_items(hir_global_symbol!("my_hako", "submodule", "f")),
+                        items: expected_items(hir_divided_global_symbol!(["my_hako"], ["submodule", "f"])),
                         submodules: Vec::new(),
                     },
                 ),
@@ -354,7 +354,7 @@ fn lowers_modules_in_all_layers_of_hierarchy() {
     let mut lowering = HirLowering::new();
     let modules = lowering.lower_module(&ast_module);
 
-    let expected_items = |symbol: HirGlobalSymbol| {
+    let expected_items = |symbol: HirDividedGlobalSymbol| {
         let mut items = HashMap::new();
 
         items.insert(
@@ -373,28 +373,28 @@ fn lowers_modules_in_all_layers_of_hierarchy() {
         modules,
         (
             (
-                hir_global_symbol!("my_hako"),
+                hir_divided_global_symbol!([], ["my_hako"]),
                 HirModule {
-                    items: expected_items(hir_global_symbol!("my_hako", "f")),
+                    items: expected_items(hir_divided_global_symbol!([], ["my_hako", "f"])),
                     submodules: vec![
-                        hir_global_symbol!("my_hako", "submodule1"),
+                        hir_divided_global_symbol!(["my_hako"], ["submodule1"]),
                     ],
                 },
             ),
             vec![
                 (
-                    hir_global_symbol!("my_hako", "submodule1"),
+                    hir_divided_global_symbol!(["my_hako"], ["submodule1"]),
                     HirModule {
-                        items: expected_items(hir_global_symbol!("my_hako", "submodule1", "f")),
+                        items: expected_items(hir_divided_global_symbol!(["my_hako"], ["submodule1", "f"])),
                         submodules: vec![
-                            hir_global_symbol!("my_hako", "submodule1", "submodule1_1"),
+                            hir_divided_global_symbol!(["my_hako", "submodule1"], ["submodule1_1"]),
                         ],
                     },
                 ),
                 (
-                    hir_global_symbol!("my_hako", "submodule1", "submodule1_1"),
+                    hir_divided_global_symbol!(["my_hako", "submodule1"], ["submodule1_1"]),
                     HirModule {
-                        items: expected_items(hir_global_symbol!("my_hako", "submodule1", "submodule1_1", "f")),
+                        items: expected_items(hir_divided_global_symbol!(["my_hako", "submodule1"], ["submodule1_1", "f"])),
                         submodules: Vec::new(),
                     },
                 ),

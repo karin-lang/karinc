@@ -9,12 +9,41 @@ pub struct HirGlobalSymbol {
     pub segments: Vec<String>,
 }
 
-impl HirGlobalSymbol {
-    pub fn new_with_parent(parent_segments: Vec<String>, last_segment: String) -> HirGlobalSymbol {
-        let mut segments = parent_segments;
-        segments.push(last_segment);
-        HirGlobalSymbol { segments }
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct HirDividedGlobalSymbol {
+    pub parent_module_path_segments: Vec<String>,
+    pub following_segments: Vec<String>,
+}
+
+impl HirDividedGlobalSymbol {
+    pub fn from_module_path(segments: Vec<String>) -> HirDividedGlobalSymbol {
+        let mut parent = segments;
+        let following = parent.pop().expect("expected path segments of at least one length");
+
+        HirDividedGlobalSymbol {
+            parent_module_path_segments: parent,
+            following_segments: vec![following],
+        }
     }
+
+    pub fn from_located_module_path_and_id(located_module_path: Vec<String>, id: String) -> HirDividedGlobalSymbol {
+        let mut parent = located_module_path;
+        let following = match parent.pop() {
+            Some(located) => vec![located, id],
+            None => vec![id],
+        };
+
+        HirDividedGlobalSymbol {
+            parent_module_path_segments: parent,
+            following_segments: following,
+        }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum HirSymbolCodeOrPath {
+    SymbolCode(HirSymbolCode),
+    Path(Vec<String>),
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]

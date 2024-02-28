@@ -8,11 +8,11 @@ use self::{item::*, symbol::*};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hir {
-    pub modules: HashMap<HirGlobalSymbol, HirModule>,
+    pub modules: HashMap<HirDividedGlobalSymbol, HirModule>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct HirModule {
-    pub items: HashMap<HirGlobalSymbol, HirItem>,
-    pub submodules: Vec<HirGlobalSymbol>,
+    pub items: HashMap<HirDividedGlobalSymbol, HirItem>,
+    pub submodules: Vec<HirDividedGlobalSymbol>,
 }
