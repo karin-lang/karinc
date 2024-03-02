@@ -82,7 +82,7 @@ impl Lexer {
             }
         }
 
-        if alphanumerics.len() == 0 {
+        if alphanumerics.is_empty() {
             None
         } else {
             Some(alphanumerics)
