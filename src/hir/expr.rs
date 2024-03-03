@@ -25,8 +25,8 @@ impl HirLowering {
             "number" => self.lower_number_literal(child.expect_leaf()).map(|v| HirExpression::Number(v)),
             "id_or_path" => {
                 let symbol = HirSymbolAccessor {
-                    segments: self.lower_id_or_path(child.expect_node()),
                     index: self.generate_symbol_index(),
+                    kind: self.lower_path_or_member_access_chain(child.expect_node()),
                 };
                 Some(HirExpression::Symbol(symbol))
             },
@@ -44,7 +44,7 @@ impl HirLowering {
         Some(HirNumberLiteral { value })
     }
 
-    pub fn lower_id_or_path(&mut self, node: &AstNode) -> Vec<String> {
+    pub fn lower_path_or_member_access_chain(&mut self, node: &AstNode) -> HirSymbolAccessorKind {
         let mut segments = Vec::new();
 
         for each_segment in &node.children {
@@ -55,7 +55,16 @@ impl HirLowering {
             }
         }
 
-        segments
+        // todo: segments が empty だった場合のエラー処理を実装する
+
+        if segments.len() == 1 {
+            HirSymbolAccessorKind::SingleSegment(segments.get(0).unwrap().clone())
+        } else {
+            HirSymbolAccessorKind::MultipleSegments(
+                HirPath { segments },
+                HirMemberAccessChain { segments: Vec::new() },
+            )
+        }
     }
 
     pub fn lower_variable_declaration(&mut self, node: &AstNode) -> Option<HirVariableDeclaration> {
@@ -81,7 +90,7 @@ impl HirLowering {
         let id_leaf = node.find("id").unwrap().expect_leaf();
         let id = id_leaf.value.kind.expect_id().clone();
         let index = self.generate_symbol_index();
-        let symbol = HirSymbolAccessor { segments: vec![id], index };
+        let symbol = HirSymbolAccessor { index, kind: HirSymbolAccessorKind::SingleSegment(id) };
 
         let args = node
             .find("actual_fn_args")

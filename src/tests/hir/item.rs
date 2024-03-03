@@ -1,6 +1,6 @@
 use crate::*;
 use crate::data::{ast::*, token::*};
-use crate::data::hir::{expr::*, item::*};
+use crate::data::hir::{expr::*, item::*, symbol::*};
 use crate::hir::*;
 
 #[test]
@@ -21,7 +21,10 @@ fn lowers_any_item() {
     let mut lowering = HirLowering::new().add_module_context_layer();
 
     assert_eq!(
-        lowering.lower_item(Vec::new(), &node),
+        lowering.lower_item(
+            HirPath { segments: Vec::new() },
+            &node,
+        ),
         Some((
             hir_divided_global_symbol!([], ["f"]),
             HirItem::FunctionDeclaration(
@@ -42,7 +45,13 @@ fn fails_to_lower_unknown_item_node() {
     );
     let mut lowering = HirLowering::new().add_module_context_layer();
 
-    assert_eq!(lowering.lower_item(Vec::new(), &node), None);
+    assert_eq!(
+        lowering.lower_item(
+            HirPath { segments: Vec::new() },
+            &node,
+        ),
+        None,
+    );
     assert_eq!(
         lowering.logs,
         vec![
@@ -69,7 +78,10 @@ fn lowers_function_declaration() {
     let mut lowering = HirLowering::new().add_module_context_layer();
 
     assert_eq!(
-        lowering.lower_function_declaration(Vec::new(), &node),
+        lowering.lower_function_declaration(
+            HirPath { segments: Vec::new() },
+            &node,
+        ),
         Some((
             hir_divided_global_symbol!([], ["f"]),
             HirFunctionDeclaration {
@@ -98,7 +110,10 @@ fn joins_function_declaration_id_to_parent_module_path() {
     let mut lowering = HirLowering::new().add_module_context_layer();
 
     assert_eq!(
-        lowering.lower_function_declaration(vec!["my_hako".to_string()], &node),
+        lowering.lower_function_declaration(
+            HirPath { segments: vec!["my_hako".to_string()] },
+            &node,
+        ),
         Some((
             hir_divided_global_symbol!([], ["my_hako", "f"]),
             HirFunctionDeclaration {
@@ -132,7 +147,10 @@ fn lowers_function_declaration_with_body() {
     let mut lowering = HirLowering::new().add_module_context_layer();
 
     assert_eq!(
-        lowering.lower_function_declaration(Vec::new(), &node),
+        lowering.lower_function_declaration(
+            HirPath { segments: Vec::new() },
+            &node,
+        ),
         Some((
             hir_divided_global_symbol!([], ["f"]),
             HirFunctionDeclaration {

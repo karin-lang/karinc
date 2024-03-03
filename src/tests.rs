@@ -42,10 +42,11 @@ macro_rules! hir_divided_global_symbol {
     ([$($parent_module_segment:expr),*], [$($following_segment:expr),*$(,)?]) => {
         {
             use crate::data::hir::symbol::*;
+            let parent_segments = vec![$($parent_module_segment.to_string()),*];
 
             HirDividedGlobalSymbol {
-                parent_module_path_segments: vec![$($parent_module_segment.to_string()),*],
-                following_segments: vec![$($following_segment.to_string()),*],
+                parent_module_path: HirPath { segments: parent_segments },
+                following_path: HirPath { segments: vec![$($following_segment.to_string()),*] },
             }
         }
     };
@@ -67,17 +68,27 @@ macro_rules! hir_local_symbol {
 
 #[macro_export]
 macro_rules! hir_symbol_accessor {
-    ([$($segment:expr,)+], $code:expr$(,)?) => {
-        hir_symbol!($($segment),+)
-    };
-
-    ([$($segment:expr),*], $code:expr$(,)?) => {
+    ($segment:expr, $code:expr$(,)?) => {
         {
             use crate::data::hir::symbol::*;
 
             HirSymbolAccessor {
-                segments: vec![$($segment.to_string()),*],
                 index: HirSymbolIndex::new($code),
+                kind: HirSymbolAccessorKind::SingleSegment($segment.to_string()),
+            }
+        }
+    };
+
+    ([$($path_segment:expr),*], [$($member_access_chain_segment:expr),*], $code:expr$(,)?) => {
+        {
+            use crate::data::hir::symbol::*;
+
+            HirSymbolAccessor {
+                index: HirSymbolIndex::new($code),
+                kind: HirSymbolAccessorKind::MultipleSegments(
+                    vec![$($path_segment.to_string()),*],
+                    vec![$($member_access_chain_segment.to_string()),*],
+                ),
             }
         }
     };

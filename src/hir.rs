@@ -86,9 +86,10 @@ impl HirLowering {
         let mut submodules = Vec::new();
         let mut submodule_symbols = Vec::new();
         let mut items = HashMap::new();
+        let module_path = HirPath { segments: ast_module.path.clone() };
 
         for each_child in &ast_module.ast.root.children {
-            if let Some((new_item_symbol, new_item)) = self.lower_item(ast_module.path.clone(), each_child.expect_node()) {
+            if let Some((new_item_symbol, new_item)) = self.lower_item(module_path.clone(), each_child.expect_node()) {
                 items.insert(new_item_symbol, new_item);
             }
         }

@@ -1,6 +1,6 @@
 use crate::{*, hir::*};
 use crate::data::{ast::*, token::*};
-use crate::data::hir::expr::*;
+use crate::data::hir::{expr::*, symbol::*};
 
 #[test]
 fn lowers_function_body() {
@@ -120,7 +120,7 @@ fn lowers_number_literal() {
 }
 
 #[test]
-fn lowers_id_or_path() {
+fn lowers_path_or_member_access_chain() {
     let node = AstNode::new(
         "id_or_path".to_string(),
         vec![
@@ -139,11 +139,16 @@ fn lowers_id_or_path() {
         .add_function_context_layer();
 
     assert_eq!(
-        lowering.lower_id_or_path(&node),
-        vec![
-            "segment1".to_string(),
-            "segment2".to_string(),
-        ],
+        lowering.lower_path_or_member_access_chain(&node),
+        HirSymbolAccessorKind::MultipleSegments(
+            HirPath {
+                segments: vec![
+                    "segment1".to_string(),
+                    "segment2".to_string(),
+                ],
+            },
+            HirMemberAccessChain { segments: Vec::new() },
+        )
     );
     assert_eq!(lowering.logs, Vec::new());
 }
@@ -234,7 +239,7 @@ fn lowers_function_call() {
         lowering.lower_function_call(&node),
         Some(
             HirFunctionCall {
-                symbol: hir_symbol_accessor!(["f"], 0),
+                symbol: hir_symbol_accessor!("f", 0),
                 args: Vec::new(),
             },
         ),
@@ -275,7 +280,7 @@ fn lowers_function_call_with_args() {
         lowering.lower_function_call(&node),
         Some(
             HirFunctionCall {
-                symbol: hir_symbol_accessor!(["f"], 0),
+                symbol: hir_symbol_accessor!("f", 0),
                 args: vec![
                     HirActualFunctionArgument::Expression(
                         HirExpression::Number(

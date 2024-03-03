@@ -276,8 +276,8 @@ fn increments_symbol_index_for_each_module_context() {
             HirItem::FunctionDeclaration(
                 HirFunctionDeclaration {
                     exprs: vec![
-                        HirExpression::Symbol(hir_symbol_accessor!(["id1"], 0)),
-                        HirExpression::Symbol(hir_symbol_accessor!(["id2"], 1)),
+                        HirExpression::Symbol(hir_symbol_accessor!("id1", 0)),
+                        HirExpression::Symbol(hir_symbol_accessor!("id2", 1)),
                     ],
                 },
             ),

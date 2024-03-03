@@ -5,14 +5,32 @@ pub trait HirCount: Copy {
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
-pub struct HirGlobalSymbol {
+pub struct HirPath {
     pub segments: Vec<String>,
 }
 
 #[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct HirMemberAccessChain {
+    pub segments: Vec<String>,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct HirGlobalSymbol {
+    pub path: HirPath,
+}
+
+impl From<HirDividedGlobalSymbol> for HirGlobalSymbol {
+    fn from(mut value: HirDividedGlobalSymbol) -> Self {
+        let mut path = value.parent_module_path;
+        path.segments.append(&mut value.following_path.segments);
+        HirGlobalSymbol { path }
+    }
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
 pub struct HirDividedGlobalSymbol {
-    pub parent_module_path_segments: Vec<String>,
-    pub following_segments: Vec<String>,
+    pub parent_module_path: HirPath,
+    pub following_path: HirPath,
 }
 
 impl HirDividedGlobalSymbol {
@@ -21,21 +39,21 @@ impl HirDividedGlobalSymbol {
         let following = parent.pop().expect("expected path segments of at least one length");
 
         HirDividedGlobalSymbol {
-            parent_module_path_segments: parent,
-            following_segments: vec![following],
+            parent_module_path: HirPath { segments: parent },
+            following_path: HirPath { segments: vec![following] },
         }
     }
 
-    pub fn from_located_module_path_and_id(located_module_path: Vec<String>, id: String) -> HirDividedGlobalSymbol {
+    pub fn from_located_module_path_and_id(located_module_path: HirPath, id: String) -> HirDividedGlobalSymbol {
         let mut parent = located_module_path;
-        let following = match parent.pop() {
+        let following = match parent.segments.pop() {
             Some(located) => vec![located, id],
             None => vec![id],
         };
 
         HirDividedGlobalSymbol {
-            parent_module_path_segments: parent,
-            following_segments: following,
+            parent_module_path: parent,
+            following_path: HirPath { segments: following },
         }
     }
 }
@@ -43,7 +61,7 @@ impl HirDividedGlobalSymbol {
 #[derive(Clone, Debug, PartialEq)]
 pub enum HirSymbolCodeOrPath {
     SymbolCode(HirSymbolCode),
-    Path(Vec<String>),
+    Path(HirPath),
 }
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
@@ -86,8 +104,14 @@ impl HirCount for HirSymbolIndex {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct HirSymbolAccessor {
-    pub segments: Vec<String>,
     pub index: HirSymbolIndex,
+    pub kind: HirSymbolAccessorKind,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum HirSymbolAccessorKind {
+    SingleSegment(String),
+    MultipleSegments(HirPath, HirMemberAccessChain),
 }
 
 #[derive(Clone, Debug, PartialEq)]
