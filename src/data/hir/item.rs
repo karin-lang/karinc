@@ -1,4 +1,4 @@
-use super::expr::*;
+use super::{*, expr::*};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum HirItem {
@@ -8,5 +8,6 @@ pub enum HirItem {
 // note: メンバ関数は別の構造体で管理する
 #[derive(Clone, Debug, PartialEq)]
 pub struct HirFunctionDeclaration {
+    pub local_entity_map: HirLocalEntityMap,
     pub exprs: Vec<HirExpression>,
 }

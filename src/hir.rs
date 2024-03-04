@@ -75,7 +75,7 @@ impl HirLowering {
             }
         }
 
-        let hir = Hir { modules };
+        let hir = Hir { global_entity_map };
         (hir, self.logs)
     }
 

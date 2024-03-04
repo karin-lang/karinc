@@ -1,3 +1,7 @@
+pub mod entity;
+
+use std::collections::HashMap;
+
 pub trait HirCount: Copy {
     fn new(v: usize) -> Self;
 
@@ -99,6 +103,15 @@ impl HirCount for HirSymbolIndex {
 
     fn value(self) -> usize {
         self.0
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct HirSymbolAccessorMap(HashMap<HirSymbolIndex, HirSymbolCodeOrPath>);
+
+impl HirSymbolAccessorMap {
+    pub fn new() -> HirSymbolAccessorMap {
+        HirSymbolAccessorMap(HashMap::new())
     }
 }
 
