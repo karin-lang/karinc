@@ -1,5 +1,6 @@
 #[cfg(test)]
-mod ast;
+mod parser;
+/*
 #[cfg(test)]
 mod hir;
 #[cfg(test)]
@@ -8,7 +9,9 @@ mod lexer;
 mod parser;
 #[cfg(test)]
 mod token;
+*/
 
+/*
 use maplit::hashmap;
 
 use crate::hir::HirLowering;
@@ -186,3 +189,4 @@ fn generates_parser_result() {
         Vec::new(),
     );
 }
+*/

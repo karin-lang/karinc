@@ -1,3 +1,24 @@
+#[macro_export]
+macro_rules! id_token {
+    ($id:expr, $index:expr, $len:expr$(,)?) => {
+        Token::new(TokenKind::Id($id.to_string()), $index, $len)
+    };
+}
+
+#[macro_export]
+macro_rules! symbol_token {
+    ($symbol:ident, $index:expr, $len:expr$(,)?) => {
+        Token::new(TokenKind::Symbol(SymbolToken::$symbol), $index, $len)
+    };
+}
+
+#[macro_export]
+macro_rules! keyword_token {
+    ($keyword:ident, $index:expr, $len:expr$(,)?) => {
+        Token::new(TokenKind::Keyword(KeywordToken::$keyword), $index, $len)
+    };
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
@@ -31,20 +52,6 @@ impl TokenKind {
 
         TokenKind::Id(s.to_string())
     }
-
-    pub fn expect_number(&self) -> &NumberToken {
-        match self {
-            TokenKind::Number(value) => value,
-            _ => panic!("expected id token"),
-        }
-    }
-
-    pub fn expect_id(&self) -> &String {
-        match self {
-            TokenKind::Id(id) => id,
-            _ => panic!("expected id token"),
-        }
-    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -63,6 +70,8 @@ impl NumberToken {
     }
 }
 
+// todo: KeywordToken → TokenKeyword
+// todo: バリアント名を変える
 #[derive(Clone, Debug, PartialEq)]
 pub enum KeywordToken {
     Function,
@@ -85,6 +94,7 @@ impl KeywordToken {
     }
 }
 
+// todo: SymbolToken → TokenSymbol
 #[derive(Clone, Debug, PartialEq)]
 pub enum SymbolToken {
     Comma,
