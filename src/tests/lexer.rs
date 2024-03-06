@@ -1,4 +1,5 @@
-use crate::{data::token::{SymbolToken, Token, TokenKind}, lexer::Lexer};
+use crate::lexer::tokenize::Lexer;
+use crate::lexer::token::{SymbolToken, Token, TokenKind};
 
 #[test]
 fn skips_whitespaces() {
