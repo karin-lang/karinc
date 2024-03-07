@@ -24,12 +24,15 @@ fn lowers_items_in_ast() {
     let ast = ast::Ast {
         items: vec![
             ast::Item {
-                kind: ast::ItemKind::FnDecl(
-                    ast::FnDecl {
-                        id: "f".into(),
-                        args: Vec::new(),
-                        body: Vec::new(),
-                    },
+                kind: Box::new(
+                    ast::ItemKind::FnDecl(
+                        ast::FnDecl {
+                            id: "f".into(),
+                            args: Vec::new(),
+                            ret_type: None,
+                            body: Vec::new(),
+                        },
+                    ),
                 ),
             },
         ],

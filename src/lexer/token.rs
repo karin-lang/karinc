@@ -72,12 +72,13 @@ impl NumberToken {
 
 // todo: KeywordToken → TokenKeyword
 // todo: バリアント名を変える
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum KeywordToken {
     Function,
     Let,
     Public,
     Struct,
+    Usize,
 }
 
 impl KeywordToken {
@@ -87,6 +88,7 @@ impl KeywordToken {
             "let" => KeywordToken::Let,
             "pub" => KeywordToken::Public,
             "struct" => KeywordToken::Struct,
+            "usize" => KeywordToken::Usize,
             _ => return None,
         };
 
@@ -95,7 +97,7 @@ impl KeywordToken {
 }
 
 // todo: SymbolToken → TokenSymbol
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum SymbolToken {
     Comma,
     Colon,

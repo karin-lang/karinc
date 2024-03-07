@@ -26,7 +26,7 @@ impl From<&String> for Id {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Item {
-    pub kind: ItemKind,
+    pub kind: Box<ItemKind>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -38,30 +38,51 @@ pub enum ItemKind {
 pub struct FnDecl {
     pub id: Id,
     pub args: Vec<FormalArg>,
+    pub ret_type: Option<Type>,
     pub body: Vec<Expr>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FormalArg {
     pub id: Id,
+    pub r#type: Type,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Expr {
-    pub kind: ExprKind,
+    pub kind: Box<ExprKind>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
-    VarInit(VarInit),
     VarDecl(VarDecl),
+    VarInit(VarInit),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Type {
+    pub kind: Box<TypeKind>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum TypeKind {
+    Prim(PrimType),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum PrimType {
+    Usize,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct VarDecl {
+    pub id: Id,
+    pub r#type: Option<Type>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct VarInit {
     pub id: Id,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct VarDecl {
+    pub r#type: Option<Type>,
+    pub expr: Expr,
 }

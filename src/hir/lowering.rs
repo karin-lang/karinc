@@ -127,7 +127,7 @@ impl HirLowering {
     }
 
     pub fn lower_item(&mut self, item: &ast::Item) -> (GlobalEntityId, GlobalEntity) {
-        match &item.kind {
+        match &*item.kind {
             ast::ItemKind::FnDecl(decl) => {
                 let (id, hir_decl) = self.lower_fn_decl(decl);
                 (id, GlobalEntity::FnDecl(hir_decl))
