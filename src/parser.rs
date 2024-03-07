@@ -14,7 +14,6 @@ pub enum ParserLog {
 
 pub type ParserResult<T> = Result<T, ParserLog>;
 
-// todo: シンボル管理を実装する
 pub struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>,
     logs: Vec<ParserLog>,

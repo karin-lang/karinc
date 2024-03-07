@@ -1,21 +1,9 @@
 #[derive(Clone, Debug, PartialEq)]
-pub struct AstContainer {
-    pub roots: Vec<AstModule>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct AstModule {
-    pub path: Vec<String>,
-    pub ast: Ast,
-    pub submodules: Vec<AstModule>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
 pub struct Ast {
     pub items: Vec<Item>,
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Eq, Debug, Hash, PartialEq)]
 pub struct Id(String);
 
 impl From<&str> for Id {
@@ -55,7 +43,7 @@ pub struct FnDecl {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FormalArg {
-    id: Id,
+    pub id: Id,
 }
 
 #[derive(Clone, Debug, PartialEq)]
