@@ -4,12 +4,8 @@ mod hir;
 mod lexer;
 #[cfg(test)]
 mod parser;
-/*
-#[cfg(test)]
-mod parser;
 #[cfg(test)]
 mod token;
-*/
 
 /*
 use maplit::hashmap;

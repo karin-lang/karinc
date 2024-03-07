@@ -1,4 +1,4 @@
-use crate::data::token::{KeywordToken, NumberToken, TokenKind};
+use crate::lexer::token::{KeywordToken, NumberToken, TokenKind};
 
 #[test]
 fn converts_alphanumerics_to_number_token() {
