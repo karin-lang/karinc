@@ -1,18 +1,17 @@
-use crate::{id_token, keyword_token, symbol_token};
+use crate::{id_token, keyword_token, token};
 use crate::parser::{ast::*, Parser, ParserLog};
-use crate::lexer::token::*;
 
 // todo: テストを追加
 
 #[test]
 fn outputs_parser_result() {
     let tokens = vec![
-        keyword_token!(Function, 0, 1),
+        keyword_token!(Fn, 0, 1),
         id_token!("f", 1, 1),
-        symbol_token!(OpenParen, 2, 1),
-        symbol_token!(ClosingParen, 3, 1),
-        symbol_token!(OpenCurlyBracket, 4, 1),
-        symbol_token!(ClosingCurlyBracket, 5, 1),
+        token!(OpenParen, 2, 1),
+        token!(ClosingParen, 3, 1),
+        token!(OpenCurlyBracket, 4, 1),
+        token!(ClosingCurlyBracket, 5, 1),
     ];
     let parser = Parser::new(&tokens);
     let (ast, logs) = parser.parse();
@@ -42,12 +41,12 @@ fn outputs_parser_result() {
 #[test]
 fn parses_single_item() {
     let tokens = vec![
-        keyword_token!(Function, 0, 1),
+        keyword_token!(Fn, 0, 1),
         id_token!("f", 1, 1),
-        symbol_token!(OpenParen, 2, 1),
-        symbol_token!(ClosingParen, 3, 1),
-        symbol_token!(OpenCurlyBracket, 4, 1),
-        symbol_token!(ClosingCurlyBracket, 5, 1),
+        token!(OpenParen, 2, 1),
+        token!(ClosingParen, 3, 1),
+        token!(OpenCurlyBracket, 4, 1),
+        token!(ClosingCurlyBracket, 5, 1),
     ];
     let mut parser = Parser::new(&tokens);
 
@@ -75,18 +74,18 @@ fn parses_single_item() {
 #[test]
 fn parses_multiple_items() {
     let tokens = vec![
-        keyword_token!(Function, 0, 1),
+        keyword_token!(Fn, 0, 1),
         id_token!("f1", 1, 1),
-        symbol_token!(OpenParen, 2, 1),
-        symbol_token!(ClosingParen, 3, 1),
-        symbol_token!(OpenCurlyBracket, 4, 1),
-        symbol_token!(ClosingCurlyBracket, 5, 1),
-        keyword_token!(Function, 6, 1),
+        token!(OpenParen, 2, 1),
+        token!(ClosingParen, 3, 1),
+        token!(OpenCurlyBracket, 4, 1),
+        token!(ClosingCurlyBracket, 5, 1),
+        keyword_token!(Fn, 6, 1),
         id_token!("f2", 7, 1),
-        symbol_token!(OpenParen, 8, 1),
-        symbol_token!(ClosingParen, 9, 1),
-        symbol_token!(OpenCurlyBracket, 10, 1),
-        symbol_token!(ClosingCurlyBracket, 11, 1),
+        token!(OpenParen, 8, 1),
+        token!(ClosingParen, 9, 1),
+        token!(OpenCurlyBracket, 10, 1),
+        token!(ClosingCurlyBracket, 11, 1),
     ];
     let mut parser = Parser::new(&tokens);
 
@@ -125,7 +124,7 @@ fn parses_multiple_items() {
 
 #[test]
 fn records_item_parsing_log() {
-    let tokens = vec![symbol_token!(Semicolon, 0, 1)];
+    let tokens = vec![token!(Semicolon, 0, 1)];
     let mut parser = Parser::new(&tokens);
 
     assert_eq!(
@@ -144,12 +143,12 @@ fn records_item_parsing_log() {
 #[test]
 fn parses_fn_decl() {
     let tokens = vec![
-        keyword_token!(Function, 0, 1),
+        keyword_token!(Fn, 0, 1),
         id_token!("f", 1, 1),
-        symbol_token!(OpenParen, 2, 1),
-        symbol_token!(ClosingParen, 3, 1),
-        symbol_token!(OpenCurlyBracket, 4, 1),
-        symbol_token!(ClosingCurlyBracket, 5, 1),
+        token!(OpenParen, 2, 1),
+        token!(ClosingParen, 3, 1),
+        token!(OpenCurlyBracket, 4, 1),
+        token!(ClosingCurlyBracket, 5, 1),
     ];
     let mut parser = Parser::new(&tokens);
 
@@ -177,13 +176,13 @@ fn parses_fn_decl() {
 #[test]
 fn parses_fn_decl_with_ret_type() {
     let tokens = vec![
-        keyword_token!(Function, 0, 1),
+        keyword_token!(Fn, 0, 1),
         id_token!("f", 1, 1),
-        symbol_token!(OpenParen, 2, 1),
-        symbol_token!(ClosingParen, 5, 1),
+        token!(OpenParen, 2, 1),
+        token!(ClosingParen, 5, 1),
         keyword_token!(Usize, 4, 1),
-        symbol_token!(OpenCurlyBracket, 6, 1),
-        symbol_token!(ClosingCurlyBracket, 7, 1),
+        token!(OpenCurlyBracket, 6, 1),
+        token!(ClosingCurlyBracket, 7, 1),
     ];
     let mut parser = Parser::new(&tokens);
 

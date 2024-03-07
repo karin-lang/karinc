@@ -34,17 +34,24 @@ impl<'a> Parser<'a> {
         self.tokens.peek().is_none()
     }
 
-    pub fn is_next_keyword(&mut self, keyword: KeywordToken) -> bool {
-        self.tokens.peek().is_some_and(|v| v.kind == TokenKind::Keyword(keyword))
+    pub fn is_next(&mut self, kind: TokenKind) -> bool {
+        self.tokens.peek().is_some_and(|v| v.kind == kind)
     }
 
-    pub fn is_next_symbol(&mut self, symbol: SymbolToken) -> bool {
-        self.tokens.peek().is_some_and(|v| v.kind == TokenKind::Symbol(symbol))
+    pub fn is_next_keyword(&mut self, keyword: Keyword) -> bool {
+        self.is_next(TokenKind::Keyword(keyword))
     }
 
     pub fn next_line(&mut self) {
         // fix: 次のトークンを次の改行に修正する（トークン位置の情報を基準にする）
         self.tokens.next();
+    }
+
+    pub fn consume(&mut self, kind: TokenKind) -> bool {
+        self
+            .tokens
+            .next_if(|next_token| next_token.kind == kind)
+            .is_some()
     }
 
     pub fn consume_id(&mut self) -> Option<Id> {
@@ -58,17 +65,10 @@ impl<'a> Parser<'a> {
         None
     }
 
-    pub fn consume_keyword(&mut self, keyword: KeywordToken) -> bool {
+    pub fn consume_keyword(&mut self, keyword: Keyword) -> bool {
         self
             .tokens
-            .next_if(|next_token: &&Token| next_token.kind == TokenKind::Keyword(keyword))
-            .is_some()
-    }
-
-    pub fn consume_symbol(&mut self, symbol: SymbolToken) -> bool {
-        self
-            .tokens
-            .next_if(|next_token: &&Token| next_token.kind == TokenKind::Symbol(symbol))
+            .next_if(|next_token| next_token.kind == TokenKind::Keyword(keyword))
             .is_some()
     }
 
@@ -76,7 +76,15 @@ impl<'a> Parser<'a> {
         self.tokens.peek()
     }
 
-    pub fn expect(&mut self) -> ParserResult<&Token> {
+    pub fn expect(&mut self, kind: TokenKind) -> ParserResult<()> {
+        if self.consume(kind) {
+            Ok(())
+        } else {
+            Err(ParserLog::ExpectedToken)
+        }
+    }
+
+    pub fn expect_any(&mut self) -> ParserResult<&Token> {
         self.tokens.next().ok_or(ParserLog::UnexpectedEof)
     }
 
@@ -84,16 +92,8 @@ impl<'a> Parser<'a> {
         self.consume_id().ok_or(ParserLog::ExpectedToken)
     }
 
-    pub fn expect_keyword(&mut self, keyword: KeywordToken) -> ParserResult<()> {
+    pub fn expect_keyword(&mut self, keyword: Keyword) -> ParserResult<()> {
         if self.consume_keyword(keyword) {
-            Ok(())
-        } else {
-            Err(ParserLog::ExpectedToken)
-        }
-    }
-
-    pub fn expect_symbol(&mut self, symbol: SymbolToken) -> ParserResult<()> {
-        if self.consume_symbol(symbol) {
             Ok(())
         } else {
             Err(ParserLog::ExpectedToken)
@@ -139,10 +139,10 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_single_item(&mut self) -> ParserResult<Item> {
-        let kind = if self.consume_keyword(KeywordToken::Function) {
+        let kind = if self.consume_keyword(Keyword::Fn) {
             let id = self.expect_id()?;
             let args = self.parse_formal_args()?;
-            let ret_type = if self.is_next_symbol(SymbolToken::OpenCurlyBracket) {
+            let ret_type = if self.is_next(TokenKind::OpenCurlyBracket) {
                 None
             } else {
                 Some(self.parse_type()?)
@@ -161,7 +161,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_formal_args(&mut self) -> ParserResult<Vec<FormalArg>> {
-        self.expect_symbol(SymbolToken::OpenParen)?;
+        self.expect(TokenKind::OpenParen)?;
         let mut args = Vec::new();
         let mut allow_next_arg = true;
 
@@ -170,7 +170,7 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            if self.consume_symbol(SymbolToken::ClosingParen) {
+            if self.consume(TokenKind::ClosingParen) {
                 break;
             }
 
@@ -181,7 +181,7 @@ impl<'a> Parser<'a> {
 
             let id = self.expect_id()?;
             let r#type = self.parse_type()?;
-            allow_next_arg = self.consume_symbol(SymbolToken::Comma);
+            allow_next_arg = self.consume(TokenKind::Comma);
             let new_arg = FormalArg { id, r#type };
             args.push(new_arg);
         }
@@ -190,7 +190,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_body(&mut self) -> ParserResult<Vec<Expr>> {
-        self.expect_symbol(SymbolToken::OpenCurlyBracket)?;
+        self.expect(TokenKind::OpenCurlyBracket)?;
         let mut exprs = Vec::new();
 
         loop {
@@ -198,12 +198,12 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            if self.consume_symbol(SymbolToken::ClosingCurlyBracket) {
+            if self.consume(TokenKind::ClosingCurlyBracket) {
                 break;
             }
 
             let new_expr = self.parse_expr()?;
-            self.expect_symbol(SymbolToken::Semicolon)?;
+            self.expect(TokenKind::Semicolon)?;
             exprs.push(new_expr);
         }
 
@@ -211,11 +211,11 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_type(&mut self) -> ParserResult<Type> {
-        let first_token = self.expect()?;
+        let first_token = self.expect_any()?;
 
         if let TokenKind::Keyword(keyword) = &first_token.kind {
             let prim_type = match keyword {
-                KeywordToken::Usize => PrimType::Usize,
+                Keyword::Usize => PrimType::Usize,
                 _ => return Err(ParserLog::ExpectedType),
             };
 
@@ -228,7 +228,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_expr(&mut self) -> ParserResult<Expr> {
-        if self.consume_keyword(KeywordToken::Let) {
+        if self.consume_keyword(Keyword::Let) {
             self.parse_var_decl_or_init_expr()
         } else {
             Err(ParserLog::ExpectedExpr)
@@ -236,16 +236,16 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_var_decl_or_init_expr(&mut self) -> ParserResult<Expr> {
-        self.expect_keyword(KeywordToken::Let)?;
+        self.expect_keyword(Keyword::Let)?;
         let id = self.expect_id()?;
 
         // todo: let 式のセミコロンの扱いを検討する（暫定的にセミコロン必須で実装）
-        let expr = if self.is_next_symbol(SymbolToken::Semicolon) {
+        let expr = if self.is_next(TokenKind::Semicolon) {
             // e.g.) let i;
             let decl = VarDecl { id, r#type: None };
             let kind = ExprKind::VarDecl(decl);
             Expr { kind: Box::new(kind) }
-        } else if self.consume_symbol(SymbolToken::Equal) {
+        } else if self.consume(TokenKind::Equal) {
             // e.g.) let i = 0;
             let expr = self.parse_expr()?;
             let init = VarInit { id, r#type: None, expr };
@@ -253,12 +253,12 @@ impl<'a> Parser<'a> {
             Expr { kind: Box::new(kind) }
         } else {
             let r#type = Some(self.parse_type()?);
-            if self.is_next_symbol(SymbolToken::Semicolon) {
+            if self.is_next(TokenKind::Semicolon) {
                 // e.g.) let i usize;
                 let decl = VarDecl { id, r#type };
                 let kind = ExprKind::VarDecl(decl);
                 Expr { kind: Box::new(kind) }
-            } else if self.consume_symbol(SymbolToken::Equal) {
+            } else if self.consume(TokenKind::Equal) {
                 // e.g.) let i usize = 0;
                 let expr = self.parse_expr()?;
                 let init = VarInit { id, r#type, expr };

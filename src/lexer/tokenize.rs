@@ -2,9 +2,7 @@ use std::{iter::Peekable, str::CharIndices};
 use crate::lexer::token::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum LexerLog {
-    UnexpectedToken(usize, String),
-}
+pub enum LexerLog {}
 
 pub struct Lexer {
     pub(crate) logs: Vec<LexerLog>,
@@ -22,106 +20,83 @@ impl Lexer {
         self.tokenize_(input)
     }
 
-    pub(crate) fn tokenize_(mut self, input: &mut Peekable<CharIndices>) -> (Vec<Token>, Vec<LexerLog>) {
+    pub(crate) fn tokenize_(self, input: &mut Peekable<CharIndices>) -> (Vec<Token>, Vec<LexerLog>) {
         let mut tokens = Vec::new();
 
         loop {
-            let (index, next_char) = match input.peek() {
-                Some(v) => *v,
+            let (index, next_char) = match input.next() {
+                Some(v) => v,
                 None => break,
             };
 
-            if Lexer::is_whitespace(next_char) {
-                input.next();
-                continue;
-            }
+            let (len, kind): (usize, TokenKind) = match next_char {
+                ' ' | '\t' | '\n' => continue,
+                'a'..='z' | 'A'..='Z' | '_' => {
+                    let mut alphabetic = next_char.to_string();
 
-            if let Some(alphanumerics) = self.tokenize_alphanumerics(input) {
-                let new_token_kind = TokenKind::from_alphanumerics(&alphanumerics);
-                let new_token = Token::new(new_token_kind, index, alphanumerics.len());
-                tokens.push(new_token);
-                continue;
-            }
+                    loop {
+                        match input.peek() {
+                            Some((_, next_char @ ('0'..='9' | 'a'..='z' | 'A'..='Z' | '_'))) => {
+                                alphabetic.push(*next_char);
+                                input.next();
+                            },
+                            _ => break,
+                        };
+                    }
 
-            if let Some((len, symbol)) = self.tokenize_symbol(input) {
-                let new_token_kind = TokenKind::Symbol(symbol);
-                let new_token = Token::new(new_token_kind, index, len);
-                tokens.push(new_token);
-                continue;
-            }
+                    let len = alphabetic.len();
+                    let kind = match Keyword::from(&alphabetic) {
+                        Some(keyword) => TokenKind::Keyword(keyword),
+                        None => TokenKind::Id(alphabetic),
+                    };
+                    (len, kind)
+                },
+                '0'..='9' => {
+                    let mut numeric = next_char.to_string();
 
-            self.logs.push(LexerLog::UnexpectedToken(index, next_char.to_string()));
-            input.next();
+                    loop {
+                        match input.peek() {
+                            Some((_, next_char @ '0'..='9')) => {
+                                numeric.push(*next_char);
+                                input.next();
+                            },
+                            _ => break,
+                        };
+                    }
+
+                    let len = numeric.len();
+                    let literal = Literal::Int { value: numeric };
+                    (len, TokenKind::Literal(literal))
+                },
+                ')' => (1, TokenKind::ClosingParen),
+                '}' => (1, TokenKind::ClosingCurlyBracket),
+                ':' => {
+                    let colon = (1, TokenKind::Colon);
+                    if let Some((_, second_char)) = input.peek().cloned() {
+                        if second_char == ':' {
+                            input.next();
+                            (2, TokenKind::DoubleColon)
+                        } else {
+                            colon
+                        }
+                    } else {
+                        colon
+                    }
+                },
+                ',' => (1, TokenKind::Comma),
+                '=' => (1, TokenKind::Equal),
+                '{' => (1, TokenKind::OpenCurlyBracket),
+                '(' => (1, TokenKind::OpenParen),
+                ';' => (1, TokenKind::Semicolon),
+                _ => {
+                    // todo: 連続した不明なトークンをまとめて扱う
+                    (1, TokenKind::Unknown)
+                },
+            };
+
+            tokens.push(Token::new(kind, index, len));
         }
 
         (tokens, self.logs)
-    }
-
-    pub fn is_whitespace(ch: char) -> bool {
-        match ch {
-            ' ' | '\t' | '\n' => true,
-            _ => false,
-        }
-    }
-
-    pub fn tokenize_alphanumerics(&mut self, input: &mut Peekable<CharIndices>) -> Option<String> {
-        let mut alphanumerics = String::new();
-
-        loop {
-            let next_char = match input.peek() {
-                Some((_, v)) => *v,
-                None => break,
-            };
-
-            match next_char {
-                '0'..='9' | 'a'..='z' | 'A'..='Z' | '_' => {
-                    input.next();
-                    alphanumerics.push(next_char);
-                },
-                _ => break,
-            }
-        }
-
-        if alphanumerics.is_empty() {
-            None
-        } else {
-            Some(alphanumerics)
-        }
-    }
-
-    pub fn tokenize_symbol(&mut self, input: &mut Peekable<CharIndices>) -> Option<(usize, SymbolToken)> {
-        let first_char = if let Some((_, v)) = input.peek().cloned() {
-            input.next();
-            v
-        } else {
-            return None;
-        };
-
-        let symbol = match first_char {
-            ',' => (1, SymbolToken::Comma),
-            ':' => {
-                let colon_symbol = (1, SymbolToken::Colon);
-
-                if let Some((_, second_char)) = input.peek().cloned() {
-                    if second_char == ':' {
-                        input.next();
-                        (2, SymbolToken::DoubleColon)
-                    } else {
-                        colon_symbol
-                    }
-                } else {
-                    colon_symbol
-                }
-            },
-            '=' => (1, SymbolToken::Equal),
-            ';' => (1, SymbolToken::Semicolon),
-            '(' => (1, SymbolToken::OpenParen),
-            ')' => (1, SymbolToken::ClosingParen),
-            '{' => (1, SymbolToken::OpenCurlyBracket),
-            '}' => (1, SymbolToken::ClosingCurlyBracket),
-            _ => return None,
-        };
-
-        Some(symbol)
     }
 }

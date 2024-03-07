@@ -1,21 +1,30 @@
 #[macro_export]
-macro_rules! id_token {
-    ($id:expr, $index:expr, $len:expr$(,)?) => {
-        Token::new(TokenKind::Id($id.to_string()), $index, $len)
+macro_rules! token {
+    ($kind:ident, $index:expr, $len:expr$(,)?) => {
+        {
+            use crate::lexer::token::{Token, TokenKind};
+            Token::new(TokenKind::$kind, $index, $len)
+        }
     };
 }
 
 #[macro_export]
-macro_rules! symbol_token {
-    ($symbol:ident, $index:expr, $len:expr$(,)?) => {
-        Token::new(TokenKind::Symbol(SymbolToken::$symbol), $index, $len)
+macro_rules! id_token {
+    ($id:expr, $index:expr, $len:expr$(,)?) => {
+        {
+            use crate::lexer::token::{Token, TokenKind};
+            Token::new(TokenKind::Id($id.to_string()), $index, $len)
+        }
     };
 }
 
 #[macro_export]
 macro_rules! keyword_token {
     ($keyword:ident, $index:expr, $len:expr$(,)?) => {
-        Token::new(TokenKind::Keyword(KeywordToken::$keyword), $index, $len)
+        {
+            use crate::lexer::token::{Keyword, Token, TokenKind};
+            Token::new(TokenKind::Keyword(Keyword::$keyword), $index, $len)
+        }
     };
 }
 
@@ -34,78 +43,52 @@ impl Token {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TokenKind {
-    Number(NumberToken),
+    // basic tokens
     Id(String),
-    Keyword(KeywordToken),
-    Symbol(SymbolToken),
+    Keyword(Keyword),
+    Literal(Literal),
+
+    // symbol tokens
+    ClosingParen,
+    ClosingCurlyBracket,
+    Colon,
+    Comma,
+    DoubleColon,
+    Equal,
+    OpenCurlyBracket,
+    OpenParen,
+    Semicolon,
+
+    // special tokens
+    Unknown,
 }
 
-impl TokenKind {
-    pub fn from_alphanumerics(s: &str) -> TokenKind {
-        if let Some(number) = NumberToken::from(s) {
-            return TokenKind::Number(number);
-        };
-
-        if let Some(keyword) = KeywordToken::from(s) {
-            return TokenKind::Keyword(keyword);
-        };
-
-        TokenKind::Id(s.to_string())
-    }
-}
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct NumberToken(pub String);
-
-impl NumberToken {
-    pub fn from(s: &str) -> Option<NumberToken> {
-        if let Some(first_char) = s.chars().next() {
-            match first_char {
-                '0'..='9' => Some(NumberToken(s.to_string())),
-                _ => None,
-            }
-        } else {
-            None
-        }
-    }
+pub enum Literal {
+    Int { value: String },
 }
 
-// todo: KeywordToken → TokenKeyword
-// todo: バリアント名を変える
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub enum KeywordToken {
-    Function,
+pub enum Keyword {
+    Fn,
     Let,
-    Public,
+    Pub,
     Struct,
     Usize,
 }
 
-impl KeywordToken {
-    pub fn from(s: &str) -> Option<KeywordToken> {
+impl Keyword {
+    pub fn from(s: &str) -> Option<Keyword> {
         let keyword = match s {
-            "fn" => KeywordToken::Function,
-            "let" => KeywordToken::Let,
-            "pub" => KeywordToken::Public,
-            "struct" => KeywordToken::Struct,
-            "usize" => KeywordToken::Usize,
+            "fn" => Keyword::Fn,
+            "let" => Keyword::Let,
+            "pub" => Keyword::Pub,
+            "struct" => Keyword::Struct,
+            "usize" => Keyword::Usize,
             _ => return None,
         };
 
         Some(keyword)
     }
-}
-
-// todo: SymbolToken → TokenSymbol
-#[derive(Clone, Copy, Debug, PartialEq)]
-pub enum SymbolToken {
-    Comma,
-    Colon,
-    DoubleColon,
-    Equal,
-    Semicolon,
-    OpenParen,
-    ClosingParen,
-    OpenCurlyBracket,
-    ClosingCurlyBracket,
 }

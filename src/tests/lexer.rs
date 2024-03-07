@@ -1,5 +1,6 @@
+use crate::{id_token, keyword_token, token};
 use crate::lexer::tokenize::Lexer;
-use crate::lexer::token::{SymbolToken, Token, TokenKind};
+use crate::lexer::token::{Literal, Token, TokenKind};
 
 #[test]
 fn skips_whitespaces() {
@@ -8,105 +9,99 @@ fn skips_whitespaces() {
     let (tokens, logs) = Lexer::new().tokenize_(input_chars);
 
     assert_eq!(tokens, Vec::new());
-    assert_eq!(input_chars.peek(), None);
+    assert!(input_chars.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
-fn tokenize_alphanumerics() {
-    let input = "id";
+fn tokenize_id() {
+    let input = "aA_";
     let input_chars = &mut input.char_indices().peekable();
     let (tokens, logs) = Lexer::new().tokenize_(input_chars);
 
-    assert_eq!(tokens, vec![Token::new(TokenKind::Id("id".to_string()), 0, 2)]);
-    assert_eq!(input_chars.peek(), None);
+    assert_eq!(tokens, vec![id_token!("aA_", 0, 3)]);
+    assert!(input_chars.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
-fn does_not_match_non_alphanumerics() {
-    let mut lexer = Lexer::new();
-    let input = ";";
+fn tokenize_id_followed_by_numeric() {
+    let input = "a0";
     let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
 
-    assert_eq!(lexer.tokenize_alphanumerics(input_chars), None);
-    assert_eq!(input_chars.peek(), Some(&(0, ';')));
-    assert_eq!(lexer.logs, Vec::new());
+    assert_eq!(tokens, vec![id_token!("a0", 0, 2)]);
+    assert!(input_chars.peek().is_none());
+    assert_eq!(logs, Vec::new());
 }
 
 #[test]
-fn does_not_match_alphanumerics_of_zero_len() {
-    let mut lexer = Lexer::new();
-    let input = "";
+fn tokenize_keyword() {
+    let input = "pub";
     let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
 
-    assert_eq!(lexer.tokenize_alphanumerics(input_chars), None);
-    assert_eq!(input_chars.peek(), None);
-    assert_eq!(lexer.logs, Vec::new());
+    assert_eq!(tokens, vec![keyword_token!(Pub, 0, 3)]);
+    assert!(input_chars.peek().is_none());
+    assert_eq!(logs, Vec::new());
 }
 
 #[test]
-fn tokenize_symbols() {
+fn tokenize_symbol() {
     let input = ";";
     let input_chars = &mut input.char_indices().peekable();
     let (tokens, logs) = Lexer::new().tokenize_(input_chars);
 
-    assert_eq!(tokens, vec![Token::new(TokenKind::Symbol(SymbolToken::Semicolon), 0, 1)]);
-    assert_eq!(input_chars.peek(), None);
+    assert_eq!(tokens, vec![token!(Semicolon, 0, 1)]);
+    assert!(input_chars.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
-fn matches_single_alphanumeric() {
-    let mut lexer = Lexer::new();
-    let input = "0";
-    let input_chars = &mut input.char_indices().peekable();
-
-    assert_eq!(lexer.tokenize_alphanumerics(input_chars), Some("0".to_string()));
-    assert_eq!(input_chars.peek(), None);
-    assert_eq!(lexer.logs, Vec::new());
-}
-
-#[test]
-fn matches_multiple_alphanumerics() {
-    let mut lexer = Lexer::new();
-    let input = "000";
-    let input_chars = &mut input.char_indices().peekable();
-
-    assert_eq!(lexer.tokenize_alphanumerics(input_chars), Some("000".to_string()));
-    assert_eq!(input_chars.peek(), None);
-    assert_eq!(lexer.logs, Vec::new());
-}
-
-#[test]
-fn matches_all_kinds_of_alphanumerics() {
-    let mut lexer = Lexer::new();
-    let input = "0aA_";
-    let input_chars = &mut input.char_indices().peekable();
-
-    assert_eq!(lexer.tokenize_alphanumerics(input_chars), Some("0aA_".to_string()));
-    assert_eq!(input_chars.peek(), None);
-    assert_eq!(lexer.logs, Vec::new());
-}
-
-#[test]
-fn matches_any_symbol() {
-    let mut lexer = Lexer::new();
-    let input = ";";
-    let input_chars = &mut input.char_indices().peekable();
-
-    assert_eq!(lexer.tokenize_symbol(input_chars), Some((1, SymbolToken::Semicolon)));
-    assert_eq!(input_chars.peek(), None);
-    assert_eq!(lexer.logs, Vec::new());
-}
-
-#[test]
-fn matches_multiple_character_symbol() {
-    let mut lexer = Lexer::new();
+fn tokenize_multiple_character_symbol() {
     let input = "::";
     let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
 
-    assert_eq!(lexer.tokenize_symbol(input_chars), Some((2, SymbolToken::DoubleColon)));
-    assert_eq!(input_chars.peek(), None);
-    assert_eq!(lexer.logs, Vec::new());
+    assert_eq!(tokens, vec![token!(DoubleColon, 0, 2)]);
+    assert!(input_chars.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn matches_int_with_single_digit() {
+    let input = "0";
+    let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+
+    assert_eq!(tokens, vec![
+        Token::new(
+            TokenKind::Literal(
+                Literal::Int { value: "0".to_string() },
+            ),
+            0,
+            1,
+        ),
+    ]);
+    assert!(input_chars.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn matches_int_multiple_digit() {
+    let input = "000";
+    let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+
+    assert_eq!(tokens, vec![
+        Token::new(
+            TokenKind::Literal(
+                Literal::Int { value: "000".to_string() },
+            ),
+            0,
+            3,
+        ),
+    ]);
+    assert!(input_chars.peek().is_none());
+    assert_eq!(logs, Vec::new());
 }
