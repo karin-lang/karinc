@@ -22,15 +22,23 @@ impl Lexer {
 
     pub(crate) fn tokenize_(self, input: &mut Peekable<CharIndices>) -> (Vec<Token>, Vec<LexerLog>) {
         let mut tokens = Vec::new();
+        let mut line: usize = 0;
+        let mut start_index_of_line: usize = 0;
 
         loop {
             let (index, next_char) = match input.next() {
                 Some(v) => v,
                 None => break,
             };
+            let column = index - start_index_of_line;
 
             let (len, kind): (usize, TokenKind) = match next_char {
-                ' ' | '\t' | '\n' => continue,
+                ' ' | '\t' => continue,
+                '\n' => {
+                    line += 1;
+                    start_index_of_line = index + 1;
+                    continue;
+                },
                 'a'..='z' | 'A'..='Z' | '_' => {
                     let mut alphabetic = next_char.to_string();
 
@@ -94,7 +102,8 @@ impl Lexer {
                 },
             };
 
-            tokens.push(Token::new(kind, index, len));
+            let span = Span::from_usize(line, column, len);
+            tokens.push(Token::new(kind, span));
         }
 
         (tokens, self.logs)
