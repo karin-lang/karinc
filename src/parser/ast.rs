@@ -33,6 +33,7 @@ pub struct FnDecl {
 pub struct FormalArg {
     pub id: Id,
     pub r#type: Type,
+    pub mutable: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]

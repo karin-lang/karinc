@@ -113,6 +113,7 @@ pub enum Literal {
 pub enum Keyword {
     Fn,
     Let,
+    Mut,
     Pub,
     Struct,
     Usize,
@@ -123,6 +124,7 @@ impl Keyword {
         let keyword = match s {
             "fn" => Keyword::Fn,
             "let" => Keyword::Let,
+            "mut" => Keyword::Mut,
             "pub" => Keyword::Pub,
             "struct" => Keyword::Struct,
             "usize" => Keyword::Usize,

@@ -11,6 +11,7 @@ pub enum ParserLog {
     ExpectedExpr { span: Span },
     ExpectedId { span: Span },
     ExpectedItem { span: Span },
+    ExpectedFormalArg { span: Span },
     ExpectedKeyword { span: Span, keyword: Keyword },
     ExpectedToken { span: Span, kind: TokenKind },
     ExpectedType { span: Span },
@@ -51,15 +52,14 @@ impl<'a> Parser<'a> {
     }
 
     pub fn next_line(&mut self) {
-        // fix: 次のトークンを次の改行に修正する（トークン位置の情報を基準にする）
-        self.tokens.next();
+        let line = self.get_next_span().line;
+        self.consume_until_before(|next| next.span.line > line);
     }
 
-    pub fn consume(&mut self, kind: TokenKind) -> bool {
+    pub fn consume(&mut self, kind: TokenKind) -> Option<&Token> {
         self
             .tokens
             .next_if(|next_token| next_token.kind == kind)
-            .is_some()
     }
 
     pub fn consume_id(&mut self) -> Option<Id> {
@@ -77,11 +77,10 @@ impl<'a> Parser<'a> {
         Some(id)
     }
 
-    pub fn consume_keyword(&mut self, keyword: Keyword) -> bool {
+    pub fn consume_keyword(&mut self, keyword: Keyword) -> Option<&Token> {
         self
             .tokens
             .next_if(|next_token| next_token.kind == TokenKind::Keyword(keyword))
-            .is_some()
     }
 
     pub fn consume_until(&mut self, f: impl Fn(&Token) -> bool) {
@@ -89,6 +88,16 @@ impl<'a> Parser<'a> {
             if f(next) {
                 break;
             }
+        }
+    }
+
+    pub fn consume_until_before(&mut self, f: impl Fn(&Token) -> bool) {
+        while let Some(next) = self.tokens.peek() {
+            if f(next) {
+                break;
+            }
+
+            self.tokens.next();
         }
     }
 
@@ -187,7 +196,7 @@ impl<'a> Parser<'a> {
     pub fn parse_single_item(&mut self) -> ParserResult<Item> {
         let span = self.get_next_span();
 
-        let kind = if self.consume_keyword(Keyword::Fn) {
+        let kind = if self.consume_keyword(Keyword::Fn).is_some() {
             let id = self.expect_id()?;
             let args = self.parse_formal_args()?;
             let ret_type = if self.is_next(TokenKind::OpenCurlyBracket) {
@@ -199,7 +208,6 @@ impl<'a> Parser<'a> {
             let decl = FnDecl { id, args, ret_type, body };
             ItemKind::FnDecl(decl)
         } else {
-            // todo: もっといいトークンの進め先を考える
             self.next_line();
             return Err(ParserLog::ExpectedItem { span });
         };
@@ -218,21 +226,27 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            if self.consume(TokenKind::ClosingParen) {
+            if self.consume(TokenKind::ClosingParen).is_some() {
                 break;
+            }
+
+            if let Some(comma) = self.consume(TokenKind::Comma) {
+                let log = ParserLog::ExpectedFormalArg { span: comma.span.clone() };
+                self.record_log(log);
             }
 
             if !allow_next_arg {
                 let log = ParserLog::ExpectedExpr { span: self.get_next_span() };
                 self.record_log(log);
-                self.consume_until(|next| next.kind == TokenKind::ClosingParen || next.kind == TokenKind::OpenCurlyBracket);
+                self.consume_until(|next| next.kind == TokenKind::ClosingParen);
                 break;
             }
 
             let id = self.expect_id()?;
+            let mutable = self.consume_keyword(Keyword::Mut).is_some();
             let r#type = self.parse_type()?;
-            allow_next_arg = self.consume(TokenKind::Comma);
-            let new_arg = FormalArg { id, r#type };
+            allow_next_arg = self.consume(TokenKind::Comma).is_some();
+            let new_arg = FormalArg { id, r#type, mutable };
             args.push(new_arg);
         }
 
@@ -248,7 +262,7 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            if self.consume(TokenKind::ClosingCurlyBracket) {
+            if self.consume(TokenKind::ClosingCurlyBracket).is_some() {
                 break;
             }
 
@@ -278,7 +292,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_expr(&mut self) -> ParserResult<Expr> {
-        if self.consume_keyword(Keyword::Let) {
+        if self.consume_keyword(Keyword::Let).is_some() {
             self.parse_var_decl_or_init_expr()
         } else {
             Err(ParserLog::ExpectedExpr { span: self.get_next_span() })
@@ -296,7 +310,7 @@ impl<'a> Parser<'a> {
             let decl = VarDecl { id, r#type: None };
             let kind = ExprKind::VarDecl(decl);
             Expr { kind: Box::new(kind), span }
-        } else if self.consume(TokenKind::Equal) {
+        } else if self.consume(TokenKind::Equal).is_some() {
             // e.g.) let i = 0;
             let expr = self.parse_expr()?;
             let init = VarInit { id, r#type: None, expr };
@@ -309,7 +323,7 @@ impl<'a> Parser<'a> {
                 let decl = VarDecl { id, r#type };
                 let kind = ExprKind::VarDecl(decl);
                 Expr { kind: Box::new(kind), span }
-            } else if self.consume(TokenKind::Equal) {
+            } else if self.consume(TokenKind::Equal).is_some() {
                 // e.g.) let i usize = 0;
                 let expr = self.parse_expr()?;
                 let init = VarInit { id, r#type, expr };
