@@ -1,4 +1,5 @@
 use crate::{id_token, keyword_token, token};
+use crate::lexer::token::Span;
 use crate::parser::{ast::*, Parser, ParserLog};
 
 // todo: テストを追加
@@ -133,7 +134,7 @@ fn records_item_parsing_log() {
     );
     assert_eq!(
         *parser.get_logs(),
-        vec![ParserLog::ExpectedItem],
+        vec![ParserLog::ExpectedItem { span: Span::new(0, 0, 1) }],
     );
     assert!(parser.peek().is_none());
 }

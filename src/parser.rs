@@ -8,17 +8,20 @@ use self::ast::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParserLog {
-    ExpectedToken,
-    ExpectedItem,
-    ExpectedExpr,
-    ExpectedType,
-    UnexpectedEof,
+    ExpectedExpr { span: Span },
+    ExpectedId { span: Span },
+    ExpectedItem { span: Span },
+    ExpectedKeyword { span: Span, keyword: Keyword },
+    ExpectedToken { span: Span, kind: TokenKind },
+    ExpectedType { span: Span },
+    UnexpectedEof { span: Span },
 }
 
 pub type ParserResult<T> = Result<T, ParserLog>;
 
 pub struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>,
+    last_token_span: Span,
     logs: Vec<ParserLog>,
 }
 
@@ -26,8 +29,13 @@ impl<'a> Parser<'a> {
     pub fn new(tokens: &'a Vec<Token>) -> Parser<'a> {
         Parser {
             tokens: tokens.iter().peekable(),
+            last_token_span: tokens.last().map(|token| token.span.clone()).unwrap_or_default(),
             logs: Vec::new(),
         }
+    }
+
+    pub fn get_next_span(&mut self) -> Span {
+        self.tokens.peek().map(|next| next.span.clone()).unwrap_or(self.last_token_span.clone())
     }
 
     pub fn is_eof(&mut self) -> bool {
@@ -72,31 +80,59 @@ impl<'a> Parser<'a> {
             .is_some()
     }
 
+    pub fn consume_until(&mut self, f: impl Fn(&Token) -> bool) {
+        while let Some(next) = self.tokens.next() {
+            if f(next) {
+                break;
+            }
+        }
+    }
+
     pub fn peek(&mut self) -> Option<&&Token> {
         self.tokens.peek()
     }
 
     pub fn expect(&mut self, kind: TokenKind) -> ParserResult<()> {
-        if self.consume(kind) {
-            Ok(())
+        if let Some(next) = self.tokens.peek() {
+            if next.kind == kind {
+                self.tokens.next();
+                Ok(())
+            } else {
+                Err(ParserLog::ExpectedToken { span: next.span.clone(), kind })
+            }
         } else {
-            Err(ParserLog::ExpectedToken)
+            Err(ParserLog::ExpectedToken { span: self.last_token_span.clone(), kind })
         }
     }
 
     pub fn expect_any(&mut self) -> ParserResult<&Token> {
-        self.tokens.next().ok_or(ParserLog::UnexpectedEof)
+        self.tokens.next().ok_or(ParserLog::UnexpectedEof { span: self.last_token_span.clone() })
     }
 
     pub fn expect_id(&mut self) -> ParserResult<Id> {
-        self.consume_id().ok_or(ParserLog::ExpectedToken)
+        if let Some(token) = self.tokens.peek() {
+            if let TokenKind::Id(id) = &token.kind {
+                self.tokens.next();
+                Ok(id.into())
+            } else {
+                Err(ParserLog::ExpectedId { span: token.span.clone() })
+            }
+        } else {
+            Err(ParserLog::ExpectedId { span: self.last_token_span.clone() })
+        }
     }
 
     pub fn expect_keyword(&mut self, keyword: Keyword) -> ParserResult<()> {
-        if self.consume_keyword(keyword) {
-            Ok(())
+        if let Some(token) = self.tokens.peek() {
+            match &token.kind {
+                TokenKind::Keyword(next_keyword) if *next_keyword == keyword => {
+                    self.tokens.next();
+                    Ok(())
+                },
+                _ => Err(ParserLog::ExpectedKeyword { span: token.span.clone(), keyword }),
+            }
         } else {
-            Err(ParserLog::ExpectedToken)
+            Err(ParserLog::ExpectedKeyword { span: self.last_token_span.clone(), keyword })
         }
     }
 
@@ -104,11 +140,15 @@ impl<'a> Parser<'a> {
         &self.logs
     }
 
-    pub fn record_log<T>(&mut self, result: ParserResult<T>) -> Option<T> {
+    pub fn record_log(&mut self, log: ParserLog) {
+        self.logs.push(log);
+    }
+
+    pub fn record_result_log<T>(&mut self, result: ParserResult<T>) -> Option<T> {
         match result {
             Ok(v) => Some(v),
             Err(log) => {
-                self.logs.push(log);
+                self.record_log(log);
                 None
             }
         }
@@ -130,7 +170,7 @@ impl<'a> Parser<'a> {
 
             let item_result = self.parse_single_item();
 
-            if let Some(item) = self.record_log(item_result) {
+            if let Some(item) = self.record_result_log(item_result) {
                 items.push(item);
             }
         }
@@ -139,6 +179,8 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_single_item(&mut self) -> ParserResult<Item> {
+        let begin_span = self.get_next_span();
+
         let kind = if self.consume_keyword(Keyword::Fn) {
             let id = self.expect_id()?;
             let args = self.parse_formal_args()?;
@@ -153,7 +195,7 @@ impl<'a> Parser<'a> {
         } else {
             // todo: もっといいトークンの進め先を考える
             self.next_line();
-            return Err(ParserLog::ExpectedItem);
+            return Err(ParserLog::ExpectedItem { span: begin_span });
         };
 
         let item = Item { kind: Box::new(kind) };
@@ -175,7 +217,9 @@ impl<'a> Parser<'a> {
             }
 
             if !allow_next_arg {
-                // fix: エラー付きで値を返せるようにする
+                let log = ParserLog::ExpectedExpr { span: self.get_next_span() };
+                self.record_log(log);
+                self.consume_until(|next| next.kind == TokenKind::ClosingParen || next.kind == TokenKind::OpenCurlyBracket);
                 break;
             }
 
@@ -216,14 +260,14 @@ impl<'a> Parser<'a> {
         if let TokenKind::Keyword(keyword) = &first_token.kind {
             let prim_type = match keyword {
                 Keyword::Usize => PrimType::Usize,
-                _ => return Err(ParserLog::ExpectedType),
+                _ => return Err(ParserLog::ExpectedType { span: first_token.span.clone() }),
             };
 
             let kind = TypeKind::Prim(prim_type);
             let r#type = Type { kind: Box::new(kind) };
             Ok(r#type)
         } else {
-            Err(ParserLog::ExpectedType)
+            Err(ParserLog::ExpectedType { span: first_token.span.clone() })
         }
     }
 
@@ -231,7 +275,7 @@ impl<'a> Parser<'a> {
         if self.consume_keyword(Keyword::Let) {
             self.parse_var_decl_or_init_expr()
         } else {
-            Err(ParserLog::ExpectedExpr)
+            Err(ParserLog::ExpectedExpr { span: self.get_next_span() })
         }
     }
 
@@ -265,7 +309,7 @@ impl<'a> Parser<'a> {
                 let kind = ExprKind::VarInit(init);
                 Expr { kind: Box::new(kind) }
             } else {
-                return Err(ParserLog::ExpectedToken);
+                return Err(ParserLog::ExpectedToken { span: self.get_next_span(), kind: TokenKind::Semicolon });
             }
         };
 

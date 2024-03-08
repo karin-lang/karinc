@@ -63,6 +63,12 @@ impl fmt::Debug for Span {
     }
 }
 
+impl Default for Span {
+    fn default() -> Self {
+        Self::new(0, 0, 0)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Token {
     pub kind: TokenKind,
