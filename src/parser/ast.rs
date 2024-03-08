@@ -1,27 +1,14 @@
+use super::Span;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ast {
     pub items: Vec<Item>,
 }
 
-#[derive(Clone, Eq, Debug, Hash, PartialEq)]
-pub struct Id(String);
-
-impl From<&str> for Id {
-    fn from(value: &str) -> Self {
-        Self(value.to_string())
-    }
-}
-
-impl From<String> for Id {
-    fn from(value: String) -> Self {
-        Self(value)
-    }
-}
-
-impl From<&String> for Id {
-    fn from(value: &String) -> Self {
-        Self(value.clone())
-    }
+#[derive(Clone, Debug, PartialEq)]
+pub struct Id {
+    pub id: String,
+    pub span: Span,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -51,6 +38,7 @@ pub struct FormalArg {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Expr {
     pub kind: Box<ExprKind>,
+    pub span: Span,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -62,6 +50,7 @@ pub enum ExprKind {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Type {
     pub kind: Box<TypeKind>,
+    pub span: Span,
 }
 
 #[derive(Clone, Debug, PartialEq)]

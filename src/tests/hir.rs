@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use maplit::hashmap;
 
+use crate::lexer::token::Span;
 use crate::parser::ast;
 use crate::hir::*;
 use crate::hir::lowering::HirLowering;
@@ -27,7 +28,10 @@ fn lowers_items_in_ast() {
                 kind: Box::new(
                     ast::ItemKind::FnDecl(
                         ast::FnDecl {
-                            id: "f".into(),
+                            id: ast::Id {
+                                id: "f".to_string(),
+                                span: Span::new(0, 1, 1),
+                            },
                             args: Vec::new(),
                             ret_type: None,
                             body: Vec::new(),

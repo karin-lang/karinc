@@ -23,7 +23,7 @@ impl LocalScopeHierarchy {
         self.scopes.last_mut().expect("could not get current scope")
     }
 
-    pub fn enter_named_scope(&mut self, id: Id, entity_id: LocalEntityId) {
+    pub fn enter_named_scope(&mut self, id: ast::Id, entity_id: LocalEntityId) {
         let mut scope = LocalScope::new(Some(entity_id.clone()));
         scope.declare_id(id, entity_id);
         self.scopes.push(scope);
@@ -45,7 +45,7 @@ impl LocalScopeHierarchy {
         id
     }
 
-    pub fn declare_id(&mut self, id: Id, entity: LocalEntity) -> LocalEntityId {
+    pub fn declare_id(&mut self, id: ast::Id, entity: LocalEntity) -> LocalEntityId {
         let entity_id = self.generate_entity_id();
         self.get_current_scope().declare_id(id, entity_id.clone());
         self.entities.insert(entity_id.clone(), entity);
@@ -56,7 +56,7 @@ impl LocalScopeHierarchy {
 #[derive(Clone, Debug, PartialEq)]
 pub struct LocalScope {
     id: Option<LocalEntityId>,
-    declared_ids: Vec<(Id, LocalEntityId)>,
+    declared_ids: Vec<(ast::Id, LocalEntityId)>,
 }
 
 impl LocalScope {
@@ -67,7 +67,7 @@ impl LocalScope {
         }
     }
 
-    pub fn declare_id(&mut self, id: Id, entity_id: LocalEntityId) {
+    pub fn declare_id(&mut self, id: ast::Id, entity_id: LocalEntityId) {
         self.declared_ids.push((id, entity_id));
     }
 }
@@ -109,7 +109,7 @@ impl HirLowering {
     }
 
     // note: ボディスコープ内から呼び出してください。
-    pub fn declare_id(&mut self, id: Id, entity: LocalEntity) -> LocalEntityId {
+    pub fn declare_id(&mut self, id: ast::Id, entity: LocalEntity) -> LocalEntityId {
         let hierarchy = self.get_current_local_hierarchy();
         hierarchy.declare_id(id, entity)
     }
@@ -138,7 +138,7 @@ impl HirLowering {
     pub fn lower_fn_decl(&mut self, decl: &ast::FnDecl) -> (GlobalEntityId, FnDecl) {
         self.enter_body_scope();
 
-        let entity_id = self.module_path.clone().add_segment(decl.id.clone());
+        let entity_id = self.module_path.clone().add_segment(decl.id.id.clone());
         let args = decl.args.iter().map(|v| self.lower_formal_arg(v)).collect();
         let body = decl.body.iter().map(|v| self.lower_expr(v)).collect();
 

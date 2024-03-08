@@ -2,22 +2,18 @@ pub mod lowering;
 
 use std::collections::HashMap;
 
-use crate::parser::ast;
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hir {
     pub global_entities: HashMap<GlobalEntityId, GlobalEntity>,
 }
 
-pub type Id = ast::Id;
-
 #[derive(Clone, Eq, Debug, Hash, PartialEq)]
 pub struct GlobalEntityId {
-    segments: Vec<Id>,
+    pub segments: Vec<String>,
 }
 
 impl GlobalEntityId {
-    pub fn add_segment(mut self, segment: Id) -> GlobalEntityId {
+    pub fn add_segment(mut self, segment: String) -> GlobalEntityId {
         self.segments.push(segment);
         self
     }
@@ -25,25 +21,19 @@ impl GlobalEntityId {
 
 impl From<Vec<&str>> for GlobalEntityId {
     fn from(value: Vec<&str>) -> Self {
-        Self { segments: value.iter().map(|v| v.to_string().into()).collect() }
+        Self { segments: value.iter().map(|v| v.to_string()).collect() }
     }
 }
 
 impl From<Vec<String>> for GlobalEntityId {
     fn from(value: Vec<String>) -> Self {
-        Self { segments: value.iter().map(|v| v.into()).collect() }
+        Self { segments: value }
     }
 }
 
 impl From<Vec<&String>> for GlobalEntityId {
     fn from(value: Vec<&String>) -> Self {
-        Self { segments: value.iter().map(|v| (*v).clone().into()).collect() }
-    }
-}
-
-impl From<Vec<Id>> for GlobalEntityId {
-    fn from(value: Vec<Id>) -> Self {
-        Self { segments: value }
+        Self { segments: value.iter().map(|v| (*v).clone()).collect() }
     }
 }
 

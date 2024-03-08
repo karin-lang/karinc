@@ -63,14 +63,18 @@ impl<'a> Parser<'a> {
     }
 
     pub fn consume_id(&mut self) -> Option<Id> {
-        if let Some(token) = self.tokens.peek() {
+        let id = if let Some(token) = self.tokens.peek() {
             if let TokenKind::Id(id) = &token.kind {
-                self.tokens.next();
-                return Some(id.into());
+                Id { id: id.clone(), span: token.span.clone() }
+            } else {
+                return None;
             }
-        }
+        } else {
+            return None;
+        };
 
-        None
+        self.tokens.next();
+        Some(id)
     }
 
     pub fn consume_keyword(&mut self, keyword: Keyword) -> bool {
@@ -110,16 +114,18 @@ impl<'a> Parser<'a> {
     }
 
     pub fn expect_id(&mut self) -> ParserResult<Id> {
-        if let Some(token) = self.tokens.peek() {
+        let id = if let Some(token) = self.tokens.peek() {
             if let TokenKind::Id(id) = &token.kind {
-                self.tokens.next();
-                Ok(id.into())
+                Id { id: id.clone(), span: token.span.clone() }
             } else {
-                Err(ParserLog::ExpectedId { span: token.span.clone() })
+                return Err(ParserLog::ExpectedId { span: token.span.clone() })
             }
         } else {
-            Err(ParserLog::ExpectedId { span: self.last_token_span.clone() })
-        }
+            return Err(ParserLog::ExpectedId { span: self.last_token_span.clone() })
+        };
+
+        self.tokens.next();
+        Ok(id)
     }
 
     pub fn expect_keyword(&mut self, keyword: Keyword) -> ParserResult<()> {
@@ -179,7 +185,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_single_item(&mut self) -> ParserResult<Item> {
-        let begin_span = self.get_next_span();
+        let span = self.get_next_span();
 
         let kind = if self.consume_keyword(Keyword::Fn) {
             let id = self.expect_id()?;
@@ -195,7 +201,7 @@ impl<'a> Parser<'a> {
         } else {
             // todo: もっといいトークンの進め先を考える
             self.next_line();
-            return Err(ParserLog::ExpectedItem { span: begin_span });
+            return Err(ParserLog::ExpectedItem { span });
         };
 
         let item = Item { kind: Box::new(kind) };
@@ -264,7 +270,7 @@ impl<'a> Parser<'a> {
             };
 
             let kind = TypeKind::Prim(prim_type);
-            let r#type = Type { kind: Box::new(kind) };
+            let r#type = Type { kind: Box::new(kind), span: first_token.span.clone() };
             Ok(r#type)
         } else {
             Err(ParserLog::ExpectedType { span: first_token.span.clone() })
@@ -281,6 +287,7 @@ impl<'a> Parser<'a> {
 
     pub fn parse_var_decl_or_init_expr(&mut self) -> ParserResult<Expr> {
         self.expect_keyword(Keyword::Let)?;
+        let span = self.get_next_span();
         let id = self.expect_id()?;
 
         // todo: let 式のセミコロンの扱いを検討する（暫定的にセミコロン必須で実装）
@@ -288,26 +295,26 @@ impl<'a> Parser<'a> {
             // e.g.) let i;
             let decl = VarDecl { id, r#type: None };
             let kind = ExprKind::VarDecl(decl);
-            Expr { kind: Box::new(kind) }
+            Expr { kind: Box::new(kind), span }
         } else if self.consume(TokenKind::Equal) {
             // e.g.) let i = 0;
             let expr = self.parse_expr()?;
             let init = VarInit { id, r#type: None, expr };
             let kind = ExprKind::VarInit(init);
-            Expr { kind: Box::new(kind) }
+            Expr { kind: Box::new(kind), span }
         } else {
             let r#type = Some(self.parse_type()?);
             if self.is_next(TokenKind::Semicolon) {
                 // e.g.) let i usize;
                 let decl = VarDecl { id, r#type };
                 let kind = ExprKind::VarDecl(decl);
-                Expr { kind: Box::new(kind) }
+                Expr { kind: Box::new(kind), span }
             } else if self.consume(TokenKind::Equal) {
                 // e.g.) let i usize = 0;
                 let expr = self.parse_expr()?;
                 let init = VarInit { id, r#type, expr };
                 let kind = ExprKind::VarInit(init);
-                Expr { kind: Box::new(kind) }
+                Expr { kind: Box::new(kind), span }
             } else {
                 return Err(ParserLog::ExpectedToken { span: self.get_next_span(), kind: TokenKind::Semicolon });
             }

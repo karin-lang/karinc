@@ -25,7 +25,10 @@ fn outputs_parser_result() {
                     kind: Box::new(
                         ItemKind::FnDecl(
                             FnDecl {
-                                id: "f".into(),
+                                id: Id {
+                                    id: "f".to_string(),
+                                    span: Span::new(0, 1, 1),
+                                },
                                 args: Vec::new(),
                                 ret_type: None,
                                 body: Vec::new(),
@@ -58,7 +61,10 @@ fn parses_single_item() {
                 kind: Box::new(
                     ItemKind::FnDecl(
                         FnDecl {
-                            id: "f".into(),
+                            id: Id {
+                                id: "f".to_string(),
+                                span: Span::new(0, 1, 1),
+                            },
                             args: Vec::new(),
                             ret_type: None,
                             body: Vec::new(),
@@ -97,7 +103,10 @@ fn parses_multiple_items() {
                 kind: Box::new(
                     ItemKind::FnDecl(
                         FnDecl {
-                            id: "f1".into(),
+                            id: Id {
+                                id: "f1".to_string(),
+                                span: Span::new(0, 1, 1),
+                            },
                             args: Vec::new(),
                             ret_type: None,
                             body: Vec::new(),
@@ -109,7 +118,10 @@ fn parses_multiple_items() {
                 kind: Box::new(
                     ItemKind::FnDecl(
                         FnDecl {
-                            id: "f2".into(),
+                            id: Id {
+                                id: "f2".to_string(),
+                                span: Span::new(0, 7, 1),
+                            },
                             args: Vec::new(),
                             ret_type: None,
                             body: Vec::new(),
@@ -160,7 +172,10 @@ fn parses_fn_decl() {
                 kind: Box::new(
                     ItemKind::FnDecl(
                         FnDecl {
-                            id: "f".into(),
+                            id: Id {
+                                id: "f".to_string(),
+                                span: Span::new(0, 1, 1),
+                            },
                             args: Vec::new(),
                             ret_type: None,
                             body: Vec::new(),
@@ -194,11 +209,15 @@ fn parses_fn_decl_with_ret_type() {
                 kind: Box::new(
                     ItemKind::FnDecl(
                         FnDecl {
-                            id: "f".into(),
+                            id: Id {
+                                id: "f".to_string(),
+                                span: Span::new(0, 1, 1),
+                            },
                             args: Vec::new(),
                             ret_type: Some(
                                 Type {
                                     kind: Box::new(TypeKind::Prim(PrimType::Usize)),
+                                    span: Span::new(0, 4, 1),
                                 },
                             ),
                             body: Vec::new(),
