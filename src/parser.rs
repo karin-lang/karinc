@@ -277,17 +277,23 @@ impl<'a> Parser<'a> {
     pub fn parse_type(&mut self) -> ParserResult<Type> {
         let first_token = self.expect_any()?;
 
-        if let TokenKind::Keyword(keyword) = &first_token.kind {
-            let prim_type = match keyword {
-                Keyword::Usize => PrimType::Usize,
-                _ => return Err(ParserLog::ExpectedType { span: first_token.span.clone() }),
-            };
-
-            let kind = TypeKind::Prim(prim_type);
-            let r#type = Type { kind: Box::new(kind), span: first_token.span.clone() };
-            Ok(r#type)
-        } else {
-            Err(ParserLog::ExpectedType { span: first_token.span.clone() })
+        match &first_token.kind {
+            TokenKind::Id(id) => {
+                let id = Id { id: id.clone(), span: first_token.span.clone() };
+                let kind = TypeKind::Id(id);
+                let r#type = Type { kind: Box::new(kind), span: first_token.span.clone() };
+                Ok(r#type)
+            },
+            TokenKind::Keyword(keyword) => {
+                let prim_type = match keyword {
+                    Keyword::Usize => PrimType::Usize,
+                    _ => return Err(ParserLog::ExpectedType { span: first_token.span.clone() }),
+                };
+                let kind = TypeKind::Prim(prim_type);
+                let r#type = Type { kind: Box::new(kind), span: first_token.span.clone() };
+                Ok(r#type)
+            },
+            _ => Err(ParserLog::ExpectedType { span: first_token.span.clone() }),
         }
     }
 

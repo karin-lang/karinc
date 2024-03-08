@@ -337,6 +337,72 @@ fn allows_comma_after_formal_args() {
 }
 
 #[test]
+fn parses_id_type() {
+    let tokens = vec![id_token!("t", 0, 0, 1)];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_type(),
+        Ok(
+            Type {
+                kind: Box::new(
+                    TypeKind::Id(
+                        Id { id: "t".to_string(), span: Span::new(0, 0, 1) },
+                    ),
+                ),
+                span: Span::new(0, 0, 1),
+            },
+        ),
+    );
+    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_prim_type() {
+    let tokens = vec![keyword_token!(Usize, 0, 0, 1)];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_type(),
+        Ok(
+            Type {
+                kind: Box::new(TypeKind::Prim(PrimType::Usize)),
+                span: Span::new(0, 0, 1),
+            },
+        ),
+    );
+    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn returns_expected_type_error_for_unexpected_token() {
+    let tokens = vec![token!(Semicolon, 0, 0, 1)];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_type(),
+        Err(ParserLog::ExpectedType { span: Span::new(0, 0, 1) })
+    );
+    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn returns_expected_type_error_for_unexpected_keyword() {
+    let tokens = vec![keyword_token!(Pub, 0, 0, 1)];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_type(),
+        Err(ParserLog::ExpectedType { span: Span::new(0, 0, 1) })
+    );
+    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
 fn parses_fn_decl() {
     let tokens = vec![
         keyword_token!(Fn, 0, 0, 1),

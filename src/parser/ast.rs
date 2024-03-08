@@ -56,6 +56,7 @@ pub struct Type {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeKind {
+    Id(Id),
     Prim(PrimType),
 }
 
