@@ -64,6 +64,10 @@ impl<'a> Parser<'a> {
         }
     }
 
+    pub fn is_next_keyword(&mut self, keyword: Keyword) -> Option<&&Token> {
+        self.is_next_eq(TokenKind::Keyword(keyword))
+    }
+
     pub fn next_line(&mut self) {
         let line = self.get_next_span().line;
         self.consume_until_before(|next| next.span.line > line);
@@ -323,17 +327,17 @@ impl<'a> Parser<'a> {
                 span,
             };
             Ok(expr)
-        } else if self.consume_keyword(Keyword::Let).is_some() {
-            self.parse_var_decl_or_init_expr()
+        } else if self.is_next_keyword(Keyword::Let).is_some() {
+            self.parse_var_decl_or_init()
         } else {
             Err(ParserLog::ExpectedExpr { span: self.get_next_span() })
         }
     }
 
-    pub fn parse_var_decl_or_init_expr(&mut self) -> ParserResult<Expr> {
+    pub fn parse_var_decl_or_init(&mut self) -> ParserResult<Expr> {
         self.expect_keyword(Keyword::Let)?;
-        let span = self.get_next_span();
-        let (_, id) = self.expect_id()?;
+        let (id_token, id) = self.expect_id()?;
+        let span = id_token.span.clone();
 
         // todo: let 式のセミコロンの扱いを検討する（暫定的にセミコロン必須で実装）
         let expr = if self.is_next_eq(TokenKind::Semicolon).is_some() {

@@ -550,3 +550,198 @@ fn expectes_type_for_unexpected_keyword() {
     assert_eq!(*parser.get_logs(), Vec::new());
     assert!(parser.peek().is_none());
 }
+
+#[test]
+fn parses_id_expr() {
+    let tokens = vec![id_token!("id", 0, 0, 1)];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_expr(),
+        Ok(
+            Expr {
+                kind: Box::new(ExprKind::Id(Id { id: "id".to_string(), span: Span::new(0, 0, 1) })),
+                span: Span::new(0, 0, 1),
+            },
+        ),
+    );
+    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_var_decl_or_init_expr() {
+    let tokens = vec![
+        keyword_token!(Let, 0, 0, 1),
+        id_token!("i", 0, 1, 1),
+        token!(Semicolon, 0, 0, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_expr(),
+        Ok(
+            Expr {
+                kind: Box::new(
+                    ExprKind::VarDecl(
+                        VarDecl {
+                            id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
+                            r#type: None,
+                        },
+                    ),
+                ),
+                span: Span::new(0, 1, 1),
+            },
+        ),
+    );
+    assert_eq!(*parser.get_logs(), Vec::new());
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 0, 1)));
+}
+
+#[test]
+fn parses_var_decl() {
+    let tokens = vec![
+        keyword_token!(Let, 0, 0, 1),
+        id_token!("i", 0, 1, 1),
+        token!(Semicolon, 0, 2, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_var_decl_or_init(),
+        Ok(
+            Expr {
+                kind: Box::new(
+                    ExprKind::VarDecl(
+                        VarDecl {
+                            id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
+                            r#type: None,
+                        },
+                    ),
+                ),
+                span: Span::new(0, 1, 1),
+            },
+        ),
+    );
+    assert_eq!(*parser.get_logs(), Vec::new());
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 2, 1)));
+}
+
+#[test]
+fn parses_var_decl_with_type_annot() {
+    let tokens = vec![
+        keyword_token!(Let, 0, 0, 1),
+        id_token!("i", 0, 1, 1),
+        keyword_token!(Usize, 0, 2, 1),
+        token!(Semicolon, 0, 3, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_var_decl_or_init(),
+        Ok(
+            Expr {
+                kind: Box::new(
+                    ExprKind::VarDecl(
+                        VarDecl {
+                            id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
+                            r#type: Some(
+                                Type {
+                                    kind: Box::new(TypeKind::Prim(PrimType::Usize)),
+                                    span: Span::new(0, 2, 1),
+                                },
+                            ),
+                        },
+                    ),
+                ),
+                span: Span::new(0, 1, 1),
+            },
+        ),
+    );
+    assert_eq!(*parser.get_logs(), Vec::new());
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 3, 1)));
+}
+
+#[test]
+fn parses_var_init() {
+    let tokens = vec![
+        keyword_token!(Let, 0, 0, 1),
+        id_token!("i", 0, 1, 1),
+        token!(Equal, 0, 2, 1),
+        id_token!("init", 0, 3, 1),
+        token!(Semicolon, 0, 4, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_var_decl_or_init(),
+        Ok(
+            Expr {
+                kind: Box::new(
+                    ExprKind::VarInit(
+                        VarInit {
+                            id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
+                            r#type: None,
+                            expr: Expr {
+                                kind: Box::new(
+                                    ExprKind::Id(
+                                        Id { id: "init".to_string(), span: Span::new(0, 3, 1) },
+                                    ),
+                                ),
+                                span: Span::new(0, 3, 1),
+                            },
+                        },
+                    ),
+                ),
+                span: Span::new(0, 1, 1),
+            },
+        ),
+    );
+    assert_eq!(*parser.get_logs(), Vec::new());
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 4, 1)));
+}
+
+#[test]
+fn parses_var_init_with_type_annot() {
+    let tokens = vec![
+        keyword_token!(Let, 0, 0, 1),
+        id_token!("i", 0, 1, 1),
+        keyword_token!(Usize, 0, 2, 1),
+        token!(Equal, 0, 3, 1),
+        id_token!("init", 0, 4, 1),
+        token!(Semicolon, 0, 5, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_var_decl_or_init(),
+        Ok(
+            Expr {
+                kind: Box::new(
+                    ExprKind::VarInit(
+                        VarInit {
+                            id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
+                            r#type: Some(
+                                Type {
+                                    kind: Box::new(TypeKind::Prim(PrimType::Usize)),
+                                    span: Span::new(0, 2, 1),
+                                },
+                            ),
+                            expr: Expr {
+                                kind: Box::new(
+                                    ExprKind::Id(
+                                        Id { id: "init".to_string(), span: Span::new(0, 4, 1) },
+                                    ),
+                                ),
+                                span: Span::new(0, 4, 1),
+                            },
+                        },
+                    ),
+                ),
+                span: Span::new(0, 1, 1),
+            },
+        ),
+    );
+    assert_eq!(*parser.get_logs(), Vec::new());
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 5, 1)));
+}
