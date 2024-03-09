@@ -44,6 +44,7 @@ pub struct Expr {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
+    Id(Id),
     VarDecl(VarDecl),
     VarInit(VarInit),
 }

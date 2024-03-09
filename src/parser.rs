@@ -12,6 +12,7 @@ pub enum ParserLog {
     ExpectedId { span: Span },
     ExpectedItem { span: Span },
     ExpectedFormalArg { span: Span },
+    // todo: 順番を入れ替える
     ExpectedKeyword { span: Span, keyword: Keyword },
     ExpectedToken { span: Span, kind: TokenKind },
     ExpectedType { span: Span },
@@ -62,10 +63,11 @@ impl<'a> Parser<'a> {
             .next_if(|next_token| next_token.kind == kind)
     }
 
-    pub fn consume_id(&mut self) -> Option<Id> {
-        let id = if let Some(token) = self.tokens.peek() {
+    pub fn consume_id(&mut self) -> Option<(&Token, Id)> {
+        let value = if let Some(token) = self.tokens.peek() {
             if let TokenKind::Id(id) = &token.kind {
-                Id { id: id.clone(), span: token.span.clone() }
+                let id = Id { id: id.clone(), span: token.span.clone() };
+                (*token, id)
             } else {
                 return None;
             }
@@ -74,7 +76,7 @@ impl<'a> Parser<'a> {
         };
 
         self.tokens.next();
-        Some(id)
+        Some(value)
     }
 
     pub fn consume_keyword(&mut self, keyword: Keyword) -> Option<&Token> {
@@ -122,10 +124,11 @@ impl<'a> Parser<'a> {
         self.tokens.next().ok_or(ParserLog::UnexpectedEof { span: self.last_token_span.clone() })
     }
 
-    pub fn expect_id(&mut self) -> ParserResult<Id> {
-        let id = if let Some(token) = self.tokens.peek() {
+    pub fn expect_id(&mut self) -> ParserResult<(&Token, Id)> {
+        let value = if let Some(token) = self.tokens.peek() {
             if let TokenKind::Id(id) = &token.kind {
-                Id { id: id.clone(), span: token.span.clone() }
+                let id = Id { id: id.clone(), span: token.span.clone() };
+                (*token, id)
             } else {
                 return Err(ParserLog::ExpectedId { span: token.span.clone() })
             }
@@ -134,7 +137,7 @@ impl<'a> Parser<'a> {
         };
 
         self.tokens.next();
-        Ok(id)
+        Ok(value)
     }
 
     pub fn expect_keyword(&mut self, keyword: Keyword) -> ParserResult<()> {
@@ -197,7 +200,7 @@ impl<'a> Parser<'a> {
         let span = self.get_next_span();
 
         let kind = if self.consume_keyword(Keyword::Fn).is_some() {
-            let id = self.expect_id()?;
+            let (_, id) = self.expect_id()?;
             let args = self.parse_formal_args()?;
             let ret_type = if self.is_next(TokenKind::OpenCurlyBracket) {
                 None
@@ -242,7 +245,7 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            let id = self.expect_id()?;
+            let (_, id) = self.expect_id()?;
             let mutable = self.consume_keyword(Keyword::Mut).is_some();
             let r#type = self.parse_type()?;
             allow_next_arg = self.consume(TokenKind::Comma).is_some();
@@ -267,7 +270,8 @@ impl<'a> Parser<'a> {
             }
 
             let new_expr = self.parse_expr()?;
-            self.expect(TokenKind::Semicolon)?;
+            let semicolon_result = self.expect(TokenKind::Semicolon);
+            self.record_result_log(semicolon_result);
             exprs.push(new_expr);
         }
 
@@ -298,7 +302,14 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_expr(&mut self) -> ParserResult<Expr> {
-        if self.consume_keyword(Keyword::Let).is_some() {
+        // todo: match 式で token_kind を判断して条件分岐を最適化できないか検討する
+        if let Some((token, id)) = self.consume_id() {
+            let expr = Expr {
+                kind: Box::new(ExprKind::Id(id)),
+                span: token.span.clone(),
+            };
+            Ok(expr)
+        } else if self.consume_keyword(Keyword::Let).is_some() {
             self.parse_var_decl_or_init_expr()
         } else {
             Err(ParserLog::ExpectedExpr { span: self.get_next_span() })
@@ -308,7 +319,7 @@ impl<'a> Parser<'a> {
     pub fn parse_var_decl_or_init_expr(&mut self) -> ParserResult<Expr> {
         self.expect_keyword(Keyword::Let)?;
         let span = self.get_next_span();
-        let id = self.expect_id()?;
+        let (_, id) = self.expect_id()?;
 
         // todo: let 式のセミコロンの扱いを検討する（暫定的にセミコロン必須で実装）
         let expr = if self.is_next(TokenKind::Semicolon) {
