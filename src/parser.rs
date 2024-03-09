@@ -44,12 +44,25 @@ impl<'a> Parser<'a> {
         self.tokens.peek().is_none()
     }
 
-    pub fn is_next(&mut self, kind: TokenKind) -> bool {
-        self.tokens.peek().is_some_and(|v| v.kind == kind)
+    pub fn is_next(&mut self, f: impl FnOnce(&&&Token) -> bool) -> Option<&&Token> {
+        let next = self.tokens.peek();
+        next.filter(f)
     }
 
-    pub fn is_next_keyword(&mut self, keyword: Keyword) -> bool {
-        self.is_next(TokenKind::Keyword(keyword))
+    pub fn is_next_eq(&mut self, kind: TokenKind) -> Option<&&Token> {
+        self.is_next(|v| v.kind == kind)
+    }
+
+    pub fn is_next_id(&mut self) -> Option<Id> {
+        let next = self.tokens.peek();
+
+        match next {
+            Some(token) => match &token.kind {
+                TokenKind::Id(id) => Some(Id { id: id.clone(), span: token.span.clone() }),
+                _ => None
+            },
+            None => None
+        }
     }
 
     pub fn next_line(&mut self) {
@@ -202,7 +215,7 @@ impl<'a> Parser<'a> {
         let kind = if self.consume_keyword(Keyword::Fn).is_some() {
             let (_, id) = self.expect_id()?;
             let args = self.parse_formal_args()?;
-            let ret_type = if self.is_next(TokenKind::OpenCurlyBracket) {
+            let ret_type = if self.is_next_eq(TokenKind::OpenCurlyBracket).is_some() {
                 None
             } else {
                 Some(self.parse_type()?)
@@ -303,10 +316,12 @@ impl<'a> Parser<'a> {
 
     pub fn parse_expr(&mut self) -> ParserResult<Expr> {
         // todo: match 式で token_kind を判断して条件分岐を最適化できないか検討する
-        if let Some((token, id)) = self.consume_id() {
+        if let Some(id) = self.is_next_id() {
+            self.expect_any()?;
+            let span = id.span.clone();
             let expr = Expr {
                 kind: Box::new(ExprKind::Id(id)),
-                span: token.span.clone(),
+                span,
             };
             Ok(expr)
         } else if self.consume_keyword(Keyword::Let).is_some() {
@@ -322,7 +337,7 @@ impl<'a> Parser<'a> {
         let (_, id) = self.expect_id()?;
 
         // todo: let 式のセミコロンの扱いを検討する（暫定的にセミコロン必須で実装）
-        let expr = if self.is_next(TokenKind::Semicolon) {
+        let expr = if self.is_next_eq(TokenKind::Semicolon).is_some() {
             // e.g.) let i;
             let decl = VarDecl { id, r#type: None };
             let kind = ExprKind::VarDecl(decl);
@@ -335,7 +350,7 @@ impl<'a> Parser<'a> {
             Expr { kind: Box::new(kind), span }
         } else {
             let r#type = Some(self.parse_type()?);
-            if self.is_next(TokenKind::Semicolon) {
+            if self.is_next_eq(TokenKind::Semicolon).is_some() {
                 // e.g.) let i usize;
                 let decl = VarDecl { id, r#type };
                 let kind = ExprKind::VarDecl(decl);

@@ -103,7 +103,6 @@ pub enum TokenKind {
     Unknown,
 }
 
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
     Int { value: String },
