@@ -62,7 +62,10 @@ impl Lexer {
                     let len = alphabetic.len();
                     let kind = match Keyword::from(&alphabetic) {
                         Some(keyword) => TokenKind::Keyword(keyword),
-                        None => TokenKind::Id(alphabetic),
+                        None => match ast::PrimType::from(&alphabetic) {
+                            Some(prim_type) => TokenKind::PrimType(prim_type),
+                            None => TokenKind::Id(alphabetic),
+                        },
                     };
                     (len, kind)
                 },

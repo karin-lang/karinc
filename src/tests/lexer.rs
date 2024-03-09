@@ -1,5 +1,5 @@
 use crate::parser::ast;
-use crate::{id_token, keyword_token, literal_token, token};
+use crate::{id_token, keyword_token, literal_token, prim_type_token, token};
 use crate::lexer::tokenize::{Lexer, LexerLog};
 use crate::lexer::token::*;
 
@@ -59,6 +59,17 @@ fn tokenizes_keyword() {
     let (tokens, logs) = Lexer::new().tokenize_(input_chars);
 
     assert_eq!(tokens, vec![keyword_token!(Pub, 0, 0, 3)]);
+    assert!(input_chars.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn tokenizes_prim_type() {
+    let input = "usize";
+    let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+
+    assert_eq!(tokens, vec![prim_type_token!(Usize, 0, 0, 5)]);
     assert!(input_chars.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
