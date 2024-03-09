@@ -1,4 +1,4 @@
-use crate::{id_token, keyword_token, token};
+use crate::{id_token, keyword_token, prim_type_token, token};
 use crate::lexer::token::{Span, TokenKind};
 use crate::parser::{ast::*, Parser, ParserLog};
 
@@ -165,7 +165,7 @@ fn parses_fn_decl_with_ret_type() {
         id_token!("f", 0, 1, 1),
         token!(OpenParen, 0, 2, 1),
         token!(ClosingParen, 0, 5, 1),
-        keyword_token!(Usize, 0, 4, 1),
+        prim_type_token!(Usize, 0, 4, 1),
         token!(OpenCurlyBracket, 0, 6, 1),
         token!(ClosingCurlyBracket, 0, 7, 1),
     ];
@@ -221,7 +221,7 @@ fn parses_formal_arg_of_a_len() {
     let tokens = vec![
         token!(OpenParen, 0, 0, 1),
         id_token!("a", 0, 1, 1),
-        keyword_token!(Usize, 0, 2, 1),
+        prim_type_token!(Usize, 0, 2, 1),
         token!(ClosingParen, 0, 3, 1),
     ];
     let mut parser = Parser::new(&tokens);
@@ -250,10 +250,10 @@ fn parses_formal_args_of_two_len() {
     let tokens = vec![
         token!(OpenParen, 0, 0, 1),
         id_token!("a1", 0, 2, 1),
-        keyword_token!(Usize, 0, 3, 1),
+        prim_type_token!(Usize, 0, 3, 1),
         token!(Comma, 0, 4, 1),
         id_token!("a2", 0, 5, 1),
-        keyword_token!(Usize, 0, 6, 1),
+        prim_type_token!(Usize, 0, 6, 1),
         token!(ClosingParen, 0, 7, 1),
     ];
     let mut parser = Parser::new(&tokens);
@@ -291,7 +291,7 @@ fn parses_mutable_formal_arg() {
         token!(OpenParen, 0, 0, 1),
         id_token!("a", 0, 1, 1),
         keyword_token!(Mut, 0, 2, 1),
-        keyword_token!(Usize, 0, 3, 1),
+        prim_type_token!(Usize, 0, 3, 1),
         token!(ClosingParen, 0, 4, 1),
     ];
     let mut parser = Parser::new(&tokens);
@@ -321,7 +321,7 @@ fn disallows_comma_before_formal_args() {
         token!(OpenParen, 0, 0, 1),
         token!(Comma, 0, 1, 1),
         id_token!("a", 0, 2, 1),
-        keyword_token!(Usize, 0, 3, 1),
+        prim_type_token!(Usize, 0, 3, 1),
         token!(ClosingParen, 0, 4, 1),
     ];
     let mut parser = Parser::new(&tokens);
@@ -353,7 +353,7 @@ fn allows_comma_after_formal_args() {
     let tokens = vec![
         token!(OpenParen, 0, 0, 1),
         id_token!("a", 0, 1, 1),
-        keyword_token!(Usize, 0, 2, 1),
+        prim_type_token!(Usize, 0, 2, 1),
         token!(Comma, 0, 3, 1),
         token!(ClosingParen, 0, 4, 1),
     ];
@@ -509,7 +509,7 @@ fn parses_id_type() {
 
 #[test]
 fn parses_prim_type() {
-    let tokens = vec![keyword_token!(Usize, 0, 0, 1)];
+    let tokens = vec![prim_type_token!(Usize, 0, 0, 1)];
     let mut parser = Parser::new(&tokens);
 
     assert_eq!(
@@ -528,19 +528,6 @@ fn parses_prim_type() {
 #[test]
 fn expects_type_for_unexpected_token() {
     let tokens = vec![token!(Semicolon, 0, 0, 1)];
-    let mut parser = Parser::new(&tokens);
-
-    assert_eq!(
-        parser.parse_type(),
-        Err(ParserLog::ExpectedType { span: Span::new(0, 0, 1) })
-    );
-    assert_eq!(*parser.get_logs(), Vec::new());
-    assert!(parser.peek().is_none());
-}
-
-#[test]
-fn expectes_type_for_unexpected_keyword() {
-    let tokens = vec![keyword_token!(Pub, 0, 0, 1)];
     let mut parser = Parser::new(&tokens);
 
     assert_eq!(
@@ -632,7 +619,7 @@ fn parses_var_decl_with_type_annot() {
     let tokens = vec![
         keyword_token!(Let, 0, 0, 1),
         id_token!("i", 0, 1, 1),
-        keyword_token!(Usize, 0, 2, 1),
+        prim_type_token!(Usize, 0, 2, 1),
         token!(Semicolon, 0, 3, 1),
     ];
     let mut parser = Parser::new(&tokens);
@@ -706,7 +693,7 @@ fn parses_var_init_with_type_annot() {
     let tokens = vec![
         keyword_token!(Let, 0, 0, 1),
         id_token!("i", 0, 1, 1),
-        keyword_token!(Usize, 0, 2, 1),
+        prim_type_token!(Usize, 0, 2, 1),
         token!(Equal, 0, 3, 1),
         id_token!("init", 0, 4, 1),
         token!(Semicolon, 0, 5, 1),

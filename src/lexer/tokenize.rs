@@ -4,6 +4,8 @@ use crate::lexer::token::*;
 #[derive(Clone, Debug, PartialEq)]
 pub enum LexerLog {}
 
+pub type LexerResult<T> = Result<T, LexerLog>;
+
 pub struct Lexer {
     pub(crate) logs: Vec<LexerLog>,
 }
@@ -12,6 +14,20 @@ impl Lexer {
     pub fn new() -> Lexer {
         Lexer {
             logs: Vec::new(),
+        }
+    }
+
+    pub fn record_log(&mut self, log: LexerLog) {
+        self.logs.push(log);
+    }
+
+    pub fn record_result_log<T>(&mut self, result: LexerResult<T>) -> Option<T> {
+        match result {
+            Ok(v) => Some(v),
+            Err(log) => {
+                self.record_log(log);
+                None
+            }
         }
     }
 
@@ -60,20 +76,53 @@ impl Lexer {
                     (len, kind)
                 },
                 '0'..='9' => {
-                    let mut numeric = next_char.to_string();
+                    let mut int_digits = String::new();
+                    let mut fraction_digits = String::new();
+                    let mut is_float = false;
+                    let mut last_index = index;
+
+                    // note: 0 で始まる数値リテラルから接頭辞を発見する
+                    // note: 接頭辞が見つかった場合は整数開始位置に進み、そうでなかった場合は最初の1桁を消費した状態まで進む
+                    let base = if next_char == '0' {
+                        match input.peek() {
+                            Some((index, 'b')) => { last_index = *index; input.next(); Base::Bin },
+                            Some((index, 'o')) => { last_index = *index; input.next(); Base::Oct },
+                            Some((index, 'x')) => { last_index = *index; input.next(); Base::Hex },
+                            _ => { int_digits.push(next_char); Base::Dec },
+                        }
+                    } else {
+                        int_digits.push(next_char);
+                        Base::Dec
+                    };
 
                     loop {
                         match input.peek() {
-                            Some((_, next_char @ '0'..='9')) => {
-                                numeric.push(*next_char);
-                                input.next();
+                            Some((index, next_char @ ('0'..='9' | 'a'..='z' | 'A'..='Z' | '_'))) => {
+                                if is_float {
+                                    fraction_digits.push(*next_char);
+                                } else {
+                                    int_digits.push(*next_char);
+                                }
+                                last_index = *index;
+                            },
+                            Some((index, '.')) => {
+                                if is_float {
+                                    break;
+                                }
+                                is_float = true;
+                                last_index = *index;
                             },
                             _ => break,
-                        };
+                        }
+                        input.next();
                     }
 
-                    let len = numeric.len();
-                    let literal = Literal::Int { value: numeric };
+                    let len = last_index - index + 1;
+                    let literal = if is_float {
+                        Literal::Float { base, int_digits, fraction_digits }
+                    } else {
+                        Literal::Int { base, int_digits }
+                    };
                     (len, TokenKind::Literal(literal))
                 },
                 ')' => (1, TokenKind::ClosingParen),
@@ -92,12 +141,13 @@ impl Lexer {
                     }
                 },
                 ',' => (1, TokenKind::Comma),
+                '.' => (1, TokenKind::Dot),
                 '=' => (1, TokenKind::Equal),
                 '{' => (1, TokenKind::OpenCurlyBracket),
                 '(' => (1, TokenKind::OpenParen),
                 ';' => (1, TokenKind::Semicolon),
                 _ => {
-                    // todo: 連続した不明なトークンをまとめて扱う
+                    // todo: 連続した不明なトークンをまとめて扱う＆テストを追加する
                     (1, TokenKind::Unknown)
                 },
             };

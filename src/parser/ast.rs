@@ -61,7 +61,7 @@ pub enum TypeKind {
     Prim(PrimType),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PrimType {
     Usize,
 }

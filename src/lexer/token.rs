@@ -1,4 +1,5 @@
 use std::fmt;
+use crate::parser::ast;
 
 #[macro_export]
 macro_rules! token {
@@ -26,6 +27,17 @@ macro_rules! keyword_token {
         {
             use crate::lexer::token::{Span, Keyword, Token, TokenKind};
             Token::new(TokenKind::Keyword(Keyword::$keyword), Span::new($line, $column, $len))
+        }
+    };
+}
+
+#[macro_export]
+macro_rules! prim_type_token {
+    ($prim_type:ident, $line:expr, $column:expr, $len:expr$(,)?) => {
+        {
+            use crate::lexer::token::{Span, Token, TokenKind};
+            use crate::parser::ast::PrimType;
+            Token::new(TokenKind::PrimType(PrimType::$prim_type), Span::new($line, $column, $len))
         }
     };
 }
@@ -86,6 +98,7 @@ pub enum TokenKind {
     // basic tokens
     Id(String),
     Keyword(Keyword),
+    PrimType(ast::PrimType),
     Literal(Literal),
 
     // symbol tokens
@@ -93,6 +106,7 @@ pub enum TokenKind {
     ClosingCurlyBracket,
     Colon,
     Comma,
+    Dot,
     DoubleColon,
     Equal,
     OpenCurlyBracket,
@@ -105,7 +119,16 @@ pub enum TokenKind {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
-    Int { value: String },
+    Int { base: Base, int_digits: String },
+    Float { base: Base, int_digits: String, fraction_digits: String },
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Base {
+    Bin,
+    Oct,
+    Dec,
+    Hex,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -115,7 +138,6 @@ pub enum Keyword {
     Mut,
     Pub,
     Struct,
-    Usize,
 }
 
 impl Keyword {
@@ -126,7 +148,6 @@ impl Keyword {
             "mut" => Keyword::Mut,
             "pub" => Keyword::Pub,
             "struct" => Keyword::Struct,
-            "usize" => Keyword::Usize,
             _ => return None,
         };
 

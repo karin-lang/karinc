@@ -304,12 +304,8 @@ impl<'a> Parser<'a> {
                 let r#type = Type { kind: Box::new(kind), span: first_token.span.clone() };
                 Ok(r#type)
             },
-            TokenKind::Keyword(keyword) => {
-                let prim_type = match keyword {
-                    Keyword::Usize => PrimType::Usize,
-                    _ => return Err(ParserLog::ExpectedType { span: first_token.span.clone() }),
-                };
-                let kind = TypeKind::Prim(prim_type);
+            TokenKind::PrimType(prim_type) => {
+                let kind = TypeKind::Prim(*prim_type);
                 let r#type = Type { kind: Box::new(kind), span: first_token.span.clone() };
                 Ok(r#type)
             },
