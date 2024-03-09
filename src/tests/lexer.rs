@@ -75,12 +75,27 @@ fn tokenizes_prim_type() {
 }
 
 #[test]
-fn tokenizes_symbol() {
-    let input = ";";
+fn tokenizes_symbols() {
+    // note: TokenKind にシンボルを追加する時はこのテストに記号を追加してください。
+    let input = "}):,.::={(;";
     let input_chars = &mut input.char_indices().peekable();
     let (tokens, logs) = Lexer::new().tokenize_(input_chars);
 
-    assert_eq!(tokens, vec![token!(Semicolon, 0, 0, 1)]);
+    assert_eq!(
+        tokens,
+        vec![
+            token!(ClosingCurlyBracket, 0, 0, 1),
+            token!(ClosingParen, 0, 1, 1),
+            token!(Colon, 0, 2, 1),
+            token!(Comma, 0, 3, 1),
+            token!(Dot, 0, 4, 1),
+            token!(DoubleColon, 0, 5, 2),
+            token!(Equal, 0, 7, 1),
+            token!(OpenCurlyBracket, 0, 8, 1),
+            token!(OpenParen, 0, 9, 1),
+            token!(Semicolon, 0, 10, 1),
+        ],
+    );
     assert!(input_chars.peek().is_none());
     assert_eq!(logs, Vec::new());
 }

@@ -136,8 +136,8 @@ impl Lexer {
                     };
                     (len, TokenKind::Literal(literal))
                 },
-                ')' => (1, TokenKind::ClosingParen),
                 '}' => (1, TokenKind::ClosingCurlyBracket),
+                ')' => (1, TokenKind::ClosingParen),
                 ':' => {
                     let colon = (1, TokenKind::Colon);
                     if let Some((_, second_char)) = input.peek().cloned() {

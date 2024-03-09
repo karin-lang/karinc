@@ -102,8 +102,8 @@ pub enum TokenKind {
     Literal(Literal),
 
     // symbol tokens
-    ClosingParen,
     ClosingCurlyBracket,
+    ClosingParen,
     Colon,
     Comma,
     Dot,
