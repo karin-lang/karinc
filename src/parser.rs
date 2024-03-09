@@ -12,9 +12,8 @@ pub enum ParserLog {
     ExpectedId { span: Span },
     ExpectedItem { span: Span },
     ExpectedFormalArg { span: Span },
-    // todo: 順番を入れ替える
-    ExpectedKeyword { span: Span, keyword: Keyword },
-    ExpectedToken { span: Span, kind: TokenKind },
+    ExpectedKeyword { keyword: Keyword, span: Span },
+    ExpectedToken { kind: TokenKind, span: Span },
     ExpectedType { span: Span },
     UnexpectedEof { span: Span },
 }
@@ -126,10 +125,10 @@ impl<'a> Parser<'a> {
                 self.tokens.next();
                 Ok(())
             } else {
-                Err(ParserLog::ExpectedToken { span: next.span.clone(), kind })
+                Err(ParserLog::ExpectedToken { kind, span: next.span.clone() })
             }
         } else {
-            Err(ParserLog::ExpectedToken { span: self.last_token_span.clone(), kind })
+            Err(ParserLog::ExpectedToken { kind, span: self.last_token_span.clone() })
         }
     }
 
@@ -160,10 +159,10 @@ impl<'a> Parser<'a> {
                     self.tokens.next();
                     Ok(())
                 },
-                _ => Err(ParserLog::ExpectedKeyword { span: token.span.clone(), keyword }),
+                _ => Err(ParserLog::ExpectedKeyword { keyword, span: token.span.clone() }),
             }
         } else {
-            Err(ParserLog::ExpectedKeyword { span: self.last_token_span.clone(), keyword })
+            Err(ParserLog::ExpectedKeyword { keyword, span: self.last_token_span.clone() })
         }
     }
 
@@ -362,7 +361,7 @@ impl<'a> Parser<'a> {
                 let kind = ExprKind::VarInit(init);
                 Expr { kind: Box::new(kind), span }
             } else {
-                return Err(ParserLog::ExpectedToken { span: self.get_next_span(), kind: TokenKind::Semicolon });
+                return Err(ParserLog::ExpectedToken { kind: TokenKind::Semicolon, span: self.get_next_span() });
             }
         };
 

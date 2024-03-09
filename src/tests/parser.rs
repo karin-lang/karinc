@@ -478,8 +478,8 @@ fn expects_semicolon_after_expr_in_body() {
     assert_eq!(
         *parser.get_logs(),
         vec![
-            ParserLog::ExpectedToken { span: Span::new(0, 2, 1), kind: TokenKind::Semicolon },
-            ParserLog::ExpectedToken { span: Span::new(0, 3, 1), kind: TokenKind::Semicolon },
+            ParserLog::ExpectedToken { kind: TokenKind::Semicolon, span: Span::new(0, 2, 1) },
+            ParserLog::ExpectedToken { kind: TokenKind::Semicolon, span: Span::new(0, 3, 1) },
         ],
     );
     assert!(parser.peek().is_none());
