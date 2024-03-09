@@ -138,18 +138,11 @@ impl Lexer {
                 },
                 '}' => (1, TokenKind::ClosingCurlyBracket),
                 ')' => (1, TokenKind::ClosingParen),
-                ':' => {
-                    let colon = (1, TokenKind::Colon);
-                    if let Some((_, second_char)) = input.peek().cloned() {
-                        if second_char == ':' {
-                            input.next();
-                            (2, TokenKind::DoubleColon)
-                        } else {
-                            colon
-                        }
-                    } else {
-                        colon
-                    }
+                ':' => if let Some((_, ':')) = input.peek() {
+                    input.next();
+                    (2, TokenKind::DoubleColon)
+                } else {
+                    (1, TokenKind::Colon)
                 },
                 ',' => (1, TokenKind::Comma),
                 '.' => (1, TokenKind::Dot),
