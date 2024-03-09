@@ -1,8 +1,10 @@
 use std::{iter::Peekable, str::CharIndices};
-use crate::lexer::token::*;
+use crate::{lexer::token::*, parser::ast};
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum LexerLog {}
+pub enum LexerLog {
+    ExpectedTypeSuffix { span: Span },
+}
 
 pub type LexerResult<T> = Result<T, LexerLog>;
 
@@ -36,7 +38,7 @@ impl Lexer {
         self.tokenize_(input)
     }
 
-    pub(crate) fn tokenize_(self, input: &mut Peekable<CharIndices>) -> (Vec<Token>, Vec<LexerLog>) {
+    pub(crate) fn tokenize_(mut self, input: &mut Peekable<CharIndices>) -> (Vec<Token>, Vec<LexerLog>) {
         let mut tokens = Vec::new();
         let mut line: usize = 0;
         let mut start_index_of_line: usize = 0;
@@ -56,18 +58,7 @@ impl Lexer {
                     continue;
                 },
                 'a'..='z' | 'A'..='Z' | '_' => {
-                    let mut alphabetic = next_char.to_string();
-
-                    loop {
-                        match input.peek() {
-                            Some((_, next_char @ ('0'..='9' | 'a'..='z' | 'A'..='Z' | '_'))) => {
-                                alphabetic.push(*next_char);
-                                input.next();
-                            },
-                            _ => break,
-                        };
-                    }
-
+                    let alphabetic = Lexer::tokenize_id(input, Some(next_char));
                     let len = alphabetic.len();
                     let kind = match Keyword::from(&alphabetic) {
                         Some(keyword) => TokenKind::Keyword(keyword),
@@ -97,7 +88,7 @@ impl Lexer {
 
                     loop {
                         match input.peek() {
-                            Some((index, next_char @ ('0'..='9' | 'a'..='z' | 'A'..='Z' | '_'))) => {
+                            Some((index, next_char @ ('0'..='9' | 'a'..='f' | 'A'..='F' | '_'))) => {
                                 if is_float {
                                     fraction_digits.push(*next_char);
                                 } else {
@@ -117,11 +108,28 @@ impl Lexer {
                         input.next();
                     }
 
+                    let (r#type, expected_type_suffix) = match input.peek() {
+                        Some((_, 'a'..='z' | 'A'..='Z')) => {
+                            let alphabetic = Lexer::tokenize_id(input, None);
+                            last_index += alphabetic.len();
+                            match ast::PrimType::from(&alphabetic) {
+                                Some(prim_type) => (Some(prim_type), false),
+                                None => (None, true),
+                            }
+                        },
+                        _ => (None, false),
+                    };
+
                     let len = last_index - index + 1;
+
+                    if expected_type_suffix {
+                        self.record_log(LexerLog::ExpectedTypeSuffix { span: Span::from_usize(line, column, len) });
+                    }
+
                     let literal = if is_float {
-                        Literal::Float { base, int_digits, fraction_digits }
+                        Literal::Float { base, int_digits, fraction_digits, r#type }
                     } else {
-                        Literal::Int { base, int_digits }
+                        Literal::Int { base, int_digits, r#type }
                     };
                     (len, TokenKind::Literal(literal))
                 },
@@ -157,5 +165,22 @@ impl Lexer {
         }
 
         (tokens, self.logs)
+    }
+
+    fn tokenize_id(input: &mut Peekable<CharIndices>, initial: Option<char>) -> String {
+        let mut alphabetic = match initial {
+            Some(ch) => ch.to_string(),
+            None => String::new(),
+        };
+        loop {
+            match input.peek() {
+                Some((_, next_char @ ('0'..='9' | 'a'..='z' | 'A'..='Z' | '_'))) => {
+                    alphabetic.push(*next_char);
+                    input.next();
+                },
+                _ => break,
+            };
+        }
+        alphabetic
     }
 }

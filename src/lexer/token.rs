@@ -117,10 +117,20 @@ pub enum TokenKind {
     Unknown,
 }
 
+impl ast::PrimType {
+    pub fn from(s: &str) -> Option<ast::PrimType> {
+        let prim_type = match s {
+            "usize" => ast::PrimType::Usize,
+            _ => return None,
+        };
+        Some(prim_type)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
-    Int { base: Base, int_digits: String },
-    Float { base: Base, int_digits: String, fraction_digits: String },
+    Int { base: Base, int_digits: String, r#type: Option<ast::PrimType> },
+    Float { base: Base, int_digits: String, fraction_digits: String, r#type: Option<ast::PrimType> },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -150,7 +160,6 @@ impl Keyword {
             "struct" => Keyword::Struct,
             _ => return None,
         };
-
         Some(keyword)
     }
 }
