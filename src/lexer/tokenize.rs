@@ -42,6 +42,7 @@ impl Lexer {
         let mut tokens = Vec::new();
         let mut line: usize = 0;
         let mut start_index_of_line: usize = 0;
+        let mut was_unknown_token = false;
 
         loop {
             let (index, next_char) = match input.next() {
@@ -151,11 +152,16 @@ impl Lexer {
                 '(' => (1, TokenKind::OpenParen),
                 ';' => (1, TokenKind::Semicolon),
                 _ => {
-                    // todo: 連続した不明なトークンをまとめて扱う＆テストを追加する
-                    (1, TokenKind::Unknown)
+                    if !was_unknown_token {
+                        let span = Span::from_usize(line, column, 1);
+                        tokens.push(Token::new(TokenKind::Unknown, span));
+                    }
+                    was_unknown_token = true;
+                    continue;
                 },
             };
 
+            was_unknown_token = false;
             let span = Span::from_usize(line, column, len);
             tokens.push(Token::new(kind, span));
         }

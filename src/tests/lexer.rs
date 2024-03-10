@@ -337,3 +337,32 @@ fn tokenizes_base_of_float_literal() {
     assert!(input_chars.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
+
+#[test]
+fn consumes_unknown_char() {
+    let input = "\0";
+    let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+
+    assert_eq!(tokens, vec![token!(Unknown, 0, 0, 1)]);
+    assert!(input_chars.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn ignores_continuous_unknown_chars() {
+    let input = "\0\0;\0\0";
+    let input_chars = &mut input.char_indices().peekable();
+    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+
+    assert_eq!(
+        tokens,
+        vec![
+            token!(Unknown, 0, 0, 1),
+            token!(Semicolon, 0, 2, 1),
+            token!(Unknown, 0, 3, 1),
+        ],
+    );
+    assert!(input_chars.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
