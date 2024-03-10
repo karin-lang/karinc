@@ -42,7 +42,7 @@ impl Lexer {
         let mut tokens = Vec::new();
         let mut line: usize = 0;
         let mut start_index_of_line: usize = 0;
-        let mut was_unknown_token = false;
+        let mut last_unknown_token_span: Option<Span> = None;
 
         loop {
             let (index, next_char) = match input.next() {
@@ -50,13 +50,15 @@ impl Lexer {
                 None => break,
             };
             let column = index - start_index_of_line;
+            // note: 連続する不明な文字を 1 トークンに統合するためのフラグ
+            let mut is_unknown_token = false;
 
-            let (len, kind): (usize, TokenKind) = match next_char {
-                ' ' | '\t' => continue,
+            let token: Option<(usize, TokenKind)> = match next_char {
+                ' ' | '\t' => None,
                 '\n' => {
                     line += 1;
                     start_index_of_line = index + 1;
-                    continue;
+                    None
                 },
                 'a'..='z' | 'A'..='Z' | '_' => {
                     let alphabetic = Lexer::tokenize_id(input, Some(next_char));
@@ -68,7 +70,7 @@ impl Lexer {
                             None => TokenKind::Id(alphabetic),
                         },
                     };
-                    (len, kind)
+                    Some((len, kind))
                 },
                 '0'..='9' => {
                     let mut int_digits = String::new();
@@ -135,35 +137,49 @@ impl Lexer {
                     } else {
                         Literal::Int { base, int_digits, r#type }
                     };
-                    (len, TokenKind::Literal(literal))
+                    Some((len, TokenKind::Literal(literal)))
                 },
-                '}' => (1, TokenKind::ClosingCurlyBracket),
-                ')' => (1, TokenKind::ClosingParen),
+                '}' => Some((1, TokenKind::ClosingCurlyBracket)),
+                ')' => Some((1, TokenKind::ClosingParen)),
                 ':' => if let Some((_, ':')) = input.peek() {
                     input.next();
-                    (2, TokenKind::DoubleColon)
+                    Some((2, TokenKind::DoubleColon))
                 } else {
-                    (1, TokenKind::Colon)
+                    Some((1, TokenKind::Colon))
                 },
-                ',' => (1, TokenKind::Comma),
-                '.' => (1, TokenKind::Dot),
-                '=' => (1, TokenKind::Equal),
-                '{' => (1, TokenKind::OpenCurlyBracket),
-                '(' => (1, TokenKind::OpenParen),
-                ';' => (1, TokenKind::Semicolon),
+                ',' => Some((1, TokenKind::Comma)),
+                '.' => Some((1, TokenKind::Dot)),
+                '=' => Some((1, TokenKind::Equal)),
+                '{' => Some((1, TokenKind::OpenCurlyBracket)),
+                '(' => Some((1, TokenKind::OpenParen)),
+                ';' => Some((1, TokenKind::Semicolon)),
                 _ => {
-                    if !was_unknown_token {
-                        let span = Span::from_usize(line, column, 1);
-                        tokens.push(Token::new(TokenKind::Unknown, span));
+                    match &mut last_unknown_token_span {
+                        Some(span) => span.len += 1,
+                        None => last_unknown_token_span = Some(Span::from_usize(line, column, 1)),
                     }
-                    was_unknown_token = true;
-                    continue;
+                    // note: EOF の直前に位置する場合は字句解析を終了する前に Unknown トークンを追加する
+                    if input.peek().is_none() {
+                        if let Some(span) = &last_unknown_token_span {
+                            tokens.push(Token::new(TokenKind::Unknown, span.clone()));
+                            last_unknown_token_span = None;
+                        }
+                    }
+                    is_unknown_token = true;
+                    None
                 },
             };
 
-            was_unknown_token = false;
-            let span = Span::from_usize(line, column, len);
-            tokens.push(Token::new(kind, span));
+            if !is_unknown_token {
+                if let Some(span) = &last_unknown_token_span {
+                    tokens.push(Token::new(TokenKind::Unknown, span.clone()));
+                    last_unknown_token_span = None;
+                }
+            }
+            if let Some((len, kind)) = token {
+                let span = Span::from_usize(line, column, len);
+                tokens.push(Token::new(kind, span));
+            }
         }
 
         (tokens, self.logs)
