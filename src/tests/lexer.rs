@@ -5,20 +5,18 @@ use crate::lexer::token::*;
 
 #[test]
 fn skips_whitespaces() {
-    let input = " \t\n";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut " \t\n".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, Vec::new());
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn increments_token_position() {
-    let input = ";;\n;;";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut ";;\n;;".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![
         token!(Semicolon, 0, 0, 1),
@@ -26,60 +24,55 @@ fn increments_token_position() {
         token!(Semicolon, 1, 0, 1),
         token!(Semicolon, 1, 1, 1),
     ]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn tokenizes_id() {
-    let input = "aA_";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "aA_".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![id_token!("aA_", 0, 0, 3)]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn tokenizes_id_followed_by_numeric() {
-    let input = "a0";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "a0".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![id_token!("a0", 0, 0, 2)]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn tokenizes_keyword() {
-    let input = "pub";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "pub".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![keyword_token!(Pub, 0, 0, 3)]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn tokenizes_prim_type() {
-    let input = "usize";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "usize".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![prim_type_token!(Usize, 0, 0, 5)]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn tokenizes_symbols() {
     // note: TokenKind にシンボルを追加する時はこのテストに記号を追加してください。
-    let input = "}):,.::={(;";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "}):,.::={(;".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(
         tokens,
@@ -96,26 +89,24 @@ fn tokenizes_symbols() {
             token!(Semicolon, 0, 10, 1),
         ],
     );
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn tokenizes_multiple_character_symbol() {
-    let input = "::";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "::".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![token!(DoubleColon, 0, 0, 2)]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn tokenizes_int_literal_with_single_digit() {
-    let input = "0";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "0".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
             Literal::Int {
@@ -126,15 +117,14 @@ fn tokenizes_int_literal_with_single_digit() {
             0, 0, 1,
         ),
     ]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn tokenizes_int_literal_with_multiple_digits() {
-    let input = "0aA_";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "0aA_".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![
         literal_token!(
@@ -146,15 +136,14 @@ fn tokenizes_int_literal_with_multiple_digits() {
             0, 0, 4,
         ),
     ]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn tokenizes_base_of_int_literal() {
-    let input = "0b 0b0 0o0 0x0";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "0b 0b0 0o0 0x0".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![
         literal_token!(
@@ -190,15 +179,14 @@ fn tokenizes_base_of_int_literal() {
             0, 11, 3,
         ),
     ]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn tokenizes_int_literal_with_type_suffix() {
-    let input = "0usize";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "0usize".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
             Literal::Int {
@@ -209,15 +197,14 @@ fn tokenizes_int_literal_with_type_suffix() {
             0, 0, 6,
         ),
     ]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn expects_type_suffix_for_invalid_suffix_of_int_literal() {
-    let input = "0suffix";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "0suffix".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
             Literal::Int {
@@ -228,7 +215,7 @@ fn expects_type_suffix_for_invalid_suffix_of_int_literal() {
             0, 0, 7,
         ),
     ]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(
         logs,
         vec![LexerLog::ExpectedTypeSuffix { span: Span::new(0, 0, 7) }],
@@ -237,9 +224,8 @@ fn expects_type_suffix_for_invalid_suffix_of_int_literal() {
 
 #[test]
 fn tokenizes_float_literal() {
-    let input = "0.0";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "0.0".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![
         literal_token!(
@@ -252,15 +238,14 @@ fn tokenizes_float_literal() {
             0, 0, 3,
         ),
     ]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn allows_fraction_digits_of_zero_len() {
-    let input = "0.";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "0.".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![
         literal_token!(
@@ -273,15 +258,14 @@ fn allows_fraction_digits_of_zero_len() {
             0, 0, 2,
         ),
     ]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn tokenizes_comma_after_fraction_digits_as_symbol() {
-    let input = "0.0.";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "0.0.".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![
         literal_token!(
@@ -295,15 +279,14 @@ fn tokenizes_comma_after_fraction_digits_as_symbol() {
         ),
         token!(Dot, 0, 3, 1),
     ]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn tokenizes_base_of_float_literal() {
-    let input = "0b0.0 0o0.0 0x0.0";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "0b0.0 0o0.0 0x0.0".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![
         literal_token!(
@@ -334,26 +317,24 @@ fn tokenizes_base_of_float_literal() {
             0, 12, 5,
         ),
     ]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn consumes_unknown_char() {
-    let input = "\0";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "\0".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![token!(Unknown, 0, 0, 1)]);
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
 
 #[test]
 fn ignores_continuous_unknown_chars() {
-    let input = "\0\0\0\n\0\0\0;\0\0\0";
-    let input_chars = &mut input.char_indices().peekable();
-    let (tokens, logs) = Lexer::new().tokenize_(input_chars);
+    let input = &mut "\0\0\0\n\0\0\0;\0\0\0".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(
         tokens,
@@ -364,6 +345,6 @@ fn ignores_continuous_unknown_chars() {
             token!(Unknown, 1, 4, 3),
         ],
     );
-    assert!(input_chars.peek().is_none());
+    assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }

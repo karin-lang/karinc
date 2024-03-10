@@ -1,4 +1,5 @@
-use std::{iter::Peekable, str::CharIndices};
+use std::iter::{Enumerate, Peekable};
+use std::str::Chars;
 use crate::{lexer::token::*, parser::ast};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -7,6 +8,26 @@ pub enum LexerLog {
 }
 
 pub type LexerResult<T> = Result<T, LexerLog>;
+
+pub struct LexerInput<'a> {
+    input: Peekable<Enumerate<Chars<'a>>>,
+}
+
+impl<'a> LexerInput<'a> {
+    pub fn next(&mut self) -> Option<(usize, char)> {
+        self.input.next()
+    }
+
+    pub fn peek(&mut self) -> Option<&(usize, char)> {
+        self.input.peek()
+    }
+}
+
+impl<'a> From<&'a str> for LexerInput<'a> {
+    fn from(value: &'a str) -> Self {
+        Self { input: value.chars().enumerate().peekable() }
+    }
+}
 
 pub struct Lexer {
     pub(crate) logs: Vec<LexerLog>,
@@ -34,11 +55,11 @@ impl Lexer {
     }
 
     pub fn tokenize(self, input: &str) -> (Vec<Token>, Vec<LexerLog>) {
-        let input = &mut input.char_indices().peekable();
+        let input = &mut input.into();
         self.tokenize_(input)
     }
 
-    pub(crate) fn tokenize_(mut self, input: &mut Peekable<CharIndices>) -> (Vec<Token>, Vec<LexerLog>) {
+    pub(crate) fn tokenize_(mut self, input: &mut LexerInput) -> (Vec<Token>, Vec<LexerLog>) {
         let mut tokens = Vec::new();
         let mut line: usize = 0;
         let mut start_index_of_line: usize = 0;
@@ -185,7 +206,7 @@ impl Lexer {
         (tokens, self.logs)
     }
 
-    fn tokenize_id(input: &mut Peekable<CharIndices>, initial: Option<char>) -> String {
+    fn tokenize_id(input: &mut LexerInput, initial: Option<char>) -> String {
         let mut alphabetic = match initial {
             Some(ch) => ch.to_string(),
             None => String::new(),
