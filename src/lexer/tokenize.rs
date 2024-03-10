@@ -211,14 +211,9 @@ impl Lexer {
             Some(ch) => ch.to_string(),
             None => String::new(),
         };
-        loop {
-            match input.peek() {
-                Some((_, next_char @ ('0'..='9' | 'a'..='z' | 'A'..='Z' | '_'))) => {
-                    alphabetic.push(*next_char);
-                    input.next();
-                },
-                _ => break,
-            };
+        while let Some((_, next_char @ ('0'..='9' | 'a'..='z' | 'A'..='Z' | '_'))) = input.peek() {
+            alphabetic.push(*next_char);
+            input.next();
         }
         alphabetic
     }
