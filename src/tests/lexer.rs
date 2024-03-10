@@ -348,3 +348,18 @@ fn ignores_continuous_unknown_chars() {
     assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
+
+#[test]
+fn parses_unknown_token_with_multibyte_chars() {
+    let input = &mut "火凛".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+
+    assert_eq!(
+        tokens,
+        vec![
+            token!(Unknown, 0, 0, 2),
+        ],
+    );
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
