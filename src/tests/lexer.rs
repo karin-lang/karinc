@@ -322,6 +322,132 @@ fn tokenizes_base_of_float_literal() {
 }
 
 #[test]
+fn tokenizes_empty_string_literal() {
+    let input = &mut r#""""#.into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(
+            Literal::String { value: String::new() },
+            0, 0, 2,
+        ),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn tokenizes_string_literal_including_normal_char() {
+    let input = &mut r#""abc""#.into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(
+            Literal::String { value: "abc".to_string() },
+            0, 0, 5,
+        ),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn tokenizes_escseq_in_string_literal() {
+    let input = &mut r#""\\\"\0\n\r\t""#.into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(
+            Literal::String { value: "\\\"\0\n\r\t".to_string() },
+            0, 0, 14,
+        ),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn records_log_when_encountered_unknown_escseq_in_string_literal() {
+    let input = &mut r#""abc\?def""#.into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(
+            Literal::String { value: "abcdef".to_string() },
+            0, 0, 10,
+        ),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, vec![LexerLog::UnknownEscseq { span: Span::new(0, 4, 2) }]);
+}
+
+#[test]
+fn records_log_at_eof_after_escseq_prefix_in_string_literal() {
+    let input = &mut r#""abc\"#.into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(
+            Literal::String { value: "abc".to_string() },
+            0, 0, 5,
+        ),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, vec![LexerLog::UnclosedStringLiteral { span: Span::new(0, 0, 5) }]);
+}
+
+#[test]
+fn records_log_at_line_break_after_escseq_prefix_in_string_literal() {
+    let input = &mut "\"abc\\\n\"".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(
+            Literal::String { value: "abc".to_string() },
+            0, 0, 5,
+        ),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, vec![LexerLog::LineBreakInStringLiteral { span: Span::new(0, 0, 5) }]);
+}
+
+#[test]
+fn detects_line_break_and_skips_to_next_double_quot() {
+    let input = &mut "\"abc\nskipped\nskipped\"".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(
+            Literal::String { value: "abc".to_string() },
+            0, 0, 4,
+        ),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, vec![LexerLog::LineBreakInStringLiteral { span: Span::new(0, 0, 4) }]);
+}
+
+#[test]
+fn detects_line_break_and_skips_to_eof() {
+    let input = &mut "\"abc\nskipped\nskipped".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(
+            Literal::String { value: "abc".to_string() },
+            0, 0, 4,
+        ),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, vec![LexerLog::LineBreakInStringLiteral { span: Span::new(0, 0, 4) }]);
+}
+
+#[test]
+fn detects_unclosed_string_literal() {
+    let input = &mut r#""abc"#.into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(
+            Literal::String { value: "abc".to_string() },
+            0, 0, 4,
+        ),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, vec![LexerLog::UnclosedStringLiteral { span: Span::new(0, 0, 4) }]);
+}
+
+#[test]
 fn consumes_unknown_char() {
     let input = &mut "\0".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);

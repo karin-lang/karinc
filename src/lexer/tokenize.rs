@@ -5,6 +5,9 @@ use crate::{lexer::token::*, parser::ast};
 #[derive(Clone, Debug, PartialEq)]
 pub enum LexerLog {
     ExpectedTypeSuffix { span: Span },
+    LineBreakInStringLiteral { span: Span },
+    UnclosedStringLiteral { span: Span },
+    UnknownEscseq { span: Span },
 }
 
 pub type LexerResult<T> = Result<T, LexerLog>;
@@ -61,8 +64,8 @@ impl Lexer {
 
     pub(crate) fn tokenize_(mut self, input: &mut LexerInput) -> (Vec<Token>, Vec<LexerLog>) {
         let mut tokens = Vec::new();
-        let mut line: usize = 0;
-        let mut start_index_of_line: usize = 0;
+        let mut line = 0;
+        let mut beginning_index_of_line = 0;
         let mut last_unknown_token_span: Option<Span> = None;
 
         loop {
@@ -70,7 +73,7 @@ impl Lexer {
                 Some(v) => v,
                 None => break,
             };
-            let column = index - start_index_of_line;
+            let column = index - beginning_index_of_line;
             // note: 連続する不明な文字を 1 トークンに統合するためのフラグ
             let mut is_unknown_token = false;
 
@@ -78,8 +81,73 @@ impl Lexer {
                 ' ' | '\t' => None,
                 '\n' => {
                     line += 1;
-                    start_index_of_line = index + 1;
+                    beginning_index_of_line = index + 1;
                     None
+                },
+                'r' | '"' => {
+                    let is_raw = next_char == 'r';
+                    let mut value = String::new();
+                    let mut len = 1;
+
+                    loop {
+                        match input.next() {
+                            Some((_, '"')) => {
+                                len += 1;
+                                break;
+                            },
+                            Some((escseq_index, '\\')) => {
+                                len += 1;
+                                if is_raw {
+                                    value.push('\\');
+                                } else {
+                                    // todo: Unicode エスケープシーケンスを追加する
+                                    match input.peek() {
+                                        Some((_, '\\')) => { input.next(); len += 1; value.push('\\') },
+                                        Some((_, '"')) => { input.next(); len += 1; value.push('\"') },
+                                        Some((_, '0')) => { input.next(); len += 1; value.push('\0') },
+                                        Some((_, 'r')) => { input.next(); len += 1; value.push('\r') },
+                                        Some((_, 't')) => { input.next(); len += 1; value.push('\t') },
+                                        Some((_, 'n')) => { input.next(); len += 1; value.push('\n') },
+                                        // note: エスケープ文字に改行が出現した場合は LineBreakInStringLiteral ログの出力を委ねる
+                                        Some((_, '\n')) => continue,
+                                        Some((_, _)) => {
+                                            input.next(); 
+                                            len += 1;
+                                            let span = Span::from_usize(line, escseq_index - beginning_index_of_line, 2);
+                                            self.record_log(LexerLog::UnknownEscseq { span });
+                                        },
+                                        // note: EOF の場合は NotClosedStringLiteral ログの出力を委ねる
+                                        None => continue,
+                                    }
+                                }
+                            },
+                            // note: リテラル中に改行を検知した場合は次のダブルクォーテーションまで入力位置を進める
+                            Some((_, '\n')) => {
+                                let span = Span::from_usize(line, column, len);
+                                self.record_log(LexerLog::LineBreakInStringLiteral { span });
+                                loop {
+                                    match input.next() {
+                                        Some((_, '"')) | None => break,
+                                        _ => (),
+                                    }
+                                }
+                                // note: 不要な UnclosedStringLiteral ログを回避する
+                                break;
+                            },
+                            Some((_, next_char)) => {
+                                len += 1;
+                                value.push(next_char);
+                            },
+                            None => {
+                                let span = Span::from_usize(line, column, len);
+                                self.record_log(LexerLog::UnclosedStringLiteral { span });
+                                break;
+                            },
+                        }
+                    }
+
+                    let literal = Literal::String { value };
+                    Some((len, TokenKind::Literal(literal)))
                 },
                 'a'..='z' | 'A'..='Z' | '_' => {
                     let alphabetic = Lexer::tokenize_id(input, Some(next_char));
