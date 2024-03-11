@@ -39,6 +39,16 @@ fn tokenizes_id() {
 }
 
 #[test]
+fn tokenizes_id_with_single_char() {
+    let input = &mut "a".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+
+    assert_eq!(tokens, vec![id_token!("a", 0, 0, 1)]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
 fn tokenizes_id_followed_by_numeric() {
     let input = &mut "a0".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
@@ -54,6 +64,16 @@ fn tokenizes_keyword() {
     let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![keyword_token!(Pub, 0, 0, 3)]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn tokenizes_alphabetics_starts_with_r_as_id() {
+    let input = &mut "regex".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+
+    assert_eq!(tokens, vec![id_token!("regex", 0, 0, 5)]);
     assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
@@ -477,13 +497,13 @@ fn ignores_continuous_unknown_chars() {
 
 #[test]
 fn parses_unknown_token_with_multibyte_chars() {
-    let input = &mut "火凛".into();
+    let input = &mut "カリン".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(
         tokens,
         vec![
-            token!(Unknown, 0, 0, 2),
+            token!(Unknown, 0, 0, 3),
         ],
     );
     assert!(input.peek().is_none());
