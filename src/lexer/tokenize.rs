@@ -5,8 +5,8 @@ use crate::{lexer::token::*, parser::ast};
 #[derive(Clone, Debug, PartialEq)]
 pub enum LexerLog {
     ExpectedTypeSuffix { span: Span },
-    LineBreakInStringLiteral { span: Span },
-    UnclosedStringLiteral { span: Span },
+    LineBreakInStrLiteral { span: Span },
+    UnclosedStrLiteral { span: Span },
     UnknownEscseq { span: Span },
 }
 
@@ -135,9 +135,9 @@ impl Lexer {
 
                     let (r#type, expected_type_suffix) = match input.peek() {
                         Some((_, 'a'..='z' | 'A'..='Z')) => {
-                            let alphabetic = Lexer::tokenize_alphabetic(input, None);
-                            last_index += alphabetic.len();
-                            match ast::PrimType::from(&alphabetic) {
+                            let alphabetics = Lexer::tokenize_alphabetics(input, None);
+                            last_index += alphabetics.len();
+                            match ast::PrimType::from(&alphabetics) {
                                 Some(prim_type) => (Some(prim_type), false),
                                 None => (None, true),
                             }
@@ -204,26 +204,26 @@ impl Lexer {
         (tokens, self.logs)
     }
 
-    fn tokenize_alphabetic(input: &mut LexerInput, initial: Option<char>) -> String {
-        let mut alphabetic = match initial {
+    fn tokenize_alphabetics(input: &mut LexerInput, initial: Option<char>) -> String {
+        let mut alphabetics = match initial {
             Some(ch) => ch.to_string(),
             None => String::new(),
         };
         while let Some((_, next_char @ ('0'..='9' | 'a'..='z' | 'A'..='Z' | '_'))) = input.peek() {
-            alphabetic.push(*next_char);
+            alphabetics.push(*next_char);
             input.next();
         }
-        alphabetic
+        alphabetics
     }
 
     fn tokenize_id(input: &mut LexerInput, initial: char) -> (usize, TokenKind) {
-        let alphabetic = Lexer::tokenize_alphabetic(input, Some(initial));
-        let len = alphabetic.len();
-        let kind = match Keyword::from(&alphabetic) {
+        let alphabetics = Lexer::tokenize_alphabetics(input, Some(initial));
+        let len = alphabetics.len();
+        let kind = match Keyword::from(&alphabetics) {
             Some(keyword) => TokenKind::Keyword(keyword),
-            None => match ast::PrimType::from(&alphabetic) {
+            None => match ast::PrimType::from(&alphabetics) {
                 Some(prim_type) => TokenKind::PrimType(prim_type),
-                None => TokenKind::Id(alphabetic),
+                None => TokenKind::Id(alphabetics),
             },
         };
         (len, kind)
@@ -259,7 +259,7 @@ impl Lexer {
                             Some((_, 'r')) => { input.next(); len += 1; value.push('\r') },
                             Some((_, 't')) => { input.next(); len += 1; value.push('\t') },
                             Some((_, 'n')) => { input.next(); len += 1; value.push('\n') },
-                            // note: エスケープ文字に改行が出現した場合は入力位置を進めずに LineBreakInStringLiteral ログの出力を委ねる
+                            // note: エスケープ文字に改行が出現した場合は入力位置を進めずに LineBreakInStrLiteral ログの出力を委ねる
                             Some((_, '\n')) => continue,
                             Some((_, _)) => {
                                 input.next(); 
@@ -267,7 +267,7 @@ impl Lexer {
                                 let span = Span::from_usize(line, escseq_index - beginning_index_of_line, 2);
                                 self.record_log(LexerLog::UnknownEscseq { span });
                             },
-                            // note: EOF の場合は NotClosedStringLiteral ログの出力を委ねる
+                            // note: EOF の場合は NotClosedStrLiteral ログの出力を委ねる
                             None => continue,
                         }
                     }
@@ -275,14 +275,14 @@ impl Lexer {
                 // note: リテラル中に改行を検知した場合は次のダブルクォーテーションまで入力位置を進める
                 Some((_, '\n')) => {
                     let span = Span::from_usize(line, column, len);
-                    self.record_log(LexerLog::LineBreakInStringLiteral { span });
+                    self.record_log(LexerLog::LineBreakInStrLiteral { span });
                     loop {
                         match input.next() {
                             Some((_, '"')) | None => break,
                             _ => (),
                         }
                     }
-                    // note: 不要な UnclosedStringLiteral ログを回避する
+                    // note: 不要な UnclosedStrLiteral ログを回避する
                     break;
                 },
                 Some((_, next_char)) => {
@@ -291,13 +291,13 @@ impl Lexer {
                 },
                 None => {
                     let span = Span::from_usize(line, column, len);
-                    self.record_log(LexerLog::UnclosedStringLiteral { span });
+                    self.record_log(LexerLog::UnclosedStrLiteral { span });
                     break;
                 },
             }
         }
 
-        let literal = Literal::String { value };
+        let literal = Literal::Str { value };
         (len, TokenKind::Literal(literal))
     }
 }

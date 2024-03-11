@@ -342,12 +342,12 @@ fn tokenizes_base_of_float_literal() {
 }
 
 #[test]
-fn tokenizes_empty_string_literal() {
+fn tokenizes_empty_str_literal() {
     let input = &mut r#""""#.into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
-            Literal::String { value: String::new() },
+            Literal::Str { value: String::new() },
             0, 0, 2,
         ),
     ]);
@@ -356,12 +356,12 @@ fn tokenizes_empty_string_literal() {
 }
 
 #[test]
-fn tokenizes_string_literal_including_normal_char() {
+fn tokenizes_str_literal_including_normal_char() {
     let input = &mut r#""abc""#.into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
-            Literal::String { value: "abc".to_string() },
+            Literal::Str { value: "abc".to_string() },
             0, 0, 5,
         ),
     ]);
@@ -370,12 +370,12 @@ fn tokenizes_string_literal_including_normal_char() {
 }
 
 #[test]
-fn tokenizes_escseq_in_string_literal() {
+fn tokenizes_escseq_in_str_literal() {
     let input = &mut r#""\\\"\0\n\r\t""#.into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
-            Literal::String { value: "\\\"\0\n\r\t".to_string() },
+            Literal::Str { value: "\\\"\0\n\r\t".to_string() },
             0, 0, 14,
         ),
     ]);
@@ -384,12 +384,12 @@ fn tokenizes_escseq_in_string_literal() {
 }
 
 #[test]
-fn records_log_when_encountered_unknown_escseq_in_string_literal() {
+fn records_log_when_encountered_unknown_escseq_in_str_literal() {
     let input = &mut r#""abc\?def""#.into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
-            Literal::String { value: "abcdef".to_string() },
+            Literal::Str { value: "abcdef".to_string() },
             0, 0, 10,
         ),
     ]);
@@ -398,31 +398,31 @@ fn records_log_when_encountered_unknown_escseq_in_string_literal() {
 }
 
 #[test]
-fn records_log_at_eof_after_escseq_prefix_in_string_literal() {
+fn records_log_at_eof_after_escseq_prefix_in_str_literal() {
     let input = &mut r#""abc\"#.into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
-            Literal::String { value: "abc".to_string() },
+            Literal::Str { value: "abc".to_string() },
             0, 0, 5,
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, vec![LexerLog::UnclosedStringLiteral { span: Span::new(0, 0, 5) }]);
+    assert_eq!(logs, vec![LexerLog::UnclosedStrLiteral { span: Span::new(0, 0, 5) }]);
 }
 
 #[test]
-fn records_log_at_line_break_after_escseq_prefix_in_string_literal() {
+fn records_log_at_line_break_after_escseq_prefix_in_str_literal() {
     let input = &mut "\"abc\\\n\"".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
-            Literal::String { value: "abc".to_string() },
+            Literal::Str { value: "abc".to_string() },
             0, 0, 5,
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, vec![LexerLog::LineBreakInStringLiteral { span: Span::new(0, 0, 5) }]);
+    assert_eq!(logs, vec![LexerLog::LineBreakInStrLiteral { span: Span::new(0, 0, 5) }]);
 }
 
 #[test]
@@ -431,12 +431,12 @@ fn detects_line_break_and_skips_to_next_double_quot() {
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
-            Literal::String { value: "abc".to_string() },
+            Literal::Str { value: "abc".to_string() },
             0, 0, 4,
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, vec![LexerLog::LineBreakInStringLiteral { span: Span::new(0, 0, 4) }]);
+    assert_eq!(logs, vec![LexerLog::LineBreakInStrLiteral { span: Span::new(0, 0, 4) }]);
 }
 
 #[test]
@@ -445,26 +445,26 @@ fn detects_line_break_and_skips_to_eof() {
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
-            Literal::String { value: "abc".to_string() },
+            Literal::Str { value: "abc".to_string() },
             0, 0, 4,
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, vec![LexerLog::LineBreakInStringLiteral { span: Span::new(0, 0, 4) }]);
+    assert_eq!(logs, vec![LexerLog::LineBreakInStrLiteral { span: Span::new(0, 0, 4) }]);
 }
 
 #[test]
-fn detects_unclosed_string_literal() {
+fn detects_unclosed_str_literal() {
     let input = &mut r#""abc"#.into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
-            Literal::String { value: "abc".to_string() },
+            Literal::Str { value: "abc".to_string() },
             0, 0, 4,
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, vec![LexerLog::UnclosedStringLiteral { span: Span::new(0, 0, 4) }]);
+    assert_eq!(logs, vec![LexerLog::UnclosedStrLiteral { span: Span::new(0, 0, 4) }]);
 }
 
 #[test]

@@ -131,7 +131,7 @@ impl ast::PrimType {
 pub enum Literal {
     Int { base: Base, int_digits: String, r#type: Option<ast::PrimType> },
     Float { base: Base, int_digits: String, fraction_digits: String, r#type: Option<ast::PrimType> },
-    String { value: String },
+    Str { value: String },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
