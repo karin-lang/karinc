@@ -342,6 +342,140 @@ fn tokenizes_base_of_float_literal() {
 }
 
 #[test]
+fn tokenizes_char_literal() {
+    let input = &mut "'a'".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(Literal::Char { value: Some('a') }, 0, 0, 3),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn detects_empty_char_literal() {
+    let input = &mut "''".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(Literal::Char { value: None }, 0, 0, 2),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(
+        logs,
+        vec![LexerLog::EmptyCharLiteral { span: Span::new(0, 0, 2) }],
+    );
+}
+
+#[test]
+fn detects_too_long_char_literal() {
+    let input: &mut crate::lexer::tokenize::LexerInput<'_> = &mut "'ab' 'abc'".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(Literal::Char { value: None }, 0, 0, 4),
+        literal_token!(Literal::Char { value: None }, 0, 5, 5),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(
+        logs,
+        vec![
+            LexerLog::TooLongCharLiteral { span: Span::new(0, 0, 4) },
+            LexerLog::TooLongCharLiteral { span: Span::new(0, 5, 5) },
+        ],
+    );
+}
+
+#[test]
+fn tokenizes_escseq_in_char_literal() {
+    let input = &mut r#"'\\' '\'' '\"' '\0' '\n' '\r' '\t'"#.into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(Literal::Char { value: Some('\\') }, 0, 0, 4),
+        literal_token!(Literal::Char { value: Some('\'') }, 0, 5, 4),
+        literal_token!(Literal::Char { value: Some('\"') }, 0, 10, 4),
+        literal_token!(Literal::Char { value: Some('\0') }, 0, 15, 4),
+        literal_token!(Literal::Char { value: Some('\n') }, 0, 20, 4),
+        literal_token!(Literal::Char { value: Some('\r') }, 0, 25, 4),
+        literal_token!(Literal::Char { value: Some('\t') }, 0, 30, 4),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn records_log_when_encountered_unknown_escseq_in_char_literal() {
+    let input = &mut r"'\?'".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(Literal::Char { value: None }, 0, 0, 4),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, vec![
+        LexerLog::UnknownEscseq { span: Span::new(0, 1, 2) },
+        LexerLog::EmptyCharLiteral { span: Span::new(0, 0, 4) },
+    ]);
+}
+
+#[test]
+fn records_log_at_eof_after_escseq_prefix_in_char_literal() {
+    let input = &mut r"'\".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(Literal::Char { value: None }, 0, 0, 2),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, vec![
+        LexerLog::UnclosedCharLiteral { span: Span::new(0, 0, 2) },
+        LexerLog::EmptyCharLiteral { span: Span::new(0, 0, 2) },
+    ]);
+}
+
+#[test]
+fn detects_line_break_in_char_literal_and_skips_to_next_single_quot() {
+    let input = &mut "'\nskipped\nskipped'tokenized".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(Literal::Char { value: None }, 0, 0, 1),
+        id_token!("tokenized", 2, 8, 9),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(
+        logs,
+        vec![
+            LexerLog::LineBreakInCharLiteral { span: Span::new(0, 0, 1) },
+            LexerLog::EmptyCharLiteral { span: Span::new(0, 0, 1) },
+        ],
+    );
+}
+
+#[test]
+fn detects_line_break_in_char_literal_and_skips_to_eof() {
+    let input = &mut "'\nskipped\nskipped".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(Literal::Char { value: None }, 0, 0, 1),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(
+        logs,
+        vec![
+            LexerLog::LineBreakInCharLiteral { span: Span::new(0, 0, 1) },
+            LexerLog::EmptyCharLiteral { span: Span::new(0, 0, 1) },
+        ],
+    );
+}
+
+#[test]
+fn detects_unclosed_char_literal() {
+    let input = &mut "'a".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(Literal::Char { value: Some('a') }, 0, 0, 2),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, vec![LexerLog::UnclosedCharLiteral { span: Span::new(0, 0, 2) }]);
+}
+
+#[test]
 fn tokenizes_empty_str_literal() {
     let input = &mut r#""""#.into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
@@ -371,12 +505,12 @@ fn tokenizes_str_literal_including_normal_char() {
 
 #[test]
 fn tokenizes_escseq_in_str_literal() {
-    let input = &mut r#""\\\"\0\n\r\t""#.into();
+    let input = &mut r#""\\\'\"\0\n\r\t""#.into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
-            Literal::Str { value: "\\\"\0\n\r\t".to_string() },
-            0, 0, 14,
+            Literal::Str { value: "\\\'\"\0\n\r\t".to_string() },
+            0, 0, 16,
         ),
     ]);
     assert!(input.peek().is_none());
@@ -426,21 +560,22 @@ fn records_log_at_line_break_after_escseq_prefix_in_str_literal() {
 }
 
 #[test]
-fn detects_line_break_and_skips_to_next_double_quot() {
-    let input = &mut "\"abc\nskipped\nskipped\"".into();
+fn detects_line_break_in_str_literal_and_skips_to_next_double_quot() {
+    let input = &mut "\"abc\nskipped\nskipped\"tokenized".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
         literal_token!(
             Literal::Str { value: "abc".to_string() },
             0, 0, 4,
         ),
+        id_token!("tokenized", 2, 8, 9),
     ]);
     assert!(input.peek().is_none());
     assert_eq!(logs, vec![LexerLog::LineBreakInStrLiteral { span: Span::new(0, 0, 4) }]);
 }
 
 #[test]
-fn detects_line_break_and_skips_to_eof() {
+fn detects_line_break_in_str_literal_and_skips_to_eof() {
     let input = &mut "\"abc\nskipped\nskipped".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
