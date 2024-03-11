@@ -120,7 +120,21 @@ pub enum TokenKind {
 impl ast::PrimType {
     pub fn from(s: &str) -> Option<ast::PrimType> {
         let prim_type = match s {
+            "bool" => ast::PrimType::Bool,
+            "i8" => ast::PrimType::I8,
+            "i16" => ast::PrimType::I16,
+            "i32" => ast::PrimType::I32,
+            "i64" => ast::PrimType::I64,
+            "isize" => ast::PrimType::Isize,
+            "u8" => ast::PrimType::U8,
+            "u16" => ast::PrimType::U16,
+            "u32" => ast::PrimType::U32,
+            "u64" => ast::PrimType::U64,
             "usize" => ast::PrimType::Usize,
+            "f32" => ast::PrimType::F32,
+            "f64" => ast::PrimType::F64,
+            "char" => ast::PrimType::Char,
+            "str" => ast::PrimType::Str,
             _ => return None,
         };
         Some(prim_type)

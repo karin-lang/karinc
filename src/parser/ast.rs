@@ -63,7 +63,11 @@ pub enum TypeKind {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PrimType {
-    Usize,
+    Bool,
+    I8, I16, I32, I64, Isize,
+    U8, U16, U32, U64, Usize,
+    F32, F64,
+    Char, Str,
 }
 
 #[derive(Clone, Debug, PartialEq)]

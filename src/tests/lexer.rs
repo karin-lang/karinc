@@ -99,11 +99,17 @@ fn tokenizes_id_starts_with_raw_byte_prefix() {
 }
 
 #[test]
-fn tokenizes_prim_type() {
-    let input = &mut "usize".into();
+fn tokenizes_prim_types() {
+    let input = &mut "bool isize usize f32 char".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
 
-    assert_eq!(tokens, vec![prim_type_token!(Usize, 0, 0, 5)]);
+    assert_eq!(tokens, vec![
+        prim_type_token!(Bool, 0, 0, 4),
+        prim_type_token!(Isize, 0, 5, 5),
+        prim_type_token!(Usize, 0, 11, 5),
+        prim_type_token!(F32, 0, 17, 3),
+        prim_type_token!(Char, 0, 21, 4),
+    ]);
     assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
