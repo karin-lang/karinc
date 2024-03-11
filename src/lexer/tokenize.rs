@@ -106,18 +106,18 @@ impl Lexer {
                             input.next();
                             Some(self.tokenize_raw_byte_str_literal(input, &mut beginning_index_of_line, &mut line, column, 3))
                         } else {
-                            Some(Lexer::tokenize_id(input, Some("br".to_string())))
+                            Some(Lexer::tokenize_alphabetics(input, Some("br".to_string())))
                         }
                     },
-                    _ => Some(Lexer::tokenize_id(input, Some("b".to_string()))),
+                    _ => Some(Lexer::tokenize_alphabetics(input, Some("b".to_string()))),
                 },
                 'r' => if let Some((_, '"')) = input.peek() {
                     input.next();
                     Some(self.tokenize_raw_str_literal(input, &mut beginning_index_of_line, &mut line, column, 2))
                 } else {
-                    Some(Lexer::tokenize_id(input, Some(next_char.to_string())))
+                    Some(Lexer::tokenize_alphabetics(input, Some(next_char.to_string())))
                 },
-                'a'..='z' | 'A'..='Z' | '_' => Some(Lexer::tokenize_id(input, Some(next_char.to_string()))),
+                'a'..='z' | 'A'..='Z' | '_' => Some(Lexer::tokenize_alphabetics(input, Some(next_char.to_string()))),
                 '0'..='9' => {
                     let mut int_digits = String::new();
                     let mut fraction_digits = String::new();
@@ -162,7 +162,7 @@ impl Lexer {
 
                     let (r#type, expected_type_suffix) = match input.peek() {
                         Some((_, 'a'..='z' | 'A'..='Z')) => {
-                            let alphabetics = Lexer::tokenize_alphabetics(input, None);
+                            let alphabetics = Lexer::consume_alphabetics(input, None);
                             last_index += alphabetics.len();
                             match ast::PrimType::from(&alphabetics) {
                                 Some(prim_type) => (Some(prim_type), false),
@@ -231,7 +231,7 @@ impl Lexer {
         (tokens, self.logs)
     }
 
-    fn tokenize_alphabetics(input: &mut LexerInput, initial: Option<String>) -> String {
+    fn consume_alphabetics(input: &mut LexerInput, initial: Option<String>) -> String {
         let mut alphabetics = initial.unwrap_or_default();
         while let Some((_, next_char @ ('0'..='9' | 'a'..='z' | 'A'..='Z' | '_'))) = input.peek() {
             alphabetics.push(*next_char);
@@ -240,17 +240,23 @@ impl Lexer {
         alphabetics
     }
 
-    fn tokenize_id(input: &mut LexerInput, initial: Option<String>) -> (usize, TokenKind) {
-        let alphabetics = Lexer::tokenize_alphabetics(input, initial);
+    fn tokenize_alphabetics(input: &mut LexerInput, initial: Option<String>) -> (usize, TokenKind) {
+        let alphabetics = Lexer::consume_alphabetics(input, initial);
         let len = alphabetics.len();
-        let kind = match Keyword::from(&alphabetics) {
-            Some(keyword) => TokenKind::Keyword(keyword),
-            None => match ast::PrimType::from(&alphabetics) {
-                Some(prim_type) => TokenKind::PrimType(prim_type),
-                None => TokenKind::Id(alphabetics),
-            },
-        };
-        (len, kind)
+
+        if let Some(value) = Literal::to_bool_literal(&alphabetics) {
+            return (len, TokenKind::Literal(Literal::Bool { value }));
+        }
+
+        if let Some(keyword) = Keyword::from(&alphabetics) {
+            return (len, TokenKind::Keyword(keyword));
+        }
+
+        if let Some(prim_type) = ast::PrimType::from(&alphabetics) {
+            return (len, TokenKind::PrimType(prim_type));
+        }
+
+        (len, TokenKind::Id(alphabetics))
     }
 
     fn tokenize_char_or_str_literal_(

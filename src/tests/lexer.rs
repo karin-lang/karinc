@@ -144,6 +144,24 @@ fn tokenizes_multiple_character_symbol() {
 }
 
 #[test]
+fn tokenizes_true_literal() {
+    let input = &mut "true".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![literal_token!(Literal::Bool { value: true }, 0, 0, 4)]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn tokenizes_false_literal() {
+    let input = &mut "false".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![literal_token!(Literal::Bool { value: false }, 0, 0, 5)]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
 fn tokenizes_int_literal_with_single_digit() {
     let input = &mut "0".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);

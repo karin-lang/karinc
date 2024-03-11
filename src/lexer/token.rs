@@ -129,12 +129,23 @@ impl ast::PrimType {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
+    Bool { value: bool },
     Int { base: Base, int_digits: String, r#type: Option<ast::PrimType> },
     Float { base: Base, int_digits: String, fraction_digits: String, r#type: Option<ast::PrimType> },
     Char { value: Option<char> },
     Str { value: String },
     ByteChar { value: Option<char> },
     ByteStr { value: String },
+}
+
+impl Literal {
+    pub fn to_bool_literal(s: &str) -> Option<bool> {
+        match s {
+            "true" => Some(true),
+            "false" => Some(false),
+            _ => None,
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
