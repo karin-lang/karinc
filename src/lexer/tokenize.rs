@@ -93,7 +93,7 @@ impl Lexer {
                 '"' => Some(self.tokenize_char_or_str_literal(input, &mut beginning_index_of_line, &mut line, column, 1, false, false)),
                 'r' => if let Some((_, '"')) = input.peek() {
                     input.next();
-                    Some(self.tokenize_char_or_str_literal(input, &mut beginning_index_of_line, &mut line, column, 2, false, false))
+                    Some(self.tokenize_char_or_str_literal(input, &mut beginning_index_of_line, &mut line, column, 2, false, true))
                 } else {
                     Some(Lexer::tokenize_id(input, next_char))
                 },

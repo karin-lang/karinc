@@ -560,6 +560,20 @@ fn records_log_at_line_break_after_escseq_prefix_in_str_literal() {
 }
 
 #[test]
+fn tokenizes_raw_str_literal() {
+    let input = &mut r#"r"\\n""#.into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(
+            Literal::Str { value: r"\\n".to_string() },
+            0, 0, 6,
+        ),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
 fn detects_line_break_in_str_literal_and_skips_to_next_double_quot() {
     let input = &mut "\"abc\nskipped\nskipped\"tokenized".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
