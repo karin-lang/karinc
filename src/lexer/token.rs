@@ -133,6 +133,8 @@ pub enum Literal {
     Float { base: Base, int_digits: String, fraction_digits: String, r#type: Option<ast::PrimType> },
     Char { value: Option<char> },
     Str { value: String },
+    ByteChar { value: Option<char> },
+    ByteStr { value: String },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

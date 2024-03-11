@@ -89,15 +89,35 @@ impl Lexer {
                     beginning_index_of_line = index + 1;
                     None
                 },
-                '\'' => Some(self.tokenize_char_or_str_literal(input, &mut beginning_index_of_line, &mut line, column, 1, true, false)),
-                '"' => Some(self.tokenize_char_or_str_literal(input, &mut beginning_index_of_line, &mut line, column, 1, false, false)),
+                '\'' => Some(self.tokenize_char_or_str_literal(input, &mut beginning_index_of_line, &mut line, column, 1, true, false, false)),
+                '"' => Some(self.tokenize_char_or_str_literal(input, &mut beginning_index_of_line, &mut line, column, 1, false, false, false)),
+                'b' => match input.peek() {
+                    Some((_, '\'')) => {
+                        input.next();
+                        Some(self.tokenize_char_or_str_literal(input, &mut beginning_index_of_line, &mut line, column, 2, true, false, true))
+                    },
+                    Some((_, '"')) => {
+                        input.next();
+                        Some(self.tokenize_char_or_str_literal(input, &mut beginning_index_of_line, &mut line, column, 2, false, false, true))
+                    },
+                    Some((_, 'r')) => {
+                        input.next();
+                        if let Some((_, '"')) = input.peek() {
+                            input.next();
+                            Some(self.tokenize_char_or_str_literal(input, &mut beginning_index_of_line, &mut line, column, 3, false, true, true))
+                        } else {
+                            Some(Lexer::tokenize_id(input, Some("br".to_string())))
+                        }
+                    },
+                    _ => Some(Lexer::tokenize_id(input, Some("b".to_string()))),
+                },
                 'r' => if let Some((_, '"')) = input.peek() {
                     input.next();
-                    Some(self.tokenize_char_or_str_literal(input, &mut beginning_index_of_line, &mut line, column, 2, false, true))
+                    Some(self.tokenize_char_or_str_literal(input, &mut beginning_index_of_line, &mut line, column, 2, false, true, false))
                 } else {
-                    Some(Lexer::tokenize_id(input, next_char))
+                    Some(Lexer::tokenize_id(input, Some(next_char.to_string())))
                 },
-                'a'..='z' | 'A'..='Z' | '_' => Some(Lexer::tokenize_id(input, next_char)),
+                'a'..='z' | 'A'..='Z' | '_' => Some(Lexer::tokenize_id(input, Some(next_char.to_string()))),
                 '0'..='9' => {
                     let mut int_digits = String::new();
                     let mut fraction_digits = String::new();
@@ -211,11 +231,8 @@ impl Lexer {
         (tokens, self.logs)
     }
 
-    fn tokenize_alphabetics(input: &mut LexerInput, initial: Option<char>) -> String {
-        let mut alphabetics = match initial {
-            Some(ch) => ch.to_string(),
-            None => String::new(),
-        };
+    fn tokenize_alphabetics(input: &mut LexerInput, initial: Option<String>) -> String {
+        let mut alphabetics = initial.unwrap_or_default();
         while let Some((_, next_char @ ('0'..='9' | 'a'..='z' | 'A'..='Z' | '_'))) = input.peek() {
             alphabetics.push(*next_char);
             input.next();
@@ -223,8 +240,8 @@ impl Lexer {
         alphabetics
     }
 
-    fn tokenize_id(input: &mut LexerInput, initial: char) -> (usize, TokenKind) {
-        let alphabetics = Lexer::tokenize_alphabetics(input, Some(initial));
+    fn tokenize_id(input: &mut LexerInput, initial: Option<String>) -> (usize, TokenKind) {
+        let alphabetics = Lexer::tokenize_alphabetics(input, initial);
         let len = alphabetics.len();
         let kind = match Keyword::from(&alphabetics) {
             Some(keyword) => TokenKind::Keyword(keyword),
@@ -245,6 +262,7 @@ impl Lexer {
         backward_len: usize,
         is_char: bool,
         is_raw: bool,
+        is_byte: bool,
     ) -> (usize, TokenKind) {
         let mut value = String::new();
         let beginning_line = *line;
@@ -351,9 +369,17 @@ impl Lexer {
                     None
                 },
             };
-            Literal::Char { value }
+            if is_byte {
+                Literal::ByteChar { value }
+            } else {
+                Literal::Char { value }
+            }
         } else {
-            Literal::Str { value }
+            if is_byte {
+                Literal::ByteStr { value }
+            } else {
+                Literal::Str { value }
+            }
         };
         (len, TokenKind::Literal(literal))
     }

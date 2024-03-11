@@ -69,11 +69,31 @@ fn tokenizes_keyword() {
 }
 
 #[test]
-fn tokenizes_alphabetics_starts_with_r_as_id() {
+fn tokenizes_id_starts_with_byte_prefix() {
+    let input = &mut "bit".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+
+    assert_eq!(tokens, vec![id_token!("bit", 0, 0, 3)]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn tokenizes_id_starts_with_raw_prefix() {
     let input = &mut "regex".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![id_token!("regex", 0, 0, 5)]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn tokenizes_id_starts_with_raw_byte_prefix() {
+    let input = &mut "bruh".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+
+    assert_eq!(tokens, vec![id_token!("bruh", 0, 0, 4)]);
     assert!(input.peek().is_none());
     assert_eq!(logs, Vec::new());
 }
@@ -430,6 +450,41 @@ fn records_log_at_eof_after_escseq_prefix_in_char_literal() {
 }
 
 #[test]
+fn does_not_support_raw_char_literal() {
+    let input = &mut "r' '".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        id_token!("r", 0, 0, 1),
+        literal_token!(Literal::Char { value: Some(' ') }, 0, 1, 3),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn tokenizes_byte_char_literal() {
+    let input = &mut "b' '".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(Literal::ByteChar { value: Some(' ') }, 0, 0, 4),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn does_not_support_raw_byte_char_literal() {
+    let input = &mut "brr' '".into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        id_token!("brr", 0, 0, 3),
+        literal_token!(Literal::Char { value: Some(' ') }, 0, 3, 3),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
 fn detects_line_break_in_char_literal_and_skips_to_next_single_quot() {
     let input = &mut "'\nskipped\nskipped'tokenized".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
@@ -546,7 +601,7 @@ fn records_log_at_eof_after_escseq_prefix_in_str_literal() {
 }
 
 #[test]
-fn records_log_at_line_break_after_escseq_prefix_in_str_literal() {
+fn detects_line_break_after_escseq_prefix_in_str_literal() {
     let input = &mut "\"abc\\\n\"".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![
@@ -567,6 +622,34 @@ fn tokenizes_raw_str_literal() {
         literal_token!(
             Literal::Str { value: r"\\n".to_string() },
             0, 0, 6,
+        ),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn tokenizes_byte_str_literal() {
+    let input = &mut r#"b"abc""#.into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(
+            Literal::ByteStr { value: "abc".to_string() },
+            0, 0, 6,
+        ),
+    ]);
+    assert!(input.peek().is_none());
+    assert_eq!(logs, Vec::new());
+}
+
+#[test]
+fn tokenizes_raw_byte_str_literal() {
+    let input = &mut r#"br"abc\""#.into();
+    let (tokens, logs) = Lexer::new().tokenize_(input);
+    assert_eq!(tokens, vec![
+        literal_token!(
+            Literal::ByteStr { value: r"abc\".to_string() },
+            0, 0, 8,
         ),
     ]);
     assert!(input.peek().is_none());
