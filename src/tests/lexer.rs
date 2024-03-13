@@ -8,9 +8,9 @@ fn skips_whitespaces() {
     let input = &mut " \t\n".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
 
-    assert_eq!(tokens, Vec::new());
+    assert!(tokens.is_empty());
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -25,7 +25,7 @@ fn increments_token_position() {
         token!(Semicolon, 1, 1, 1),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -35,7 +35,7 @@ fn tokenizes_id() {
 
     assert_eq!(tokens, vec![id_token!("aA_", 0, 0, 3)]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -45,7 +45,7 @@ fn tokenizes_id_with_single_char() {
 
     assert_eq!(tokens, vec![id_token!("a", 0, 0, 1)]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -55,7 +55,7 @@ fn tokenizes_id_followed_by_numeric() {
 
     assert_eq!(tokens, vec![id_token!("a0", 0, 0, 2)]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -65,7 +65,7 @@ fn tokenizes_keyword() {
 
     assert_eq!(tokens, vec![keyword_token!(Pub, 0, 0, 3)]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -75,7 +75,7 @@ fn tokenizes_id_starts_with_byte_prefix() {
 
     assert_eq!(tokens, vec![id_token!("bit", 0, 0, 3)]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -85,7 +85,7 @@ fn tokenizes_id_starts_with_raw_prefix() {
 
     assert_eq!(tokens, vec![id_token!("regex", 0, 0, 5)]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -95,7 +95,7 @@ fn tokenizes_id_starts_with_raw_byte_prefix() {
 
     assert_eq!(tokens, vec![id_token!("bruh", 0, 0, 4)]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -111,7 +111,7 @@ fn tokenizes_prim_types() {
         prim_type_token!(Char, 0, 21, 4),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -136,7 +136,7 @@ fn tokenizes_symbols() {
         ],
     );
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -146,7 +146,7 @@ fn tokenizes_multiple_character_symbol() {
 
     assert_eq!(tokens, vec![token!(DoubleColon, 0, 0, 2)]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -155,7 +155,7 @@ fn tokenizes_true_literal() {
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![literal_token!(Literal::Bool { value: true }, 0, 0, 4)]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -164,7 +164,7 @@ fn tokenizes_false_literal() {
     let (tokens, logs) = Lexer::new().tokenize_(input);
     assert_eq!(tokens, vec![literal_token!(Literal::Bool { value: false }, 0, 0, 5)]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -182,7 +182,7 @@ fn tokenizes_int_literal_with_single_digit() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -201,7 +201,7 @@ fn tokenizes_int_literal_with_multiple_digits() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -244,7 +244,7 @@ fn tokenizes_base_of_int_literal() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -262,7 +262,7 @@ fn tokenizes_int_literal_with_type_suffix() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -303,7 +303,7 @@ fn tokenizes_float_literal() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -323,7 +323,7 @@ fn allows_fraction_digits_of_zero_len() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -344,7 +344,7 @@ fn tokenizes_comma_after_fraction_digits_as_symbol() {
         token!(Dot, 0, 3, 1),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -382,7 +382,7 @@ fn tokenizes_base_of_float_literal() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -393,7 +393,7 @@ fn tokenizes_char_literal() {
         literal_token!(Literal::Char { value: Some('a') }, 0, 0, 3),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -442,7 +442,7 @@ fn tokenizes_escseq_in_char_literal() {
         literal_token!(Literal::Char { value: Some('\t') }, 0, 30, 4),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -482,7 +482,7 @@ fn does_not_support_raw_char_literal() {
         literal_token!(Literal::Char { value: Some(' ') }, 0, 1, 3),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -493,7 +493,7 @@ fn tokenizes_byte_char_literal() {
         literal_token!(Literal::ByteChar { value: Some(' ') }, 0, 0, 4),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -505,7 +505,7 @@ fn does_not_support_raw_byte_char_literal() {
         literal_token!(Literal::Char { value: Some(' ') }, 0, 3, 3),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -565,7 +565,7 @@ fn tokenizes_empty_str_literal() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -579,7 +579,7 @@ fn tokenizes_str_literal_including_normal_char() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -593,7 +593,7 @@ fn tokenizes_escseq_in_str_literal() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -649,7 +649,7 @@ fn tokenizes_raw_str_literal() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -663,7 +663,7 @@ fn tokenizes_byte_str_literal() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -677,7 +677,7 @@ fn tokenizes_raw_byte_str_literal() {
         ),
     ]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -730,7 +730,7 @@ fn consumes_unknown_char() {
 
     assert_eq!(tokens, vec![token!(Unknown, 0, 0, 1)]);
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -748,7 +748,7 @@ fn ignores_continuous_unknown_chars() {
         ],
     );
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -763,5 +763,5 @@ fn parses_unknown_token_with_multibyte_chars() {
         ],
     );
     assert!(input.peek().is_none());
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }

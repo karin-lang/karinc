@@ -41,7 +41,7 @@ fn outputs_parser_result() {
             ),
         },
     );
-    assert_eq!(logs, Vec::new());
+    assert!(logs.is_empty());
 }
 
 #[test]
@@ -96,7 +96,7 @@ fn parses_continuous_items() {
             ),
         }.into(),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -154,7 +154,7 @@ fn parses_fn_decl() {
             ),
         )),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -194,7 +194,7 @@ fn parses_fn_decl_with_ret_type() {
             ),
         )),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -210,7 +210,7 @@ fn parses_formal_args_of_zero_len() {
         parser.parse_formal_args(),
         Ok(Vec::new()),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -239,7 +239,7 @@ fn parses_formal_arg_of_a_len() {
             ],
         ),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -279,7 +279,7 @@ fn parses_formal_args_of_two_len() {
             ],
         ),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -309,7 +309,7 @@ fn parses_mutable_formal_arg() {
             ],
         ),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -372,7 +372,7 @@ fn allows_comma_after_formal_args() {
             ],
         ),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -388,7 +388,7 @@ fn parses_empty_body() {
         parser.parse_body(),
         Ok((Vec::new(), LocalSymbolTable::new())),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -414,7 +414,7 @@ fn parses_body_with_single_expr() {
             LocalSymbolTable::new(),
         )),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -446,7 +446,7 @@ fn parses_body_with_multiple_exprs() {
             LocalSymbolTable::new(),
         )),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -551,7 +551,7 @@ fn resolves_symbols_in_body() {
             }.into(),
         )),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -573,7 +573,7 @@ fn parses_id_type() {
             },
         ),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -591,7 +591,7 @@ fn parses_prim_type() {
             },
         ),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -604,7 +604,7 @@ fn expects_type_for_unexpected_token() {
         parser.parse_type(),
         Err(ParserLog::ExpectedType { span: Span::new(0, 0, 1) })
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -623,7 +623,7 @@ fn parses_id_expr() {
             },
         ),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
 
@@ -659,7 +659,7 @@ fn parses_var_decl_or_init_expr() {
             ),
         }.into(),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 0, 1)));
 }
 
@@ -695,7 +695,7 @@ fn parses_var_decl() {
             ),
         }.into(),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 2, 1)));
 }
 
@@ -737,7 +737,7 @@ fn parses_var_decl_with_type_annot() {
             ),
         }.into(),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 3, 1)));
 }
 
@@ -784,7 +784,7 @@ fn parses_var_init() {
             ),
         }.into(),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 4, 1)));
 }
 
@@ -837,6 +837,6 @@ fn parses_var_init_with_type_annot() {
             ),
         }.into(),
     );
-    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.get_logs().is_empty());
     assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 5, 1)));
 }
