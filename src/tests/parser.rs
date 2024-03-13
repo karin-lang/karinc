@@ -515,7 +515,7 @@ fn resolves_symbols_in_body() {
         Ok((
             vec![
                 Expr {
-                    kind: Box::new(ExprKind::VarDecl(0.into())),
+                    kind: Box::new(ExprKind::LocalEntity(0.into())),
                     span: Span::new(0, 2, 1),
                 },
                 Expr {
@@ -523,7 +523,7 @@ fn resolves_symbols_in_body() {
                     span: Span::new(0, 4, 1),
                 },
                 Expr {
-                    kind: Box::new(ExprKind::VarDecl(1.into())),
+                    kind: Box::new(ExprKind::LocalEntity(1.into())),
                     span: Span::new(0, 7, 1),
                 },
                 Expr {
@@ -641,7 +641,7 @@ fn parses_var_decl_or_init_expr() {
         parser.parse_expr(),
         Ok(
             Expr {
-                kind: Box::new(ExprKind::VarDecl(0.into())),
+                kind: Box::new(ExprKind::LocalEntity(0.into())),
                 span: Span::new(0, 1, 1),
             },
         ),
@@ -677,7 +677,7 @@ fn parses_var_decl() {
         parser.parse_var_decl_or_init(),
         Ok(
             Expr {
-                kind: Box::new(ExprKind::VarDecl(0.into())),
+                kind: Box::new(ExprKind::LocalEntity(0.into())),
                 span: Span::new(0, 1, 1),
             },
         ),
@@ -714,7 +714,7 @@ fn parses_var_decl_with_type_annot() {
         parser.parse_var_decl_or_init(),
         Ok(
             Expr {
-                kind: Box::new(ExprKind::VarDecl(0.into())),
+                kind: Box::new(ExprKind::LocalEntity(0.into())),
                 span: Span::new(0, 1, 1),
             },
         ),
@@ -757,7 +757,7 @@ fn parses_var_init() {
         parser.parse_var_decl_or_init(),
         Ok(
             Expr {
-                kind: Box::new(ExprKind::VarInit(0.into())),
+                kind: Box::new(ExprKind::LocalEntity(0.into())),
                 span: Span::new(0, 1, 1),
             },
         ),
@@ -805,7 +805,7 @@ fn parses_var_init_with_type_annot() {
         parser.parse_var_decl_or_init(),
         Ok(
             Expr {
-                kind: Box::new(ExprKind::VarInit(0.into())),
+                kind: Box::new(ExprKind::LocalEntity(0.into())),
                 span: Span::new(0, 1, 1),
             },
         ),

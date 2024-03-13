@@ -169,8 +169,7 @@ pub struct Expr {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
     Id(Id, Option<LocalSymbol>),
-    VarDecl(LocalSymbol),
-    VarInit(LocalSymbol),
+    LocalEntity(LocalSymbol),
 }
 
 #[derive(Clone, Debug, PartialEq)]
