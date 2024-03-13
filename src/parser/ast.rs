@@ -107,6 +107,19 @@ pub struct Id {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct VarDecl {
+    pub id: Id,
+    pub r#type: Option<Type>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct VarInit {
+    pub id: Id,
+    pub r#type: Option<Type>,
+    pub expr: Expr,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct FnDecl {
     pub id: Id,
     pub args: Vec<FormalArg>,
@@ -131,8 +144,8 @@ pub struct Expr {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
     Id(Id, Option<LocalSymbol>),
-    VarDecl(VarDecl),
-    VarInit(VarInit),
+    VarDecl(LocalSymbol),
+    VarInit(LocalSymbol),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -154,17 +167,4 @@ pub enum PrimType {
     U8, U16, U32, U64, Usize,
     F32, F64,
     Char, Str,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct VarDecl {
-    pub id: Id,
-    pub r#type: Option<Type>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct VarInit {
-    pub id: Id,
-    pub r#type: Option<Type>,
-    pub expr: Expr,
 }

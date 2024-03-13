@@ -27,8 +27,8 @@ impl BodyScopeHierarchy {
         self.scopes.pop().expect("could not leave body scope").exit()
     }
 
-    pub fn declare(&mut self, id: &str, entity: LocalEntity) {
-        self.get_current_scope_mut().declare(id, entity);
+    pub fn declare(&mut self, id: &str, entity: LocalEntity) -> LocalSymbol {
+        self.get_current_scope_mut().declare(id, entity)
     }
 
     pub fn resolve(&self, id: &str) -> Option<LocalSymbol> {
@@ -73,11 +73,12 @@ impl BodyScope {
         self.scopes.pop().expect("could not leave local scope");
     }
 
-    pub fn declare(&mut self, id: &str, entity: LocalEntity) {
+    pub fn declare(&mut self, id: &str, entity: LocalEntity) -> LocalSymbol {
         let symbol = LocalSymbol::from(self.symbol_counter);
         self.get_current_scope_mut().declare(id, symbol.clone());
-        self.symbol_table.insert(symbol, entity);
+        self.symbol_table.insert(symbol.clone(), entity);
         self.symbol_counter += 1;
+        symbol
     }
 
     pub fn resolve(&self, id: &str) -> Option<LocalSymbol> {
@@ -453,32 +454,37 @@ impl<'a> Parser<'a> {
     pub fn parse_var_decl_or_init(&mut self) -> ParserResult<Expr> {
         self.expect_keyword(Keyword::Let)?;
         let (id_token, id) = self.expect_id()?;
+        let str_id = id.id.clone();
         let span = id_token.span.clone();
 
         // todo: let 式のセミコロンの扱いを検討する（暫定的にセミコロン必須で実装）
         let expr = if self.is_next_eq(TokenKind::Semicolon).is_some() {
             // e.g.) let i;
             let decl = VarDecl { id, r#type: None };
-            let kind = ExprKind::VarDecl(decl);
+            let symbol = self.body_scope_hierarchy.declare(&str_id, LocalEntity::VarDecl(decl));
+            let kind = ExprKind::VarDecl(symbol);
             Expr { kind: Box::new(kind), span }
         } else if self.consume(TokenKind::Equal).is_some() {
             // e.g.) let i = 0;
             let expr = self.parse_expr()?;
             let init = VarInit { id, r#type: None, expr };
-            let kind = ExprKind::VarInit(init);
+            let symbol = self.body_scope_hierarchy.declare(&str_id, LocalEntity::VarInit(init));
+            let kind = ExprKind::VarInit(symbol);
             Expr { kind: Box::new(kind), span }
         } else {
             let r#type = Some(self.parse_type()?);
             if self.is_next_eq(TokenKind::Semicolon).is_some() {
                 // e.g.) let i usize;
                 let decl = VarDecl { id, r#type };
-                let kind = ExprKind::VarDecl(decl);
+                let symbol = self.body_scope_hierarchy.declare(&str_id, LocalEntity::VarDecl(decl));
+                let kind = ExprKind::VarDecl(symbol);
                 Expr { kind: Box::new(kind), span }
             } else if self.consume(TokenKind::Equal).is_some() {
                 // e.g.) let i usize = 0;
                 let expr = self.parse_expr()?;
                 let init = VarInit { id, r#type, expr };
-                let kind = ExprKind::VarInit(init);
+                let symbol = self.body_scope_hierarchy.declare(&str_id, LocalEntity::VarInit(init));
+                let kind = ExprKind::VarInit(symbol);
                 Expr { kind: Box::new(kind), span }
             } else {
                 return Err(ParserLog::ExpectedToken { kind: TokenKind::Semicolon, span: self.get_next_span() });
