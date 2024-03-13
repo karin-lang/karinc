@@ -2,9 +2,8 @@ use maplit::hashmap;
 
 use crate::{id_token, keyword_token, prim_type_token, token};
 use crate::lexer::token::{Span, TokenKind};
-use crate::parser::{ast::*, Parser, ParserLog};
-
-// todo: テストを追加
+use crate::parser::ast::*;
+use crate::parser::{Parser, ParserLog};
 
 #[test]
 fn outputs_parser_result() {
@@ -22,22 +21,24 @@ fn outputs_parser_result() {
     assert_eq!(
         ast,
         Ast {
-            global_symbol_table: hashmap! {
-                vec!["hako", "f"].into() => (
-                    GlobalEntity::FnDecl(
-                        FnDecl {
-                            id: Id {
-                                id: "f".to_string(),
-                                span: Span::new(0, 1, 1),
+            global_symbol_table: Box::new(
+                hashmap! {
+                    vec!["hako", "f"].into() => (
+                        GlobalEntity::FnDecl(
+                            FnDecl {
+                                id: Id {
+                                    id: "f".to_string(),
+                                    span: Span::new(0, 1, 1),
+                                },
+                                args: Vec::new(),
+                                ret_type: None,
+                                body: Vec::new(),
+                                symbol_table: Box::new(LocalSymbolTable::new()),
                             },
-                            args: Vec::new(),
-                            ret_type: None,
-                            body: Vec::new(),
-                            symbol_table: LocalSymbolTable::new(),
-                        },
-                    )
-                ),
-            }.into(),
+                        )
+                    ),
+                }.into(),
+            ),
         },
     );
     assert_eq!(logs, Vec::new());
@@ -75,7 +76,7 @@ fn parses_continuous_items() {
                         args: Vec::new(),
                         ret_type: None,
                         body: Vec::new(),
-                        symbol_table: LocalSymbolTable::new(),
+                        symbol_table: Box::new(LocalSymbolTable::new()),
                     },
                 )
             ),
@@ -89,7 +90,7 @@ fn parses_continuous_items() {
                         args: Vec::new(),
                         ret_type: None,
                         body: Vec::new(),
-                        symbol_table: LocalSymbolTable::new(),
+                        symbol_table: Box::new(LocalSymbolTable::new()),
                     },
                 )
             ),
@@ -122,7 +123,7 @@ fn expects_items_and_skips_line() {
     );
     assert!(parser.peek().is_none());
 }
-/*
+
 #[test]
 fn parses_fn_decl() {
     let tokens = vec![
@@ -133,27 +134,25 @@ fn parses_fn_decl() {
         token!(OpenCurlyBracket, 0, 4, 1),
         token!(ClosingCurlyBracket, 0, 5, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_single_item(),
-        Ok(
-            Item {
-                kind: Box::new(
-                    ItemKind::FnDecl(
-                        FnDecl {
-                            id: Id {
-                                id: "f".to_string(),
-                                span: Span::new(0, 1, 1),
-                            },
-                            args: Vec::new(),
-                            ret_type: None,
-                            body: Vec::new(),
-                        },
-                    ),
-                ),
-            },
-        ),
+        Ok((
+            Id { id: "f".to_string(), span: Span::new(0, 1, 1) },
+            GlobalEntity::FnDecl(
+                FnDecl {
+                    id: Id {
+                        id: "f".to_string(),
+                        span: Span::new(0, 1, 1),
+                    },
+                    args: Vec::new(),
+                    ret_type: None,
+                    body: Vec::new(),
+                    symbol_table: Box::new(LocalSymbolTable::new()),
+                },
+            ),
+        )),
     );
     assert_eq!(*parser.get_logs(), Vec::new());
     assert!(parser.peek().is_none());
@@ -170,32 +169,30 @@ fn parses_fn_decl_with_ret_type() {
         token!(OpenCurlyBracket, 0, 6, 1),
         token!(ClosingCurlyBracket, 0, 7, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_single_item(),
-        Ok(
-            Item {
-                kind: Box::new(
-                    ItemKind::FnDecl(
-                        FnDecl {
-                            id: Id {
-                                id: "f".to_string(),
-                                span: Span::new(0, 1, 1),
-                            },
-                            args: Vec::new(),
-                            ret_type: Some(
-                                Type {
-                                    kind: Box::new(TypeKind::Prim(PrimType::Usize)),
-                                    span: Span::new(0, 4, 1),
-                                },
-                            ),
-                            body: Vec::new(),
+        Ok((
+            Id { id: "f".to_string(), span: Span::new(0, 1, 1) },
+            GlobalEntity::FnDecl(
+                FnDecl {
+                    id: Id {
+                        id: "f".to_string(),
+                        span: Span::new(0, 1, 1),
+                    },
+                    args: Vec::new(),
+                    ret_type: Some(
+                        Type {
+                            kind: Box::new(TypeKind::Prim(PrimType::Usize)),
+                            span: Span::new(0, 4, 1),
                         },
                     ),
-                ),
-            },
-        ),
+                    body: Vec::new(),
+                    symbol_table: Box::new(LocalSymbolTable::new()),
+                },
+            ),
+        )),
     );
     assert_eq!(*parser.get_logs(), Vec::new());
     assert!(parser.peek().is_none());
@@ -207,7 +204,7 @@ fn parses_formal_args_of_zero_len() {
         token!(OpenParen, 0, 0, 1),
         token!(ClosingParen, 0, 1, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_formal_args(),
@@ -225,7 +222,7 @@ fn parses_formal_arg_of_a_len() {
         prim_type_token!(Usize, 0, 2, 1),
         token!(ClosingParen, 0, 3, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_formal_args(),
@@ -257,7 +254,7 @@ fn parses_formal_args_of_two_len() {
         prim_type_token!(Usize, 0, 6, 1),
         token!(ClosingParen, 0, 7, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_formal_args(),
@@ -295,7 +292,7 @@ fn parses_mutable_formal_arg() {
         prim_type_token!(Usize, 0, 3, 1),
         token!(ClosingParen, 0, 4, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_formal_args(),
@@ -325,7 +322,7 @@ fn disallows_comma_before_formal_args() {
         prim_type_token!(Usize, 0, 3, 1),
         token!(ClosingParen, 0, 4, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_formal_args(),
@@ -358,7 +355,7 @@ fn allows_comma_after_formal_args() {
         token!(Comma, 0, 3, 1),
         token!(ClosingParen, 0, 4, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_formal_args(),
@@ -385,11 +382,11 @@ fn parses_empty_body() {
         token!(OpenCurlyBracket, 0, 0, 1),
         token!(ClosingCurlyBracket, 0, 1, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_body(),
-        Ok(Vec::new()),
+        Ok((Vec::new(), LocalSymbolTable::new())),
     );
     assert_eq!(*parser.get_logs(), Vec::new());
     assert!(parser.peek().is_none());
@@ -403,18 +400,19 @@ fn parses_body_with_single_expr() {
         token!(Semicolon, 0, 2, 1),
         token!(ClosingCurlyBracket, 0, 3, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_body(),
-        Ok(
+        Ok((
             vec![
                 Expr {
-                    kind: Box::new(ExprKind::Id(Id { id: "id".to_string(), span: Span::new(0, 1, 1) })),
+                    kind: Box::new(ExprKind::Id(Id { id: "id".to_string(), span: Span::new(0, 1, 1) }, None)),
                     span: Span::new(0, 1, 1),
                 },
             ],
-        ),
+            LocalSymbolTable::new(),
+        )),
     );
     assert_eq!(*parser.get_logs(), Vec::new());
     assert!(parser.peek().is_none());
@@ -430,22 +428,23 @@ fn parses_body_with_multiple_exprs() {
         token!(Semicolon, 0, 4, 1),
         token!(ClosingCurlyBracket, 0, 5, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_body(),
-        Ok(
+        Ok((
             vec![
                 Expr {
-                    kind: Box::new(ExprKind::Id(Id { id: "id1".to_string(), span: Span::new(0, 1, 1) })),
+                    kind: Box::new(ExprKind::Id(Id { id: "id1".to_string(), span: Span::new(0, 1, 1) }, None)),
                     span: Span::new(0, 1, 1),
                 },
                 Expr {
-                    kind: Box::new(ExprKind::Id(Id { id: "id2".to_string(), span: Span::new(0, 3, 1) })),
+                    kind: Box::new(ExprKind::Id(Id { id: "id2".to_string(), span: Span::new(0, 3, 1) }, None)),
                     span: Span::new(0, 3, 1),
                 },
             ],
-        ),
+            LocalSymbolTable::new(),
+        )),
     );
     assert_eq!(*parser.get_logs(), Vec::new());
     assert!(parser.peek().is_none());
@@ -459,22 +458,23 @@ fn expects_semicolon_after_expr_in_body() {
         id_token!("id2", 0, 2, 1),
         token!(ClosingCurlyBracket, 0, 3, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_body(),
-        Ok(
+        Ok((
             vec![
                 Expr {
-                    kind: Box::new(ExprKind::Id(Id { id: "id1".to_string(), span: Span::new(0, 1, 1) })),
+                    kind: Box::new(ExprKind::Id(Id { id: "id1".to_string(), span: Span::new(0, 1, 1) }, None)),
                     span: Span::new(0, 1, 1),
                 },
                 Expr {
-                    kind: Box::new(ExprKind::Id(Id { id: "id2".to_string(), span: Span::new(0, 2, 1) })),
+                    kind: Box::new(ExprKind::Id(Id { id: "id2".to_string(), span: Span::new(0, 2, 1) }, None)),
                     span: Span::new(0, 2, 1),
                 },
             ],
-        ),
+            LocalSymbolTable::new(),
+        )),
     );
     assert_eq!(
         *parser.get_logs(),
@@ -487,9 +487,78 @@ fn expects_semicolon_after_expr_in_body() {
 }
 
 #[test]
+fn resolves_symbols_in_body() {
+    let tokens = vec![
+        // {
+        token!(OpenCurlyBracket, 0, 0, 1),
+        // let i;
+        keyword_token!(Let, 0, 1, 1),
+        id_token!("i", 0, 2, 1),
+        token!(Semicolon, 0, 3, 1),
+        // i;
+        id_token!("i", 0, 4, 1),
+        token!(Semicolon, 0, 5, 1),
+        // let i;
+        keyword_token!(Let, 0, 6, 1),
+        id_token!("i", 0, 7, 1),
+        token!(Semicolon, 0, 8, 1),
+        // i;
+        id_token!("i", 0, 9, 1),
+        token!(Semicolon, 0, 10, 1),
+        // }
+        token!(ClosingCurlyBracket, 0, 11, 1),
+    ];
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
+
+    assert_eq!(
+        parser.parse_body(),
+        Ok((
+            vec![
+                Expr {
+                    kind: Box::new(ExprKind::VarDecl(0.into())),
+                    span: Span::new(0, 2, 1),
+                },
+                Expr {
+                    kind: Box::new(ExprKind::Id(Id { id: "i".to_string(), span: Span::new(0, 4, 1) }, Some(0.into()))),
+                    span: Span::new(0, 4, 1),
+                },
+                Expr {
+                    kind: Box::new(ExprKind::VarDecl(1.into())),
+                    span: Span::new(0, 7, 1),
+                },
+                Expr {
+                    kind: Box::new(ExprKind::Id(Id { id: "i".to_string(), span: Span::new(0, 9, 1) }, Some(1.into()))),
+                    span: Span::new(0, 9, 1),
+                },
+            ],
+            hashmap! {
+                0.into() => (
+                    LocalEntity::VarDecl(
+                        VarDecl {
+                            id: Id { id: "i".to_string(), span: Span::new(0, 2, 1) },
+                            r#type: None,
+                        },
+                    )
+                ),
+                1.into() => (
+                    LocalEntity::VarDecl(
+                        VarDecl {
+                            id: Id { id: "i".to_string(), span: Span::new(0, 7, 1) },
+                            r#type: None,
+                        },
+                    )
+                ),
+            }.into(),
+        )),
+    );
+    assert_eq!(*parser.get_logs(), Vec::new());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
 fn parses_id_type() {
     let tokens = vec![id_token!("t", 0, 0, 1)];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_type(),
@@ -511,7 +580,7 @@ fn parses_id_type() {
 #[test]
 fn parses_prim_type() {
     let tokens = vec![prim_type_token!(Usize, 0, 0, 1)];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_type(),
@@ -529,7 +598,7 @@ fn parses_prim_type() {
 #[test]
 fn expects_type_for_unexpected_token() {
     let tokens = vec![token!(Semicolon, 0, 0, 1)];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
 
     assert_eq!(
         parser.parse_type(),
@@ -542,13 +611,14 @@ fn expects_type_for_unexpected_token() {
 #[test]
 fn parses_id_expr() {
     let tokens = vec![id_token!("id", 0, 0, 1)];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
+    parser.body_scope_hierarchy.enter_scope();
 
     assert_eq!(
         parser.parse_expr(),
         Ok(
             Expr {
-                kind: Box::new(ExprKind::Id(Id { id: "id".to_string(), span: Span::new(0, 0, 1) })),
+                kind: Box::new(ExprKind::Id(Id { id: "id".to_string(), span: Span::new(0, 0, 1) }, None)),
                 span: Span::new(0, 0, 1),
             },
         ),
@@ -564,23 +634,30 @@ fn parses_var_decl_or_init_expr() {
         id_token!("i", 0, 1, 1),
         token!(Semicolon, 0, 0, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
+    parser.body_scope_hierarchy.enter_scope();
 
     assert_eq!(
         parser.parse_expr(),
         Ok(
             Expr {
-                kind: Box::new(
-                    ExprKind::VarDecl(
-                        VarDecl {
-                            id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
-                            r#type: None,
-                        },
-                    ),
-                ),
+                kind: Box::new(ExprKind::VarDecl(0.into())),
                 span: Span::new(0, 1, 1),
             },
         ),
+    );
+    assert_eq!(
+        *parser.body_scope_hierarchy.get_current_symbol_table(),
+        hashmap! {
+            0.into() => (
+                LocalEntity::VarDecl(
+                    VarDecl {
+                        id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
+                        r#type: None,
+                    },
+                )
+            ),
+        }.into(),
     );
     assert_eq!(*parser.get_logs(), Vec::new());
     assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 0, 1)));
@@ -593,23 +670,30 @@ fn parses_var_decl() {
         id_token!("i", 0, 1, 1),
         token!(Semicolon, 0, 2, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
+    parser.body_scope_hierarchy.enter_scope();
 
     assert_eq!(
         parser.parse_var_decl_or_init(),
         Ok(
             Expr {
-                kind: Box::new(
-                    ExprKind::VarDecl(
-                        VarDecl {
-                            id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
-                            r#type: None,
-                        },
-                    ),
-                ),
+                kind: Box::new(ExprKind::VarDecl(0.into())),
                 span: Span::new(0, 1, 1),
             },
         ),
+    );
+    assert_eq!(
+        *parser.body_scope_hierarchy.get_current_symbol_table(),
+        hashmap! {
+            0.into() => (
+                LocalEntity::VarDecl(
+                    VarDecl {
+                        id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
+                        r#type: None,
+                    },
+                )
+            ),
+        }.into(),
     );
     assert_eq!(*parser.get_logs(), Vec::new());
     assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 2, 1)));
@@ -623,28 +707,35 @@ fn parses_var_decl_with_type_annot() {
         prim_type_token!(Usize, 0, 2, 1),
         token!(Semicolon, 0, 3, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
+    parser.body_scope_hierarchy.enter_scope();
 
     assert_eq!(
         parser.parse_var_decl_or_init(),
         Ok(
             Expr {
-                kind: Box::new(
-                    ExprKind::VarDecl(
-                        VarDecl {
-                            id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
-                            r#type: Some(
-                                Type {
-                                    kind: Box::new(TypeKind::Prim(PrimType::Usize)),
-                                    span: Span::new(0, 2, 1),
-                                },
-                            ),
-                        },
-                    ),
-                ),
+                kind: Box::new(ExprKind::VarDecl(0.into())),
                 span: Span::new(0, 1, 1),
             },
         ),
+    );
+    assert_eq!(
+        *parser.body_scope_hierarchy.get_current_symbol_table(),
+        hashmap! {
+            0.into() => (
+                LocalEntity::VarDecl(
+                    VarDecl {
+                        id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
+                        r#type: Some(
+                            Type {
+                                kind: Box::new(TypeKind::Prim(PrimType::Usize)),
+                                span: Span::new(0, 2, 1),
+                            },
+                        ),
+                    },
+                )
+            ),
+        }.into(),
     );
     assert_eq!(*parser.get_logs(), Vec::new());
     assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 3, 1)));
@@ -659,31 +750,39 @@ fn parses_var_init() {
         id_token!("init", 0, 3, 1),
         token!(Semicolon, 0, 4, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
+    parser.body_scope_hierarchy.enter_scope();
 
     assert_eq!(
         parser.parse_var_decl_or_init(),
         Ok(
             Expr {
-                kind: Box::new(
-                    ExprKind::VarInit(
-                        VarInit {
-                            id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
-                            r#type: None,
-                            expr: Expr {
-                                kind: Box::new(
-                                    ExprKind::Id(
-                                        Id { id: "init".to_string(), span: Span::new(0, 3, 1) },
-                                    ),
-                                ),
-                                span: Span::new(0, 3, 1),
-                            },
-                        },
-                    ),
-                ),
+                kind: Box::new(ExprKind::VarInit(0.into())),
                 span: Span::new(0, 1, 1),
             },
         ),
+    );
+    assert_eq!(
+        *parser.body_scope_hierarchy.get_current_symbol_table(),
+        hashmap! {
+            0.into() => (
+                LocalEntity::VarInit(
+                    VarInit {
+                        id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
+                        r#type: None,
+                        expr: Expr {
+                            kind: Box::new(
+                                ExprKind::Id(
+                                    Id { id: "init".to_string(), span: Span::new(0, 3, 1) },
+                                    None,
+                                ),
+                            ),
+                            span: Span::new(0, 3, 1),
+                        },
+                    },
+                )
+            ),
+        }.into(),
     );
     assert_eq!(*parser.get_logs(), Vec::new());
     assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 4, 1)));
@@ -699,38 +798,45 @@ fn parses_var_init_with_type_annot() {
         id_token!("init", 0, 4, 1),
         token!(Semicolon, 0, 5, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut parser = Parser::new(&tokens, vec!["hako"].into());
+    parser.body_scope_hierarchy.enter_scope();
 
     assert_eq!(
         parser.parse_var_decl_or_init(),
         Ok(
             Expr {
-                kind: Box::new(
-                    ExprKind::VarInit(
-                        VarInit {
-                            id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
-                            r#type: Some(
-                                Type {
-                                    kind: Box::new(TypeKind::Prim(PrimType::Usize)),
-                                    span: Span::new(0, 2, 1),
-                                },
-                            ),
-                            expr: Expr {
-                                kind: Box::new(
-                                    ExprKind::Id(
-                                        Id { id: "init".to_string(), span: Span::new(0, 4, 1) },
-                                    ),
-                                ),
-                                span: Span::new(0, 4, 1),
-                            },
-                        },
-                    ),
-                ),
+                kind: Box::new(ExprKind::VarInit(0.into())),
                 span: Span::new(0, 1, 1),
             },
         ),
     );
+    assert_eq!(
+        *parser.body_scope_hierarchy.get_current_symbol_table(),
+        hashmap! {
+            0.into() => (
+                LocalEntity::VarInit(
+                    VarInit {
+                        id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
+                        r#type: Some(
+                            Type {
+                                kind: Box::new(TypeKind::Prim(PrimType::Usize)),
+                                span: Span::new(0, 2, 1),
+                            },
+                        ),
+                        expr: Expr {
+                            kind: Box::new(
+                                ExprKind::Id(
+                                    Id { id: "init".to_string(), span: Span::new(0, 4, 1) },
+                                    None,
+                                ),
+                            ),
+                            span: Span::new(0, 4, 1),
+                        },
+                    },
+                )
+            ),
+        }.into(),
+    );
     assert_eq!(*parser.get_logs(), Vec::new());
     assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 5, 1)));
 }
-*/

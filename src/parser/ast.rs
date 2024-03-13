@@ -1,10 +1,11 @@
 use std::collections::HashMap;
+use std::fmt;
 
 use super::Span;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ast {
-    pub global_symbol_table: GlobalSymbolTable,
+    pub global_symbol_table: Box<GlobalSymbolTable>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -30,7 +31,7 @@ impl From<HashMap<GlobalSymbol, GlobalEntity>> for GlobalSymbolTable {
     }
 }
 
-#[derive(Clone, Eq, Debug, Hash, PartialEq)]
+#[derive(Clone, Eq, Hash, PartialEq)]
 pub struct GlobalSymbol {
     segments: Vec<String>,
 }
@@ -39,6 +40,12 @@ impl GlobalSymbol {
     pub fn add(mut self, segment: &str) -> GlobalSymbol {
         self.segments.push(segment.to_string());
         self
+    }
+}
+
+impl fmt::Debug for GlobalSymbol {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.segments.join("::"))
     }
 }
 
@@ -82,9 +89,21 @@ impl LocalSymbolTable {
     }
 }
 
-#[derive(Clone, Eq, Debug, Hash, PartialEq)]
+impl From<HashMap<LocalSymbol, LocalEntity>> for LocalSymbolTable {
+    fn from(value: HashMap<LocalSymbol, LocalEntity>) -> Self {
+        Self { table: value }
+    }
+}
+
+#[derive(Clone, Eq, Hash, PartialEq)]
 pub struct LocalSymbol {
     index: usize,
+}
+
+impl fmt::Debug for LocalSymbol {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "_{}", self.index)
+    }
 }
 
 impl From<usize> for LocalSymbol {
@@ -100,10 +119,16 @@ pub enum LocalEntity {
     VarInit(VarInit),
 }
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, PartialEq)]
 pub struct Id {
     pub id: String,
     pub span: Span,
+}
+
+impl fmt::Debug for Id {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "Id({:?}, {:?})", self.id, self.span)
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -125,7 +150,7 @@ pub struct FnDecl {
     pub args: Vec<FormalArg>,
     pub ret_type: Option<Type>,
     pub body: Vec<Expr>,
-    pub symbol_table: LocalSymbolTable,
+    pub symbol_table: Box<LocalSymbolTable>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

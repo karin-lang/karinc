@@ -15,8 +15,16 @@ impl BodyScopeHierarchy {
         BodyScopeHierarchy { scopes: Vec::new() }
     }
 
-    fn get_current_scope_mut(&mut self) -> &mut BodyScope {
+    pub fn get_current_scope(&self) -> &BodyScope {
+        self.scopes.last().expect("could not get current body scope")
+    }
+
+    pub fn get_current_scope_mut(&mut self) -> &mut BodyScope {
         self.scopes.last_mut().expect("could not get current body scope")
+    }
+
+    pub fn get_current_symbol_table(&self) -> &LocalSymbolTable {
+        &self.get_current_scope().symbol_table
     }
 
     pub fn enter_scope(&mut self) {
@@ -53,7 +61,7 @@ impl BodyScope {
         BodyScope {
             symbol_table: LocalSymbolTable::new(),
             symbol_counter: 0,
-            scopes: Vec::new(),
+            scopes: vec![LocalScope::new()],
         }
     }
 
@@ -61,7 +69,7 @@ impl BodyScope {
         self.symbol_table
     }
 
-    fn get_current_scope_mut(&mut self) -> &mut LocalScope {
+    pub fn get_current_scope_mut(&mut self) -> &mut LocalScope {
         self.scopes.last_mut().expect("could not get current local scope")
     }
 
@@ -136,7 +144,7 @@ pub struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>,
     module_path: GlobalSymbol,
     pub(crate) global_symbol_table: GlobalSymbolTable,
-    body_scope_hierarchy: BodyScopeHierarchy,
+    pub(crate) body_scope_hierarchy: BodyScopeHierarchy,
     last_token_span: Span,
     logs: Vec<ParserLog>,
 }
@@ -308,7 +316,7 @@ impl<'a> Parser<'a> {
 
     pub fn parse(mut self) -> (Ast, Vec<ParserLog>) {
         self.parse_items();
-        let ast = Ast { global_symbol_table: self.global_symbol_table };
+        let ast = Ast { global_symbol_table: Box::new(self.global_symbol_table) };
         (ast, self.logs)
     }
 
@@ -337,8 +345,8 @@ impl<'a> Parser<'a> {
             } else {
                 Some(self.parse_type()?)
             };
-            let (symbol_table, body) = self.parse_body()?;
-            let decl = FnDecl { id: id.clone(), args, ret_type, body, symbol_table };
+            let (body, symbol_table) = self.parse_body()?;
+            let decl = FnDecl { id: id.clone(), args, ret_type, body, symbol_table: Box::new(symbol_table) };
             (id, GlobalEntity::FnDecl(decl))
         } else {
             self.next_line();
@@ -385,11 +393,11 @@ impl<'a> Parser<'a> {
         Ok(args)
     }
 
-    fn parse_body(&mut self) -> ParserResult<(LocalSymbolTable, Vec<Expr>)> {
+    pub fn parse_body(&mut self) -> ParserResult<(Vec<Expr>, LocalSymbolTable)> {
         self.body_scope_hierarchy.enter_scope();
         let result = self.parse_body_();
         let symbol_table = self.body_scope_hierarchy.leave_scope();
-        result.map(|body| (symbol_table, body))
+        result.map(|body| (body, symbol_table))
     }
 
     fn parse_body_(&mut self) -> ParserResult<Vec<Expr>> {
