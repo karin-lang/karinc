@@ -4,8 +4,8 @@ use maplit::hashmap;
 
 use crate::lexer::token::Span;
 use crate::parser::ast;
-use crate::hir::*;
-use crate::hir::lowering::HirLowering;
+// use crate::hir::*;
+// use crate::hir::lowering::HirLowering;
 
 #[test]
 fn lowers_empty_ast() {

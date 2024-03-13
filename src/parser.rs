@@ -6,6 +6,117 @@ use std::slice::Iter;
 use crate::lexer::token::*;
 use self::ast::*;
 
+pub struct BodyScopeHierarchy {
+    scopes: Vec<BodyScope>,
+}
+
+impl BodyScopeHierarchy {
+    pub fn new() -> BodyScopeHierarchy {
+        BodyScopeHierarchy { scopes: Vec::new() }
+    }
+
+    fn get_current_scope_mut(&mut self) -> &mut BodyScope {
+        self.scopes.last_mut().expect("could not get current body scope")
+    }
+
+    pub fn enter_scope(&mut self) {
+        self.scopes.push(BodyScope::new());
+    }
+
+    pub fn leave_scope(&mut self) -> LocalSymbolTable {
+        self.scopes.pop().expect("could not leave body scope").exit()
+    }
+
+    pub fn declare(&mut self, id: &str, entity: LocalEntity) {
+        self.get_current_scope_mut().declare(id, entity);
+    }
+
+    pub fn resolve(&self, id: &str) -> Option<LocalSymbol> {
+        for each_scope in self.scopes.iter().rev() {
+            if let Some(symbol) = each_scope.resolve(id) {
+                return Some(symbol);
+            }
+        }
+
+        None
+    }
+}
+
+pub struct BodyScope {
+    symbol_table: LocalSymbolTable,
+    symbol_counter: usize,
+    scopes: Vec<LocalScope>,
+}
+
+impl BodyScope {
+    pub fn new() -> BodyScope {
+        BodyScope {
+            symbol_table: LocalSymbolTable::new(),
+            symbol_counter: 0,
+            scopes: Vec::new(),
+        }
+    }
+
+    pub fn exit(self) -> LocalSymbolTable {
+        self.symbol_table
+    }
+
+    fn get_current_scope_mut(&mut self) -> &mut LocalScope {
+        self.scopes.last_mut().expect("could not get current local scope")
+    }
+
+    pub fn enter_scope(&mut self) {
+        self.scopes.push(LocalScope::new());
+    }
+
+    pub fn leave_scope(&mut self) {
+        self.scopes.pop().expect("could not leave local scope");
+    }
+
+    pub fn declare(&mut self, id: &str, entity: LocalEntity) {
+        let symbol = LocalSymbol::from(self.symbol_counter);
+        self.get_current_scope_mut().declare(id, symbol.clone());
+        self.symbol_table.insert(symbol, entity);
+        self.symbol_counter += 1;
+    }
+
+    pub fn resolve(&self, id: &str) -> Option<LocalSymbol> {
+        for each_scope in self.scopes.iter().rev() {
+            if let Some(symbol) = each_scope.resolve(id) {
+                return Some(symbol);
+            }
+        }
+
+        None
+    }
+}
+
+pub struct LocalScope {
+    id_decls: Vec<(String, LocalSymbol)>,
+}
+
+impl LocalScope {
+    pub fn new() -> LocalScope {
+        LocalScope {
+            id_decls: Vec::new(),
+        }
+    }
+
+    pub fn declare(&mut self, id: &str, symbol: LocalSymbol) {
+        self.id_decls.push((id.to_string(), symbol));
+    }
+
+    pub fn resolve(&self, id: &str) -> Option<LocalSymbol> {
+        for (each_id, each_symbol) in self.id_decls.iter().rev() {
+            if each_id == id {
+                return Some(each_symbol.clone());
+            }
+        }
+
+        None
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParserLog {
     ExpectedExpr { span: Span },
@@ -22,14 +133,20 @@ pub type ParserResult<T> = Result<T, ParserLog>;
 
 pub struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>,
+    module_path: GlobalSymbol,
+    pub(crate) global_symbol_table: GlobalSymbolTable,
+    body_scope_hierarchy: BodyScopeHierarchy,
     last_token_span: Span,
     logs: Vec<ParserLog>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(tokens: &'a Vec<Token>) -> Parser<'a> {
+    pub fn new(tokens: &'a Vec<Token>, module_path: GlobalSymbol) -> Parser<'a> {
         Parser {
             tokens: tokens.iter().peekable(),
+            module_path,
+            global_symbol_table: GlobalSymbolTable::new(),
+            body_scope_hierarchy: BodyScopeHierarchy::new(),
             last_token_span: tokens.last().map(|token| token.span.clone()).unwrap_or_default(),
             logs: Vec::new(),
         }
@@ -189,33 +306,29 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse(mut self) -> (Ast, Vec<ParserLog>) {
-        let items = self.parse_items();
-        let ast = Ast { items };
+        self.parse_items();
+        let ast = Ast { global_symbol_table: self.global_symbol_table };
         (ast, self.logs)
     }
 
-    pub fn parse_items(&mut self) -> Vec<Item> {
-        let mut items = Vec::new();
-
+    pub fn parse_items(&mut self) {
         loop {
             if self.is_eof() {
                 break;
             }
 
             let item_result = self.parse_single_item();
-
-            if let Some(item) = self.record_result_log(item_result) {
-                items.push(item);
+            if let Some((id, entity)) = self.record_result_log(item_result) {
+                let symbol = self.module_path.clone().add(&id.id);
+                self.global_symbol_table.insert(symbol, entity);
             }
         }
-
-        items
     }
 
-    pub fn parse_single_item(&mut self) -> ParserResult<Item> {
+    pub fn parse_single_item(&mut self) -> ParserResult<(Id, GlobalEntity)> {
         let span = self.get_next_span();
 
-        let kind = if self.consume_keyword(Keyword::Fn).is_some() {
+        let (id, entity) = if self.consume_keyword(Keyword::Fn).is_some() {
             let (_, id) = self.expect_id()?;
             let args = self.parse_formal_args()?;
             let ret_type = if self.is_next_eq(TokenKind::OpenCurlyBracket).is_some() {
@@ -223,16 +336,15 @@ impl<'a> Parser<'a> {
             } else {
                 Some(self.parse_type()?)
             };
-            let body = self.parse_body()?;
-            let decl = FnDecl { id, args, ret_type, body };
-            ItemKind::FnDecl(decl)
+            let (symbol_table, body) = self.parse_body()?;
+            let decl = FnDecl { id: id.clone(), args, ret_type, body, symbol_table };
+            (id, GlobalEntity::FnDecl(decl))
         } else {
             self.next_line();
             return Err(ParserLog::ExpectedItem { span });
         };
 
-        let item = Item { kind: Box::new(kind) };
-        Ok(item)
+        Ok((id, entity))
     }
 
     pub fn parse_formal_args(&mut self) -> ParserResult<Vec<FormalArg>> {
@@ -272,7 +384,14 @@ impl<'a> Parser<'a> {
         Ok(args)
     }
 
-    pub fn parse_body(&mut self) -> ParserResult<Vec<Expr>> {
+    fn parse_body(&mut self) -> ParserResult<(LocalSymbolTable, Vec<Expr>)> {
+        self.body_scope_hierarchy.enter_scope();
+        let result = self.parse_body_();
+        let symbol_table = self.body_scope_hierarchy.leave_scope();
+        result.map(|body| (symbol_table, body))
+    }
+
+    fn parse_body_(&mut self) -> ParserResult<Vec<Expr>> {
         self.expect(TokenKind::OpenCurlyBracket)?;
         let mut exprs = Vec::new();
 
@@ -318,8 +437,9 @@ impl<'a> Parser<'a> {
         if let Some(id) = self.is_next_id() {
             self.expect_any()?;
             let span = id.span.clone();
+            let symbol = self.body_scope_hierarchy.resolve(&id.id);
             let expr = Expr {
-                kind: Box::new(ExprKind::Id(id)),
+                kind: Box::new(ExprKind::Id(id, symbol)),
                 span,
             };
             Ok(expr)
