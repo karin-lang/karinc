@@ -315,10 +315,7 @@ impl<'a> Parser<'a> {
         if let Some(id) = self.is_next_id() {
             self.expect_any()?;
             let span = id.span.clone();
-            let expr = Expr {
-                kind: Box::new(ExprKind::Id(id)),
-                span,
-            };
+            let expr = Expr { kind: ExprKind::Id(id), span };
             Ok(expr)
         } else if self.is_next_keyword(Keyword::Let).is_some() {
             self.parse_var_decl_or_init()
@@ -340,7 +337,7 @@ impl<'a> Parser<'a> {
         } else if self.consume(TokenKind::Equal).is_some() {
             // e.g.) let i = 0;
             let expr = self.parse_expr()?;
-            let init = VarInit { id, r#type: None, expr };
+            let init = VarInit { id, r#type: None, expr: Box::new(expr) };
             ExprKind::VarInit(init)
         } else {
             let r#type = Some(self.parse_type()?);
@@ -351,14 +348,14 @@ impl<'a> Parser<'a> {
             } else if self.consume(TokenKind::Equal).is_some() {
                 // e.g.) let i usize = 0;
                 let expr = self.parse_expr()?;
-                let init = VarInit { id, r#type, expr };
+                let init = VarInit { id, r#type, expr: Box::new(expr) };
                 ExprKind::VarInit(init)
             } else {
                 return Err(ParserLog::ExpectedToken { kind: TokenKind::Semicolon, span: self.get_next_span() });
             }
         };
 
-        let expr = Expr { kind: Box::new(kind), span };
+        let expr = Expr { kind, span };
         Ok(expr)
     }
 }

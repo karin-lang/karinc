@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::hir::ItemId;
+
 use super::Span;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -7,9 +9,11 @@ pub struct Ast {
     pub hakos: Vec<Hako>,
 }
 
+// todo: パーサ呼び出し部分で Hako を生成する
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hako {
     pub items: Vec<Item>,
+    pub root_mods: Vec<ItemId>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -51,7 +55,7 @@ pub struct FormalArg {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Expr {
-    pub kind: Box<ExprKind>,
+    pub kind: ExprKind,
     pub span: Span,
 }
 
@@ -94,5 +98,5 @@ pub struct VarDecl {
 pub struct VarInit {
     pub id: Id,
     pub r#type: Option<Type>,
-    pub expr: Expr,
+    pub expr: Box<Expr>,
 }
