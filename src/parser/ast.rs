@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::{hash_map::Iter, HashMap};
 use std::fmt;
 
 use super::Span;
@@ -17,11 +17,13 @@ impl GlobalSymbolTable {
     pub fn new() -> GlobalSymbolTable {
         GlobalSymbolTable { table: HashMap::new() }
     }
-}
 
-impl GlobalSymbolTable {
     pub fn insert(&mut self, symbol: GlobalSymbol, entity: GlobalEntity) -> Option<GlobalEntity> {
         self.table.insert(symbol, entity)
+    }
+
+    pub fn iter(&self) -> Iter<GlobalSymbol, GlobalEntity> {
+        self.table.iter()
     }
 }
 

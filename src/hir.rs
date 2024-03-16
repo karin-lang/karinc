@@ -2,39 +2,11 @@ pub mod lowering;
 
 use std::collections::HashMap;
 
+use crate::parser::ast;
+
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hir {
-    pub global_entities: HashMap<GlobalEntityId, GlobalEntity>,
-}
-
-#[derive(Clone, Eq, Debug, Hash, PartialEq)]
-pub struct GlobalEntityId {
-    pub segments: Vec<String>,
-}
-
-impl GlobalEntityId {
-    pub fn add_segment(mut self, segment: String) -> GlobalEntityId {
-        self.segments.push(segment);
-        self
-    }
-}
-
-impl From<Vec<&str>> for GlobalEntityId {
-    fn from(value: Vec<&str>) -> Self {
-        Self { segments: value.iter().map(|v| v.to_string()).collect() }
-    }
-}
-
-impl From<Vec<String>> for GlobalEntityId {
-    fn from(value: Vec<String>) -> Self {
-        Self { segments: value }
-    }
-}
-
-impl From<Vec<&String>> for GlobalEntityId {
-    fn from(value: Vec<&String>) -> Self {
-        Self { segments: value.iter().map(|v| (*v).clone()).collect() }
-    }
+    pub global_entities: HashMap<ast::GlobalSymbol, GlobalEntity>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -72,7 +44,7 @@ pub struct FormalArg;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr {
-    LocalEntity(LocalEntityId),
+    LocalEntity(),
 }
 
 #[derive(Clone, Debug, PartialEq)]
