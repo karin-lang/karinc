@@ -6,126 +6,6 @@ use std::slice::Iter;
 use crate::lexer::token::*;
 use self::ast::*;
 
-pub struct BodyScopeHierarchy {
-    scopes: Vec<BodyScope>,
-}
-
-impl BodyScopeHierarchy {
-    pub fn new() -> BodyScopeHierarchy {
-        BodyScopeHierarchy { scopes: Vec::new() }
-    }
-
-    pub fn get_current_scope(&self) -> &BodyScope {
-        self.scopes.last().expect("could not get current body scope")
-    }
-
-    pub fn get_current_scope_mut(&mut self) -> &mut BodyScope {
-        self.scopes.last_mut().expect("could not get current body scope")
-    }
-
-    pub fn get_current_symbol_table(&self) -> &LocalSymbolTable {
-        &self.get_current_scope().symbol_table
-    }
-
-    pub fn enter_scope(&mut self) {
-        self.scopes.push(BodyScope::new());
-    }
-
-    pub fn leave_scope(&mut self) -> LocalSymbolTable {
-        self.scopes.pop().expect("could not leave body scope").exit()
-    }
-
-    pub fn declare(&mut self, id: &str, entity: LocalEntity) -> LocalSymbol {
-        self.get_current_scope_mut().declare(id, entity)
-    }
-
-    pub fn resolve(&self, id: &str) -> Option<LocalSymbol> {
-        for each_scope in self.scopes.iter().rev() {
-            if let Some(symbol) = each_scope.resolve(id) {
-                return Some(symbol);
-            }
-        }
-
-        None
-    }
-}
-
-pub struct BodyScope {
-    symbol_table: LocalSymbolTable,
-    symbol_counter: usize,
-    scopes: Vec<LocalScope>,
-}
-
-impl BodyScope {
-    pub fn new() -> BodyScope {
-        BodyScope {
-            symbol_table: LocalSymbolTable::new(),
-            symbol_counter: 0,
-            scopes: vec![LocalScope::new()],
-        }
-    }
-
-    pub fn exit(self) -> LocalSymbolTable {
-        self.symbol_table
-    }
-
-    pub fn get_current_scope_mut(&mut self) -> &mut LocalScope {
-        self.scopes.last_mut().expect("could not get current local scope")
-    }
-
-    pub fn enter_scope(&mut self) {
-        self.scopes.push(LocalScope::new());
-    }
-
-    pub fn leave_scope(&mut self) {
-        self.scopes.pop().expect("could not leave local scope");
-    }
-
-    pub fn declare(&mut self, id: &str, entity: LocalEntity) -> LocalSymbol {
-        let symbol = LocalSymbol::from(self.symbol_counter);
-        self.get_current_scope_mut().declare(id, symbol.clone());
-        self.symbol_table.insert(symbol.clone(), entity);
-        self.symbol_counter += 1;
-        symbol
-    }
-
-    pub fn resolve(&self, id: &str) -> Option<LocalSymbol> {
-        for each_scope in self.scopes.iter().rev() {
-            if let Some(symbol) = each_scope.resolve(id) {
-                return Some(symbol);
-            }
-        }
-
-        None
-    }
-}
-
-pub struct LocalScope {
-    id_decls: Vec<(String, LocalSymbol)>,
-}
-
-impl LocalScope {
-    pub fn new() -> LocalScope {
-        LocalScope {
-            id_decls: Vec::new(),
-        }
-    }
-
-    pub fn declare(&mut self, id: &str, symbol: LocalSymbol) {
-        self.id_decls.push((id.to_string(), symbol));
-    }
-
-    pub fn resolve(&self, id: &str) -> Option<LocalSymbol> {
-        for (each_id, each_symbol) in self.id_decls.iter().rev() {
-            if each_id == id {
-                return Some(each_symbol.clone());
-            }
-        }
-
-        None
-    }
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParserLog {
     ExpectedExpr { span: Span },
@@ -142,20 +22,14 @@ pub type ParserResult<T> = Result<T, ParserLog>;
 
 pub struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>,
-    module_path: GlobalSymbol,
-    pub(crate) global_symbol_table: GlobalSymbolTable,
-    pub(crate) body_scope_hierarchy: BodyScopeHierarchy,
     last_token_span: Span,
     logs: Vec<ParserLog>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(tokens: &'a Vec<Token>, module_path: GlobalSymbol) -> Parser<'a> {
+    pub fn new(tokens: &'a Vec<Token>) -> Parser<'a> {
         Parser {
             tokens: tokens.iter().peekable(),
-            module_path,
-            global_symbol_table: GlobalSymbolTable::new(),
-            body_scope_hierarchy: BodyScopeHierarchy::new(),
             last_token_span: tokens.last().map(|token| token.span.clone()).unwrap_or_default(),
             logs: Vec::new(),
         }
@@ -314,30 +188,32 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(mut self) -> (Ast, Vec<ParserLog>) {
-        self.parse_items();
-        let ast = Ast { global_symbol_table: Box::new(self.global_symbol_table) };
-        (ast, self.logs)
+    pub fn parse(mut self) -> (Vec<Item>, Vec<ParserLog>) {
+        let items = self.parse_items();
+        (items, self.logs)
     }
 
-    pub fn parse_items(&mut self) {
+    pub fn parse_items(&mut self) -> Vec<Item> {
+        let mut items = Vec::new();
+
         loop {
             if self.is_eof() {
                 break;
             }
 
             let item_result = self.parse_single_item();
-            if let Some((id, entity)) = self.record_result_log(item_result) {
-                let symbol = self.module_path.clone().add(&id.id);
-                self.global_symbol_table.insert(symbol, entity);
+            if let Some(new_item) = self.record_result_log(item_result) {
+                items.push(new_item);
             }
         }
+
+        items
     }
 
-    pub fn parse_single_item(&mut self) -> ParserResult<(Id, GlobalEntity)> {
+    pub fn parse_single_item(&mut self) -> ParserResult<Item> {
         let span = self.get_next_span();
 
-        let (id, entity) = if self.consume_keyword(Keyword::Fn).is_some() {
+        let item = if self.consume_keyword(Keyword::Fn).is_some() {
             let (_, id) = self.expect_id()?;
             let args = self.parse_formal_args()?;
             let ret_type = if self.is_next_eq(TokenKind::OpenCurlyBracket).is_some() {
@@ -345,15 +221,15 @@ impl<'a> Parser<'a> {
             } else {
                 Some(self.parse_type()?)
             };
-            let (body, symbol_table) = self.parse_body()?;
-            let decl = FnDecl { id: id.clone(), args, ret_type, body, symbol_table: Box::new(symbol_table) };
-            (id, GlobalEntity::FnDecl(decl))
+            let body = self.parse_body()?;
+            let decl = FnDecl { args, ret_type, body };
+            Item { id, kind: ItemKind::FnDecl(decl) }
         } else {
             self.next_line();
             return Err(ParserLog::ExpectedItem { span });
         };
 
-        Ok((id, entity))
+        Ok(item)
     }
 
     pub fn parse_formal_args(&mut self) -> ParserResult<Vec<FormalArg>> {
@@ -393,14 +269,7 @@ impl<'a> Parser<'a> {
         Ok(args)
     }
 
-    pub fn parse_body(&mut self) -> ParserResult<(Vec<Expr>, LocalSymbolTable)> {
-        self.body_scope_hierarchy.enter_scope();
-        let result = self.parse_body_();
-        let symbol_table = self.body_scope_hierarchy.leave_scope();
-        result.map(|body| (body, symbol_table))
-    }
-
-    fn parse_body_(&mut self) -> ParserResult<Vec<Expr>> {
+    pub fn parse_body(&mut self) -> ParserResult<Vec<Expr>> {
         self.expect(TokenKind::OpenCurlyBracket)?;
         let mut exprs = Vec::new();
 
@@ -446,9 +315,8 @@ impl<'a> Parser<'a> {
         if let Some(id) = self.is_next_id() {
             self.expect_any()?;
             let span = id.span.clone();
-            let symbol = self.body_scope_hierarchy.resolve(&id.id);
             let expr = Expr {
-                kind: Box::new(ExprKind::Id(id, symbol)),
+                kind: Box::new(ExprKind::Id(id)),
                 span,
             };
             Ok(expr)
@@ -463,35 +331,34 @@ impl<'a> Parser<'a> {
         self.expect_keyword(Keyword::Let)?;
         let (_, id) = self.expect_id()?;
         let span = id.span.clone();
-        let str_id = id.id.clone();
 
         // todo: let 式のセミコロンの扱いを検討する（暫定的にセミコロン必須で実装）
-        let symbol = if self.is_next_eq(TokenKind::Semicolon).is_some() {
+        let kind = if self.is_next_eq(TokenKind::Semicolon).is_some() {
             // e.g.) let i;
             let decl = VarDecl { id, r#type: None };
-            self.body_scope_hierarchy.declare(&str_id, LocalEntity::VarDecl(decl))
+            ExprKind::VarDecl(decl)
         } else if self.consume(TokenKind::Equal).is_some() {
             // e.g.) let i = 0;
             let expr = self.parse_expr()?;
             let init = VarInit { id, r#type: None, expr };
-            self.body_scope_hierarchy.declare(&str_id, LocalEntity::VarInit(init))
+            ExprKind::VarInit(init)
         } else {
             let r#type = Some(self.parse_type()?);
             if self.is_next_eq(TokenKind::Semicolon).is_some() {
                 // e.g.) let i usize;
                 let decl = VarDecl { id, r#type };
-                self.body_scope_hierarchy.declare(&str_id, LocalEntity::VarDecl(decl))
+                ExprKind::VarDecl(decl)
             } else if self.consume(TokenKind::Equal).is_some() {
                 // e.g.) let i usize = 0;
                 let expr = self.parse_expr()?;
                 let init = VarInit { id, r#type, expr };
-                self.body_scope_hierarchy.declare(&str_id, LocalEntity::VarInit(init))
+                ExprKind::VarInit(init)
             } else {
                 return Err(ParserLog::ExpectedToken { kind: TokenKind::Semicolon, span: self.get_next_span() });
             }
         };
 
-        let expr = Expr { kind: Box::new(ExprKind::LocalEntity(symbol)), span };
+        let expr = Expr { kind: Box::new(kind), span };
         Ok(expr)
     }
 }

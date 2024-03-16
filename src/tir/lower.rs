@@ -1,3 +1,5 @@
+use self::ast;
+
 use super::*;
 
 pub struct TirLowering {
@@ -8,7 +10,7 @@ impl TirLowering {
         TirLowering {}
     }
 
-    pub fn lower(mut self) -> Tir {
+    pub fn lower(mut self, air: ast::Ast) -> Tir {
         
     }
 }

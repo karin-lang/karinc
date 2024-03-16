@@ -6,23 +6,7 @@ use crate::parser::ast;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Tir {
-    pub hako: HashMap<ast::GlobalSymbol, Hako>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Hako {
-    pub entities: HashMap<ast::GlobalSymbol, Entity>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum Entity {
-    Module(Module),
-    Fn(Fn),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Module {
-    pub children: Vec<ast::Id>,
+    pub bodies: HashMap<ast::GlobalSymbol, >,
 }
 
 #[derive(Clone, Debug, PartialEq)]
