@@ -8,34 +8,6 @@ pub struct Hir {
     pub items: Vec<Item>,
 }
 
-// #[derive(Clone, Eq, Debug, Hash, PartialEq)]
-// pub struct ItemId {
-//     id: usize,
-// }
-
-// impl From<usize> for ItemId {
-//     fn from(value: usize) -> Self {
-//         Self { id: value }
-//     }
-// }
-
-// #[derive(Clone, Debug, PartialEq)]
-// pub struct ItemIdGen {
-//     id: usize,
-// }
-
-// impl ItemIdGen {
-//     pub fn new() -> ItemIdGen {
-//         ItemIdGen { id: 0 }
-//     }
-
-//     pub fn generate(&mut self) -> ItemId {
-//         let new = self.id.into();
-//         self.id += 1;
-//         new
-//     }
-// }
-
 #[derive(Clone, Debug, PartialEq)]
 pub enum Item {
     FnDecl(FnDecl),
