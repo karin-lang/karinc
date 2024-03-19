@@ -36,7 +36,6 @@ impl NodeIdGen {
     }
 }
 
-// todo: パーサ呼び出し部分でモジュール情報付きの Hako を生成する
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ast {
     pub items: Vec<Item>,

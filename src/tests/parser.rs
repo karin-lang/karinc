@@ -1,7 +1,102 @@
+use crate::lexer::*;
 use crate::{id_token, keyword_token, token};
 use crate::lexer::token::Span;
 use crate::parser::ast::*;
-use crate::parser::{Parser, ParserLog};
+use crate::parser::{Parser, ParserLog, ParsingBroker};
+
+#[test]
+fn a() {
+    let src_tree = SourceTree {
+        hakos: vec![
+            HakoSource {
+                mods: vec![
+                    (
+                        0,
+                        ModSource {
+                            id: "my_hako".to_string(),
+                            src: "fn f1() {}",
+                            submods: vec![
+                                (
+                                    1,
+                                    ModSource {
+                                        id: "my_submod".to_string(),
+                                        src: "fn f2() {}",
+                                        submods: Vec::new(),
+                                    },
+                                ),
+                            ],
+                        },
+                    ),
+                ],
+            },
+        ],
+    };
+    let parsing_broker = ParsingBroker::new();
+    let ast = parsing_broker.parse(&src_tree);
+
+    assert_eq!(
+        ast,
+        Ast {
+            items: vec![
+                Item {
+                    node_id: 0.into(),
+                    id: Id {
+                        id: "my_mod".to_string(),
+                        span: Span::new(0, 0, 0),
+                    },
+                    kind: ItemKind::Mod(
+                        Mod {
+                            submods: vec![1.into()],
+                            items: vec![("f1".to_string(), 2.into())],
+                        },
+                    ),
+                },
+                Item {
+                    node_id: 1.into(),
+                    id: Id {
+                        id: "my_submod".to_string(),
+                        span: Span::new(0, 0, 0),
+                    },
+                    kind: ItemKind::Mod(
+                        Mod {
+                            submods: Vec::new(),
+                            items: vec![("f2".to_string(), 3.into())],
+                        },
+                    ),
+                },
+                Item {
+                    node_id: 2.into(),
+                    id: Id {
+                        id: "f1".to_string(),
+                        span: Span::new(0, 3, 2),
+                    },
+                    kind: ItemKind::FnDecl(
+                        FnDecl {
+                            args: Vec::new(),
+                            ret_type: None,
+                            body: Body { exprs: Vec::new() },
+                        },
+                    ),
+                },
+                Item {
+                    node_id: 3.into(),
+                    id: Id {
+                        id: "f2".to_string(),
+                        span: Span::new(0, 3, 2),
+                    },
+                    kind: ItemKind::FnDecl(
+                        FnDecl {
+                            args: Vec::new(),
+                            ret_type: None,
+                            body: Body { exprs: Vec::new() },
+                        },
+                    ),
+                },
+            ],
+            hako_mods: vec![0.into()],
+        },
+    );
+}
 
 #[test]
 fn outputs_parser_result() {
@@ -15,10 +110,10 @@ fn outputs_parser_result() {
     ];
     let mut item_id_gen = NodeIdGen::new();
     let parser = Parser::new(&tokens, &mut item_id_gen);
-    let (ast, logs) = parser.parse();
+    let (items, logs) = parser.parse();
 
     assert_eq!(
-        ast,
+        items,
         vec![
             Item {
                 node_id: 0.into(),

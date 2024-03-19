@@ -1,9 +1,9 @@
 pub mod ast;
 
-use std::iter::Peekable;
+use std::{collections::HashMap, iter::Peekable};
 use std::slice::Iter;
 
-use crate::lexer::token::*;
+use crate::lexer::{token::*, tokenize::Lexer, ModSource, SourceTree};
 use self::ast::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -19,6 +19,71 @@ pub enum ParserLog {
 }
 
 pub type ParserResult<T> = Result<T, ParserLog>;
+
+pub struct ParsingBroker {
+    items: Vec<Item>,
+    node_id_gen: NodeIdGen,
+}
+
+// SourceTreeをAST用のツリーに再構築してモジュール内のアイテムのノードIDを計算する？
+// モジュール、アイテムをノードIDでなく文字列で管理する？
+// 文字列管理でASTを生成したあとにアイテムのIDを数値に変換する？→不可
+impl ParsingBroker {
+    pub fn new() -> ParsingBroker {
+        ParsingBroker {
+            items: Vec::new(),
+            node_id_gen: NodeIdGen::new(),
+        }
+    }
+
+    pub fn parse(mut self, src_tree: &SourceTree) -> Ast {
+        let mut hako_mods = Vec::new();
+        for each_hako in &src_tree.hakos {
+            for (each_mod_id, each_mod) in &each_hako.mods {
+                hako_mods.push(NodeId::from(*each_mod_id));
+                self.parse_mod(each_mod);
+            }
+        }
+        Ast { items: self.items, hako_mods }
+    }
+
+    pub fn parse_mod(&mut self, mod_src: &ModSource) {
+        let mod_item = Item { node_id: mod_src, id: (), kind: () };
+        self.items.push(mod_item);
+        for (_, each_submod) in &mod_src.submods {
+            self.parse_mod(each_submod);
+        }
+    }
+
+    pub fn parse_mod_items(&mut self, mod_src: &ModSource) {
+        self.items.insert();
+        self.parse_mod_src(mod_src);
+        for (_, each_submod) in &mod_src.submods {
+            self.parse_mod(each_submod);
+        }
+    }
+
+    pub fn parse_mod_src(&mut self, mod_src: &ModSource) {
+        let lexer = Lexer::new();
+        let (tokens, _lexer_logs) = lexer.tokenize(mod_src.src);
+
+        let parser = Parser::new(&tokens, &mut self.node_id_gen);
+        let (mut items, _parser_logs) = parser.parse();
+
+        let submod_node_ids = mod_src.submods.iter().map(|(each_submod_id, _)| NodeId::from(*each_submod_id)).collect();
+        let item_node_ids = items.iter().map(|each_item| (each_item.id.id.clone(), each_item.node_id.clone())).collect();
+        let mod_item = Item {
+            node_id: self.node_id_gen.generate(),
+            id: Id { id: mod_src.id.clone(), span: Span::default() },
+            kind: ItemKind::Mod(
+                Mod { submods: submod_node_ids, items: item_node_ids },
+            ),
+        };
+
+        self.non_mod_items.push(mod_item);
+        self.non_mod_items.append(&mut items);
+    }
+}
 
 pub struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>,
@@ -190,13 +255,13 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(mut self) -> (Vec<Item>, Vec<ParserLog>) {
+    pub fn parse(mut self) -> (HashMap<NodeId, Item>, Vec<ParserLog>) {
         let items = self.parse_items();
         (items, self.logs)
     }
 
-    pub fn parse_items(&mut self) -> Vec<Item> {
-        let mut items = Vec::new();
+    pub fn parse_items(&mut self) -> HashMap<NodeId, Item> {
+        let mut items = HashMap::new();
 
         loop {
             if self.is_eof() {
@@ -205,7 +270,7 @@ impl<'a> Parser<'a> {
 
             let item_result = self.parse_single_item();
             if let Some(new_item) = self.record_result_log(item_result) {
-                items.push(new_item);
+                items.insert(new_item.node_id.clone(), new_item);
             }
         }
 
