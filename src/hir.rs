@@ -1,54 +1,104 @@
-pub mod lowering;
-
-use std::collections::HashMap;
-
-use crate::parser::ast;
+pub mod lower;
+pub mod resolve;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hir {
-    pub global_entities: HashMap<ast::GlobalSymbol, GlobalEntity>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum GlobalEntity {
-    FnDecl(FnDecl),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct FnDecl {
-    pub entities: HashMap<LocalEntityId, LocalEntity>,
-    pub args: Vec<LocalEntityId>,
-    pub body: Vec<Expr>,
+    pub items: Vec<Item>,
 }
 
 #[derive(Clone, Eq, Debug, Hash, PartialEq)]
-pub struct LocalEntityId {
+pub struct ItemId {
     id: usize,
 }
 
-impl From<usize> for LocalEntityId {
+impl From<usize> for ItemId {
     fn from(value: usize) -> Self {
         Self { id: value }
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum LocalEntity {
+pub struct ItemIdGen {
+    id: usize,
+}
+
+impl ItemIdGen {
+    pub fn new() -> ItemIdGen {
+        ItemIdGen { id: 0 }
+    }
+
+    pub fn generate(&mut self) -> ItemId {
+        let new = self.id.into();
+        self.id += 1;
+        new
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Item {
+    Mod,
+    FnDecl(FnDecl),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FnDecl {
+    pub args: Vec<LocalId>,
+    pub body: Body,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Body {
+    pub locals: Vec<Local>,
+    pub exprs: Vec<Expr>,
+}
+
+#[derive(Clone, Eq, Debug, Hash, PartialEq)]
+pub struct LocalId {
+    id: usize,
+}
+
+impl From<usize> for LocalId {
+    fn from(value: usize) -> Self {
+        Self { id: value }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Local {
     FormalArg(FormalArg),
     VarDecl(VarDecl),
     VarInit(VarInit),
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct FormalArg;
-
-#[derive(Clone, Debug, PartialEq)]
 pub enum Expr {
-    LocalEntity(),
+    FnCall(FnCall),
+    ItemRef(ItemId),
+    LocalDecl(LocalId),
+    LocalRef(LocalId),
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct VarDecl;
+pub struct FnCall {
+    pub r#fn: ItemId,
+    pub args: Vec<ActualArg>,
+}
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct VarInit;
+pub struct ActualArg {
+    pub expr: Expr,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FormalArg;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct VarDecl {
+    pub mutable: bool,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct VarInit {
+    pub mutable: bool,
+    pub init: Expr,
+}

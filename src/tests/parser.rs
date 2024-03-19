@@ -1,5 +1,5 @@
-use crate::{id_token, keyword_token, prim_type_token, token};
-use crate::lexer::token::{Span, TokenKind};
+use crate::{id_token, keyword_token, token};
+use crate::lexer::token::Span;
 use crate::parser::ast::*;
 use crate::parser::{Parser, ParserLog};
 
@@ -13,13 +13,15 @@ fn outputs_parser_result() {
         token!(OpenCurlyBracket, 0, 4, 1),
         token!(ClosingCurlyBracket, 0, 5, 1),
     ];
-    let parser = Parser::new(&tokens);
+    let mut item_id_gen = NodeIdGen::new();
+    let parser = Parser::new(&tokens, &mut item_id_gen);
     let (ast, logs) = parser.parse();
 
     assert_eq!(
         ast,
         vec![
             Item {
+                node_id: 0.into(),
                 id: Id {
                     id: "f".to_string(),
                     span: Span::new(0, 1, 1),
@@ -28,7 +30,7 @@ fn outputs_parser_result() {
                     FnDecl {
                         args: Vec::new(),
                         ret_type: None,
-                        body: Vec::new(),
+                        body: Body { exprs: Vec::new() },
                     },
                 ),
             },
@@ -53,12 +55,14 @@ fn parses_continuous_items() {
         token!(OpenCurlyBracket, 0, 10, 1),
         token!(ClosingCurlyBracket, 0, 11, 1),
     ];
-    let mut parser = Parser::new(&tokens);
+    let mut item_id_gen = NodeIdGen::new();
+    let mut parser = Parser::new(&tokens, &mut item_id_gen);
 
     assert_eq!(
         parser.parse_items(),
         vec![
             Item {
+                node_id: 0.into(),
                 id: Id {
                     id: "f1".to_string(),
                     span: Span::new(0, 1, 1),
@@ -67,11 +71,12 @@ fn parses_continuous_items() {
                     FnDecl {
                         args: Vec::new(),
                         ret_type: None,
-                        body: Vec::new(),
+                        body: Body { exprs: Vec::new() },
                     },
                 ),
             },
             Item {
+                node_id: 1.into(),
                 id: Id {
                     id: "f2".to_string(),
                     span: Span::new(0, 7, 1),
@@ -80,7 +85,7 @@ fn parses_continuous_items() {
                     FnDecl {
                         args: Vec::new(),
                         ret_type: None,
-                        body: Vec::new(),
+                        body: Body { exprs: Vec::new() },
                     },
                 ),
             },
@@ -97,8 +102,9 @@ fn expects_items_and_skips_line() {
         token!(Semicolon, 0, 1, 1),
         token!(Semicolon, 1, 0, 1),
     ];
-    let mut parser = Parser::new(&tokens);
-    
+    let mut item_id_gen = NodeIdGen::new();
+    let mut parser = Parser::new(&tokens, &mut item_id_gen);
+
     assert!(parser.parse_items().is_empty());
     assert_eq!(
         *parser.get_logs(),

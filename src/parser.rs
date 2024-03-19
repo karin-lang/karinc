@@ -23,14 +23,16 @@ pub type ParserResult<T> = Result<T, ParserLog>;
 pub struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>,
     last_token_span: Span,
+    node_id_gen: &'a mut NodeIdGen,
     logs: Vec<ParserLog>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(tokens: &'a Vec<Token>) -> Parser<'a> {
+    pub fn new(tokens: &'a Vec<Token>, node_id_gen: &'a mut NodeIdGen) -> Parser<'a> {
         Parser {
             tokens: tokens.iter().peekable(),
             last_token_span: tokens.last().map(|token| token.span.clone()).unwrap_or_default(),
+            node_id_gen,
             logs: Vec::new(),
         }
     }
@@ -214,6 +216,7 @@ impl<'a> Parser<'a> {
         let span = self.get_next_span();
 
         let item = if self.consume_keyword(Keyword::Fn).is_some() {
+            let node_id = self.node_id_gen.generate();
             let (_, id) = self.expect_id()?;
             let args = self.parse_formal_args()?;
             let ret_type = if self.is_next_eq(TokenKind::OpenCurlyBracket).is_some() {
@@ -223,7 +226,7 @@ impl<'a> Parser<'a> {
             };
             let body = self.parse_body()?;
             let decl = FnDecl { args, ret_type, body };
-            Item { id, kind: ItemKind::FnDecl(decl) }
+            Item { node_id, id, kind: ItemKind::FnDecl(decl) }
         } else {
             self.next_line();
             return Err(ParserLog::ExpectedItem { span });
@@ -269,7 +272,7 @@ impl<'a> Parser<'a> {
         Ok(args)
     }
 
-    pub fn parse_body(&mut self) -> ParserResult<Vec<Expr>> {
+    pub fn parse_body(&mut self) -> ParserResult<Body> {
         self.expect(TokenKind::OpenCurlyBracket)?;
         let mut exprs = Vec::new();
 
@@ -288,7 +291,8 @@ impl<'a> Parser<'a> {
             exprs.push(new_expr);
         }
 
-        Ok(exprs)
+        let body = Body { exprs };
+        Ok(body)
     }
 
     pub fn parse_type(&mut self) -> ParserResult<Type> {

@@ -1,30 +1,65 @@
 use std::fmt;
 
-use crate::hir::ItemId;
-
 use super::Span;
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct Ast {
-    pub hakos: Vec<Hako>,
+#[derive(Clone, Eq, Debug, Hash, PartialEq)]
+pub struct NodeId {
+    id: usize,
 }
 
-// todo: パーサ呼び出し部分で Hako を生成する
+impl From<usize> for NodeId {
+    fn from(value: usize) -> Self {
+        Self { id: value }
+    }
+}
+
+impl Into<usize> for NodeId {
+    fn into(self) -> usize {
+        self.id
+    }
+}
+
 #[derive(Clone, Debug, PartialEq)]
-pub struct Hako {
+pub struct NodeIdGen {
+    id: usize,
+}
+
+impl NodeIdGen {
+    pub fn new() -> NodeIdGen {
+        NodeIdGen { id: 0 }
+    }
+
+    pub fn generate(&mut self) -> NodeId {
+        let new = self.id.into();
+        self.id += 1;
+        new
+    }
+}
+
+// todo: パーサ呼び出し部分でモジュール情報付きの Hako を生成する
+#[derive(Clone, Debug, PartialEq)]
+pub struct Ast {
     pub items: Vec<Item>,
-    pub root_mods: Vec<ItemId>,
+    pub hako_mods: Vec<NodeId>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Item {
+    pub node_id: NodeId,
     pub id: Id,
     pub kind: ItemKind,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ItemKind {
+    Mod(Mod),
     FnDecl(FnDecl),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Mod {
+    pub submods: Vec<NodeId>,
+    pub items: Vec<(String, NodeId)>,
 }
 
 #[derive(Clone, PartialEq)]
@@ -43,7 +78,12 @@ impl fmt::Debug for Id {
 pub struct FnDecl {
     pub args: Vec<FormalArg>,
     pub ret_type: Option<Type>,
-    pub body: Vec<Expr>,
+    pub body: Body,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Body {
+    pub exprs: Vec<Expr>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
