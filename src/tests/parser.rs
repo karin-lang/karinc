@@ -1,102 +1,7 @@
-use crate::lexer::*;
 use crate::{id_token, keyword_token, token};
 use crate::lexer::token::Span;
 use crate::parser::ast::*;
-use crate::parser::{Parser, ParserLog, ParsingBroker};
-
-#[test]
-fn a() {
-    let src_tree = SourceTree {
-        hakos: vec![
-            HakoSource {
-                mods: vec![
-                    (
-                        0,
-                        ModSource {
-                            id: "my_hako".to_string(),
-                            src: "fn f1() {}",
-                            submods: vec![
-                                (
-                                    1,
-                                    ModSource {
-                                        id: "my_submod".to_string(),
-                                        src: "fn f2() {}",
-                                        submods: Vec::new(),
-                                    },
-                                ),
-                            ],
-                        },
-                    ),
-                ],
-            },
-        ],
-    };
-    let parsing_broker = ParsingBroker::new();
-    let ast = parsing_broker.parse(&src_tree);
-
-    assert_eq!(
-        ast,
-        Ast {
-            items: vec![
-                Item {
-                    node_id: 0.into(),
-                    id: Id {
-                        id: "my_mod".to_string(),
-                        span: Span::new(0, 0, 0),
-                    },
-                    kind: ItemKind::Mod(
-                        Mod {
-                            submods: vec![1.into()],
-                            items: vec![("f1".to_string(), 2.into())],
-                        },
-                    ),
-                },
-                Item {
-                    node_id: 1.into(),
-                    id: Id {
-                        id: "my_submod".to_string(),
-                        span: Span::new(0, 0, 0),
-                    },
-                    kind: ItemKind::Mod(
-                        Mod {
-                            submods: Vec::new(),
-                            items: vec![("f2".to_string(), 3.into())],
-                        },
-                    ),
-                },
-                Item {
-                    node_id: 2.into(),
-                    id: Id {
-                        id: "f1".to_string(),
-                        span: Span::new(0, 3, 2),
-                    },
-                    kind: ItemKind::FnDecl(
-                        FnDecl {
-                            args: Vec::new(),
-                            ret_type: None,
-                            body: Body { exprs: Vec::new() },
-                        },
-                    ),
-                },
-                Item {
-                    node_id: 3.into(),
-                    id: Id {
-                        id: "f2".to_string(),
-                        span: Span::new(0, 3, 2),
-                    },
-                    kind: ItemKind::FnDecl(
-                        FnDecl {
-                            args: Vec::new(),
-                            ret_type: None,
-                            body: Body { exprs: Vec::new() },
-                        },
-                    ),
-                },
-            ],
-            hako_mods: vec![0.into()],
-        },
-    );
-}
+use crate::parser::{Parser, ParserLog};
 
 #[test]
 fn outputs_parser_result() {
@@ -108,28 +13,29 @@ fn outputs_parser_result() {
         token!(OpenCurlyBracket, 0, 4, 1),
         token!(ClosingCurlyBracket, 0, 5, 1),
     ];
-    let mut item_id_gen = NodeIdGen::new();
-    let parser = Parser::new(&tokens, &mut item_id_gen);
-    let (items, logs) = parser.parse();
+    let parser = Parser::new(&tokens);
+    let (ast, logs) = parser.parse("myhako".into());
 
     assert_eq!(
-        items,
-        vec![
-            Item {
-                node_id: 0.into(),
-                id: Id {
-                    id: "f".to_string(),
-                    span: Span::new(0, 1, 1),
-                },
-                kind: ItemKind::FnDecl(
-                    FnDecl {
-                        args: Vec::new(),
-                        ret_type: None,
-                        body: Body { exprs: Vec::new() },
+        ast,
+        Ast {
+            mod_path: "myhako".into(),
+            items: vec![
+                Item {
+                    id: Id {
+                        id: "f".to_string(),
+                        span: Span::new(0, 1, 1),
                     },
-                ),
-            },
-        ],
+                    kind: ItemKind::FnDecl(
+                        FnDecl {
+                            args: Vec::new(),
+                            ret_type: None,
+                            body: Body { exprs: Vec::new() },
+                        },
+                    ),
+                },
+            ],
+        },
     );
     assert!(logs.is_empty());
 }
@@ -150,14 +56,12 @@ fn parses_continuous_items() {
         token!(OpenCurlyBracket, 0, 10, 1),
         token!(ClosingCurlyBracket, 0, 11, 1),
     ];
-    let mut item_id_gen = NodeIdGen::new();
-    let mut parser = Parser::new(&tokens, &mut item_id_gen);
+    let mut parser = Parser::new(&tokens);
 
     assert_eq!(
         parser.parse_items(),
         vec![
             Item {
-                node_id: 0.into(),
                 id: Id {
                     id: "f1".to_string(),
                     span: Span::new(0, 1, 1),
@@ -171,7 +75,6 @@ fn parses_continuous_items() {
                 ),
             },
             Item {
-                node_id: 1.into(),
                 id: Id {
                     id: "f2".to_string(),
                     span: Span::new(0, 7, 1),
@@ -197,8 +100,7 @@ fn expects_items_and_skips_line() {
         token!(Semicolon, 0, 1, 1),
         token!(Semicolon, 1, 0, 1),
     ];
-    let mut item_id_gen = NodeIdGen::new();
-    let mut parser = Parser::new(&tokens, &mut item_id_gen);
+    let mut parser = Parser::new(&tokens);
 
     assert!(parser.parse_items().is_empty());
     assert_eq!(

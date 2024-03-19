@@ -1,3 +1,5 @@
+use crate::parser::ast;
+
 pub mod lower;
 pub mod resolve;
 
@@ -6,37 +8,36 @@ pub struct Hir {
     pub items: Vec<Item>,
 }
 
-#[derive(Clone, Eq, Debug, Hash, PartialEq)]
-pub struct ItemId {
-    id: usize,
-}
+// #[derive(Clone, Eq, Debug, Hash, PartialEq)]
+// pub struct ItemId {
+//     id: usize,
+// }
 
-impl From<usize> for ItemId {
-    fn from(value: usize) -> Self {
-        Self { id: value }
-    }
-}
+// impl From<usize> for ItemId {
+//     fn from(value: usize) -> Self {
+//         Self { id: value }
+//     }
+// }
 
-#[derive(Clone, Debug, PartialEq)]
-pub struct ItemIdGen {
-    id: usize,
-}
+// #[derive(Clone, Debug, PartialEq)]
+// pub struct ItemIdGen {
+//     id: usize,
+// }
 
-impl ItemIdGen {
-    pub fn new() -> ItemIdGen {
-        ItemIdGen { id: 0 }
-    }
+// impl ItemIdGen {
+//     pub fn new() -> ItemIdGen {
+//         ItemIdGen { id: 0 }
+//     }
 
-    pub fn generate(&mut self) -> ItemId {
-        let new = self.id.into();
-        self.id += 1;
-        new
-    }
-}
+//     pub fn generate(&mut self) -> ItemId {
+//         let new = self.id.into();
+//         self.id += 1;
+//         new
+//     }
+// }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Item {
-    Mod,
     FnDecl(FnDecl),
 }
 
@@ -73,14 +74,14 @@ pub enum Local {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr {
     FnCall(FnCall),
-    ItemRef(ItemId),
+    PathRef(ast::Path),
     LocalDecl(LocalId),
     LocalRef(LocalId),
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FnCall {
-    pub r#fn: ItemId,
+    pub r#fn: ast::Path,
     pub args: Vec<ActualArg>,
 }
 

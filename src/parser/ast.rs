@@ -2,63 +2,51 @@ use std::fmt;
 
 use super::Span;
 
-#[derive(Clone, Eq, Debug, Hash, PartialEq)]
-pub struct NodeId {
-    id: usize,
-}
-
-impl From<usize> for NodeId {
-    fn from(value: usize) -> Self {
-        Self { id: value }
-    }
-}
-
-impl Into<usize> for NodeId {
-    fn into(self) -> usize {
-        self.id
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct NodeIdGen {
-    id: usize,
-}
-
-impl NodeIdGen {
-    pub fn new() -> NodeIdGen {
-        NodeIdGen { id: 0 }
-    }
-
-    pub fn generate(&mut self) -> NodeId {
-        let new = self.id.into();
-        self.id += 1;
-        new
-    }
-}
-
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ast {
+    pub mod_path: Path,
     pub items: Vec<Item>,
-    pub hako_mods: Vec<NodeId>,
+}
+
+#[derive(Clone, Debug, Eq, Hash, PartialEq)]
+pub struct Path {
+    pub segments: Vec<String>,
+}
+
+impl Path {
+    pub fn new() -> Path {
+        Path { segments: Vec::new() }
+    }
+
+    pub fn add_segment(mut self, segment: &str) -> Path {
+        self.segments.push(segment.to_string());
+        self
+    }
+
+    pub fn push_segment(&mut self, segment: &str) {
+        self.segments.push(segment.to_string());
+    }
+
+    pub fn pop_segment(&mut self) -> Option<String> {
+        self.segments.pop()
+    }
+}
+
+impl From<&str> for Path {
+    fn from(value: &str) -> Self {
+        Self { segments: value.split("::").map(|v| v.to_string()).collect() }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Item {
-    pub node_id: NodeId,
     pub id: Id,
     pub kind: ItemKind,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ItemKind {
-    Mod(Mod),
     FnDecl(FnDecl),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Mod {
-    pub submods: Vec<NodeId>,
-    pub items: Vec<(String, NodeId)>,
 }
 
 #[derive(Clone, PartialEq)]
