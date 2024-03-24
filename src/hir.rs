@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::parser::ast;
 
 pub mod lower;
@@ -5,7 +7,7 @@ pub mod resolve;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hir {
-    pub items: Vec<Item>,
+    pub items: HashMap<ast::Path, Item>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

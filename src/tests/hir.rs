@@ -1,3 +1,7 @@
+use std::collections::HashMap;
+
+use maplit::hashmap;
+
 use crate::hir::*;
 use crate::hir::lower::HirLowering;
 use crate::lexer::token::Span;
@@ -11,7 +15,7 @@ fn lowers_empty_ast() {
 
     assert_eq!(
         hir,
-        Hir { items: Vec::new() },
+        Hir { items: HashMap::new() },
     );
     assert!(logs.is_empty());
 }
@@ -41,17 +45,19 @@ fn lowers_subitem_in_mod() {
     assert_eq!(
         hir,
         Hir {
-            items: vec![
-                Item::FnDecl(
-                    FnDecl {
-                        args: Vec::new(),
-                        body: Body {
-                            locals: Vec::new(),
-                            exprs: Vec::new(),
+            items: hashmap! {
+                "myhako::f".into() => (
+                    Item::FnDecl(
+                        FnDecl {
+                            args: Vec::new(),
+                            body: Body {
+                                locals: Vec::new(),
+                                exprs: Vec::new(),
+                            },
                         },
-                    },
+                    )
                 ),
-            ],
+            },
         },
     );
     assert!(logs.is_empty());
@@ -106,27 +112,29 @@ fn resolves_item_and_local() {
     assert_eq!(
         hir,
         Hir {
-            items: vec![
-                Item::FnDecl(
-                    FnDecl {
-                        args: Vec::new(),
-                        body: Body {
-                            locals: vec![
-                                Local::VarDecl(
-                                    VarDecl {
-                                        mutable: false,
-                                    },
-                                ),
-                            ],
-                            exprs: vec![
-                                Expr::PathRef("myhako::item".into()),
-                                Expr::LocalDecl(0.into()),
-                                Expr::LocalRef(0.into()),
-                            ],
+            items: hashmap! {
+                "myhako::item".into() => (
+                    Item::FnDecl(
+                        FnDecl {
+                            args: Vec::new(),
+                            body: Body {
+                                locals: vec![
+                                    Local::VarDecl(
+                                        VarDecl {
+                                            mutable: false,
+                                        },
+                                    ),
+                                ],
+                                exprs: vec![
+                                    Expr::PathRef("myhako::item".into()),
+                                    Expr::LocalDecl(0.into()),
+                                    Expr::LocalRef(0.into()),
+                                ],
+                            },
                         },
-                    },
+                    )
                 ),
-            ],
+            },
         },
     );
     assert!(logs.is_empty());

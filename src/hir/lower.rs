@@ -38,7 +38,7 @@ impl<'a> HirLowering<'a> {
     }
 
     pub fn lower(mut self) -> (Hir, Vec<HirLoweringLog>) {
-        let mut items = Vec::new();
+        let mut items = HashMap::new();
         for each_ast in self.asts {
             self.lower_ast(&mut items, each_ast);
         }
@@ -57,25 +57,28 @@ impl<'a> HirLowering<'a> {
     }
 
     pub fn resolve_item(&self, id: &str) -> Option<ast::Path> {
-        let path = self.current_mod_path.clone().add_segment(id);
+        let path = self.get_item_path(id);
         if self.paths.contains(&path) {
             Some(path)
         } else {
             None
         }
-
     }
 
     pub fn resolve_local(&self, id: &str) -> Option<LocalId> {
         self.body_scope_hierarchy.resolve(id)
     }
 
-    pub fn lower_ast(&mut self, hir_items: &mut Vec<Item>, ast: &ast::Ast) {
-        self.current_mod_path = ast.mod_path.clone();
+    pub fn get_item_path(&self, id: &str) -> ast::Path {
+        self.current_mod_path.clone().add_segment(id)
+    }
 
+    pub fn lower_ast(&mut self, hir_items: &mut HashMap<ast::Path, Item>, ast: &ast::Ast) {
+        self.current_mod_path = ast.mod_path.clone();
         for each_item in &ast.items {
             let new_hir_item = self.lower_item(each_item);
-            hir_items.push(new_hir_item);
+            let new_hir_path = self.get_item_path(&each_item.id.id);
+            hir_items.insert(new_hir_path, new_hir_item);
         }
     }
 
