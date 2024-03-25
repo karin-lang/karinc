@@ -7,182 +7,86 @@ mod parser;
 #[cfg(test)]
 mod token;
 
-/*
 use maplit::hashmap;
 
-use crate::hir::HirLowering;
-use crate::{lexer::*, parser::*};
-use crate::data::{ast::*, token::*};
-use crate::data::hir::{*, expr::*, item::*};
-
-#[macro_export]
-macro_rules! hir_global_symbol {
-    ($($segment:expr,)+) => {
-        hir_global_symbol!($($segment),+)
-    };
-
-    ($($segment:expr),*) => {
-        {
-            use crate::data::hir::symbol::*;
-
-            HirGlobalSymbol {
-                segments: vec![$($segment.to_string()),*],
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! hir_divided_global_symbol {
-    ([$($parent_module_segment:expr,)+], [$($following_segment:expr,)+]$(,)?) => {
-        hir_divided_global_symbol!([$($parent_module_segment:expr),+], [$($following_segment),+])
-    };
-
-    ([$($parent_module_segment:expr),*], [$($following_segment:expr),*$(,)?]) => {
-        {
-            use crate::data::hir::symbol::*;
-            let parent_segments = vec![$($parent_module_segment.to_string()),*];
-
-            HirDividedGlobalSymbol {
-                parent_module_path: HirPath { segments: parent_segments },
-                following_path: HirPath { segments: vec![$($following_segment.to_string()),*] },
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! hir_local_symbol {
-    ($id:expr, $code:expr$(,)?) => {
-        {
-            use crate::data::hir::symbol::*;
-
-            HirLocalSymbol {
-                id: $id.to_string(),
-                code: HirSymbolCode::new($code),
-            }
-        }
-    };
-}
-
-#[macro_export]
-macro_rules! hir_symbol_accessor {
-    ($segment:expr, $code:expr$(,)?) => {
-        {
-            use crate::data::hir::symbol::*;
-
-            HirSymbolAccessor {
-                index: HirSymbolIndex::new($code),
-                kind: HirSymbolAccessorKind::SingleSegment($segment.to_string()),
-            }
-        }
-    };
-
-    ([$($path_segment:expr),*], [$($member_access_chain_segment:expr),*], $code:expr$(,)?) => {
-        {
-            use crate::data::hir::symbol::*;
-
-            HirSymbolAccessor {
-                index: HirSymbolIndex::new($code),
-                kind: HirSymbolAccessorKind::MultipleSegments(
-                    vec![$($path_segment.to_string()),*],
-                    vec![$($member_access_chain_segment.to_string()),*],
-                ),
-            }
-        }
-    };
-}
+use crate::hir::lower::HirLowering;
+use crate::lexer::token::Span;
+use crate::parser::{ast, Parser};
+use crate::{id_token, keyword_token, token};
+use crate::lexer::tokenize::Lexer;
 
 #[test]
-fn generates_parser_result() {
-    let input = "fn f(){0;}";
+fn generates_js() {
+    let input = "fn f() { f; }";
+
     let lexer = Lexer::new();
-    let (tokens, lexer_logs) = lexer.tokenize(input);
-
-    assert_eq!(lexer_logs, Vec::new());
-
-    let parser = Parser::new();
-    let (parser_result, parser_logs) = parser.parse(&tokens);
-
+    let (tokens, lexer_logs) =  lexer.tokenize(input);
     assert_eq!(
-        parser_result,
-        ParserResult::Matched(
-            Some(
-                Ast::new(
-                    AstNode::new(
-                        "root".to_string(),
-                        vec![
-                            AstChild::node(
-                                "fn_dec".to_string(),
-                                vec![
-                                    AstChild::leaf(
-                                        "id".to_string(),
-                                        Token::new(TokenKind::Id("f".to_string()), 3, 1),
-                                    ),
-                                    AstChild::node(
-                                        "fn_exprs".to_string(),
-                                        vec![
-                                            AstChild::leaf(
-                                                "number".to_string(),
-                                                Token::new(TokenKind::Number(NumberToken("0".to_string())), 7, 1),
-                                            ),
-                                        ],
-                                    ),
-                                ],
-                            ),
-                        ],
-                    ),
-                ),
-            ),
-        ),
-    );
-    assert_eq!(parser_logs, Vec::new());
-
-    let ast = parser_result.unwrap().unwrap();
-
-    let ast_container = AstContainer {
-        roots: vec![
-            AstModule {
-                path: vec!["my_hako".to_string()],
-                ast,
-                submodules: Vec::new(),
-            },
+        tokens,
+        vec![
+            keyword_token!(Fn, 0, 2),
+            id_token!("f", 3, 1),
+            token!(OpenParen, 4, 1),
+            token!(ClosingParen, 5, 1),
+            token!(OpenCurlyBracket, 7, 1),
+            id_token!("f", 9, 1),
+            token!(Semicolon, 10, 1),
+            token!(ClosingCurlyBracket, 12, 1),
         ],
-    };
+    );
+    assert!(lexer_logs.is_empty());
 
-    let hir_lowering = HirLowering::new();
-    let (hir, hir_lowering_logs) = hir_lowering.lower(&ast_container);
+    let parser = Parser::new(&tokens);
+    let (ast, parser_logs) = parser.parse("my_hako".into());
+    assert_eq!(
+        ast,
+        ast::Ast {
+            mod_path: "my_hako".into(),
+            items: vec![
+                ast::Item {
+                    id: ast::Id { id: "f".to_string(), span: Span::new(3, 1) },
+                    kind: ast::ItemKind::FnDecl(
+                        ast::FnDecl {
+                            args: Vec::new(),
+                            ret_type: None,
+                            body: ast::Body {
+                                exprs: vec![
+                                    ast::Expr {
+                                        kind: ast::ExprKind::Id(
+                                            ast::Id { id: "f".to_string(), span: Span::new(9, 1) },
+                                        ),
+                                        span: Span::new(9, 1),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                },
+            ],
+        },
+    );
+    assert!(parser_logs.is_empty());
 
+    let asts = vec![ast];
+    let lowering = HirLowering::new(&asts);
+    let (hir, hir_lowering_logs) = lowering.lower();
     assert_eq!(
         hir,
-        Hir {
-            modules: hashmap! {
-                hir_divided_global_symbol!([], ["my_hako"]) => (
-                    HirModule {
-                        items: hashmap! {
-                            hir_divided_global_symbol!([], ["my_hako", "f"]) => (
-                                HirItem::FunctionDeclaration(
-                                    HirFunctionDeclaration {
-                                        exprs: vec![
-                                            HirExpression::Number(
-                                                HirNumberLiteral {
-                                                    value: "0".to_string(),
-                                                },
-                                            ),
-                                        ],
-                                    },
-                                )
-                            ),
+        crate::hir::Hir {
+            items: hashmap! {
+                "my_hako::f".into() => (
+                    crate::hir::Item::FnDecl(
+                        crate::hir::FnDecl {
+                            args: Vec::new(),
+                            body: crate::hir::Body {
+                                locals: Vec::new(),
+                                exprs: vec![crate::hir::Expr::PathRef("my_hako::f".into())],
+                            },
                         },
-                        submodules: Vec::new(),
-                    }
+                    )
                 ),
             },
         },
     );
-    assert_eq!(
-        hir_lowering_logs,
-        Vec::new(),
-    );
+    assert!(hir_lowering_logs.is_empty());
 }
-*/
