@@ -38,12 +38,14 @@ impl<'a> From<&'a str> for LexerInput<'a> {
 
 pub struct Lexer {
     pub(crate) logs: Vec<LexerLog>,
+    pub(crate) newline_indexes: Vec<u16>,
 }
 
 impl Lexer {
     pub fn new() -> Lexer {
         Lexer {
             logs: Vec::new(),
+            newline_indexes: Vec::new(),
         }
     }
 
@@ -61,6 +63,10 @@ impl Lexer {
         }
     }
 
+    pub fn add_newline_index(&mut self, index: usize) {
+        self.newline_indexes.push(index as u16);
+    }
+
     pub fn tokenize(self, input: &str) -> (Vec<Token>, Vec<LexerLog>) {
         let input = &mut input.into();
         self.tokenize_(input)
@@ -68,8 +74,6 @@ impl Lexer {
 
     pub(crate) fn tokenize_(mut self, input: &mut LexerInput) -> (Vec<Token>, Vec<LexerLog>) {
         let mut tokens = Vec::new();
-        let mut line = 0;
-        let mut beginning_index_of_line = 0;
         let mut last_unknown_token_span: Option<Span> = None;
 
         loop {
@@ -77,34 +81,31 @@ impl Lexer {
                 Some(v) => v,
                 None => break,
             };
-            let token_beginning_line = line;
-            let column = index - beginning_index_of_line;
             // note: 連続する不明な文字を 1 トークンに統合するためのフラグ
             let mut is_unknown_token = false;
 
             let token: Option<(usize, TokenKind)> = match next_char {
                 ' ' | '\t' => None,
                 '\n' => {
-                    line += 1;
-                    beginning_index_of_line = index + 1;
+                    self.add_newline_index(index);
                     None
                 },
-                '\'' => Some(self.tokenize_char_literal(input, &mut beginning_index_of_line, &mut line, column, 1)),
-                '"' => Some(self.tokenize_str_literal(input, &mut beginning_index_of_line, &mut line, column, 1)),
+                '\'' => Some(self.tokenize_char_literal(input, index, 1)),
+                '"' => Some(self.tokenize_str_literal(input, index, 1)),
                 'b' => match input.peek() {
                     Some((_, '\'')) => {
                         input.next();
-                        Some(self.tokenize_byte_char_literal(input, &mut beginning_index_of_line, &mut line, column, 2))
+                        Some(self.tokenize_byte_char_literal(input, index, 2))
                     },
                     Some((_, '"')) => {
                         input.next();
-                        Some(self.tokenize_byte_str_literal(input, &mut beginning_index_of_line, &mut line, column, 2))
+                        Some(self.tokenize_byte_str_literal(input, index, 2))
                     },
                     Some((_, 'r')) => {
                         input.next();
                         if let Some((_, '"')) = input.peek() {
                             input.next();
-                            Some(self.tokenize_raw_byte_str_literal(input, &mut beginning_index_of_line, &mut line, column, 3))
+                            Some(self.tokenize_raw_byte_str_literal(input, index, 3))
                         } else {
                             Some(Lexer::tokenize_alphabetics(input, Some("br".to_string())))
                         }
@@ -113,7 +114,7 @@ impl Lexer {
                 },
                 'r' => if let Some((_, '"')) = input.peek() {
                     input.next();
-                    Some(self.tokenize_raw_str_literal(input, &mut beginning_index_of_line, &mut line, column, 2))
+                    Some(self.tokenize_raw_str_literal(input, index, 2))
                 } else {
                     Some(Lexer::tokenize_alphabetics(input, Some(next_char.to_string())))
                 },
@@ -175,7 +176,7 @@ impl Lexer {
                     let len = last_index - index + 1;
 
                     if expected_type_suffix {
-                        self.record_log(LexerLog::ExpectedTypeSuffix { span: Span::from_usize(token_beginning_line, column, len) });
+                        self.record_log(LexerLog::ExpectedTypeSuffix { span: Span::from_usize(index, len) });
                     }
 
                     let literal = if is_float {
@@ -202,7 +203,7 @@ impl Lexer {
                 _ => {
                     match &mut last_unknown_token_span {
                         Some(span) => span.len += 1,
-                        None => last_unknown_token_span = Some(Span::from_usize(token_beginning_line, column, 1)),
+                        None => last_unknown_token_span = Some(Span::from_usize(index, 1)),
                     }
                     // note: EOF の直前に位置する場合は字句解析を終了する前に Unknown トークンを追加する
                     if input.peek().is_none() {
@@ -223,7 +224,7 @@ impl Lexer {
                 }
             }
             if let Some((len, kind)) = token {
-                let span = Span::from_usize(token_beginning_line, column, len);
+                let span = Span::from_usize(index, len);
                 tokens.push(Token::new(kind, span));
             }
         }
@@ -262,16 +263,13 @@ impl Lexer {
     fn tokenize_char_or_str_literal_(
         &mut self,
         input: &mut LexerInput,
-        beginning_index_of_line: &mut usize,
-        line: &mut usize,
-        column: usize,
+        begin: usize,
         backward_len: usize,
         is_char: bool,
         is_raw: bool,
         is_byte: bool,
     ) -> (usize, TokenKind) {
         let mut value = String::new();
-        let beginning_line = *line;
         let mut len = backward_len;
 
         loop {
@@ -309,7 +307,7 @@ impl Lexer {
                             Some((_, _)) => {
                                 input.next();
                                 len += 1;
-                                let span = Span::from_usize(beginning_line, escseq_index - *beginning_index_of_line, 2);
+                                let span = Span::from_usize(escseq_index, 2);
                                 self.record_log(LexerLog::UnknownEscseq { span });
                             },
                             // note: EOF の場合は UnclosedCharLiteral / UnclosedStrLiteral ログの出力を委ねる
@@ -319,7 +317,9 @@ impl Lexer {
                 },
                 // note: リテラル中に改行を検知した場合は次のクォーテーションまで入力位置を進める
                 Some((index, '\n')) => {
-                    let span = Span::from_usize(beginning_line, column, len);
+                    self.add_newline_index(index);
+
+                    let span = Span::from_usize(begin, len);
                     let log = if is_char {
                         LexerLog::LineBreakInCharLiteral { span }
                     } else {
@@ -327,17 +327,11 @@ impl Lexer {
                     };
                     self.record_log(log);
 
-                    *line += 1;
-                    *beginning_index_of_line = index + 1;
-
                     loop {
                         match input.next() {
                             Some((_, '"')) if !is_char => break,
                             Some((_, '\'')) if is_char => break,
-                            Some((index, '\n')) => {
-                                *line += 1;
-                                *beginning_index_of_line = index + 1;
-                            },
+                            Some((index, '\n')) => self.add_newline_index(index),
                             None => break,
                             _ => (),
                         }
@@ -350,7 +344,7 @@ impl Lexer {
                     value.push(next_char);
                 },
                 None => {
-                    let span = Span::from_usize(beginning_line, column, len);
+                    let span = Span::from_usize(begin, len);
                     let log = if is_char {
                         LexerLog::UnclosedCharLiteral { span }
                     } else {
@@ -363,7 +357,7 @@ impl Lexer {
         }
 
         let literal = if is_char {
-            let span = Span::from_usize(beginning_line, column, len);
+            let span = Span::from_usize(begin, len);
             let value = match value.chars().next() {
                 Some(ch) if value.chars().count() == 1 => Some(ch),
                 Some(_) => {
@@ -390,27 +384,27 @@ impl Lexer {
         (len, TokenKind::Literal(literal))
     }
 
-    fn tokenize_char_literal(&mut self, input: &mut LexerInput, beginning_index_of_line: &mut usize, line: &mut usize, column: usize, backward_len: usize) -> (usize, TokenKind) {
-        self.tokenize_char_or_str_literal_(input, beginning_index_of_line, line, column, backward_len, true, false, false)
+    fn tokenize_char_literal(&mut self, input: &mut LexerInput, begin: usize, backward_len: usize) -> (usize, TokenKind) {
+        self.tokenize_char_or_str_literal_(input, begin, backward_len, true, false, false)
     }
 
-    fn tokenize_byte_char_literal(&mut self, input: &mut LexerInput, beginning_index_of_line: &mut usize, line: &mut usize, column: usize, backward_len: usize) -> (usize, TokenKind) {
-        self.tokenize_char_or_str_literal_(input, beginning_index_of_line, line, column, backward_len, true, false, true)
+    fn tokenize_byte_char_literal(&mut self, input: &mut LexerInput, begin: usize, backward_len: usize) -> (usize, TokenKind) {
+        self.tokenize_char_or_str_literal_(input, begin, backward_len, true, false, true)
     }
 
-    fn tokenize_str_literal(&mut self, input: &mut LexerInput, beginning_index_of_line: &mut usize, line: &mut usize, column: usize, backward_len: usize) -> (usize, TokenKind) {
-        self.tokenize_char_or_str_literal_(input, beginning_index_of_line, line, column, backward_len, false, false, false)
+    fn tokenize_str_literal(&mut self, input: &mut LexerInput, begin: usize, backward_len: usize) -> (usize, TokenKind) {
+        self.tokenize_char_or_str_literal_(input, begin, backward_len, false, false, false)
     }
 
-    fn tokenize_raw_str_literal(&mut self, input: &mut LexerInput, beginning_index_of_line: &mut usize, line: &mut usize, column: usize, backward_len: usize) -> (usize, TokenKind) {
-        self.tokenize_char_or_str_literal_(input, beginning_index_of_line, line, column, backward_len, false, true, false)
+    fn tokenize_raw_str_literal(&mut self, input: &mut LexerInput, begin: usize, backward_len: usize) -> (usize, TokenKind) {
+        self.tokenize_char_or_str_literal_(input, begin, backward_len, false, true, false)
     }
 
-    fn tokenize_byte_str_literal(&mut self, input: &mut LexerInput, beginning_index_of_line: &mut usize, line: &mut usize, column: usize, backward_len: usize) -> (usize, TokenKind) {
-        self.tokenize_char_or_str_literal_(input, beginning_index_of_line, line, column, backward_len, false, false, true)
+    fn tokenize_byte_str_literal(&mut self, input: &mut LexerInput, begin: usize, backward_len: usize) -> (usize, TokenKind) {
+        self.tokenize_char_or_str_literal_(input, begin, backward_len, false, false, true)
     }
 
-    fn tokenize_raw_byte_str_literal(&mut self, input: &mut LexerInput, beginning_index_of_line: &mut usize, line: &mut usize, column: usize, backward_len: usize) -> (usize, TokenKind) {
-        self.tokenize_char_or_str_literal_(input, beginning_index_of_line, line, column, backward_len, false, true, true)
+    fn tokenize_raw_byte_str_literal(&mut self, input: &mut LexerInput, begin: usize, backward_len: usize) -> (usize, TokenKind) {
+        self.tokenize_char_or_str_literal_(input, begin, backward_len, false, true, true)
     }
 }

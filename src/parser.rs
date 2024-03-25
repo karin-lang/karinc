@@ -68,11 +68,6 @@ impl<'a> Parser<'a> {
         self.is_next_eq(TokenKind::Keyword(keyword))
     }
 
-    pub fn next_line(&mut self) {
-        let line = self.get_next_span().line;
-        self.consume_until_before(|next| next.span.line > line);
-    }
-
     pub fn consume(&mut self, kind: TokenKind) -> Option<&Token> {
         self
             .tokens
@@ -223,7 +218,7 @@ impl<'a> Parser<'a> {
             let decl = FnDecl { args, ret_type, body };
             Item { id, kind: ItemKind::FnDecl(decl) }
         } else {
-            self.next_line();
+            self.consume_until(|token| token.kind == TokenKind::ClosingCurlyBracket);
             return Err(ParserLog::ExpectedItem { span });
         };
 

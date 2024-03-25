@@ -27,7 +27,7 @@ fn lowers_subitem_in_mod() {
             mod_path: "myhako".into(),
             items: vec![
                 ast::Item {
-                    id: ast::Id { id: "f".to_string(), span: Span::new(0, 0, 1) },
+                    id: ast::Id { id: "f".to_string(), span: Span::new(0, 1) },
                     kind: ast::ItemKind::FnDecl(
                         ast::FnDecl {
                             args: Vec::new(),
@@ -70,7 +70,7 @@ fn resolves_item_and_local() {
             mod_path: "myhako".into(),
             items: vec![
                 ast::Item {
-                    id: ast::Id { id: "item".to_string(), span: Span::new(0, 0, 1) },
+                    id: ast::Id { id: "item".to_string(), span: Span::new(0, 1) },
                     kind: ast::ItemKind::FnDecl(
                         ast::FnDecl {
                             args: Vec::new(),
@@ -79,24 +79,24 @@ fn resolves_item_and_local() {
                                 exprs: vec![
                                     ast::Expr {
                                         kind: ast::ExprKind::Id(
-                                            ast::Id { id: "item".to_string(), span: Span::new(0, 1, 1) },
+                                            ast::Id { id: "item".to_string(), span: Span::new(1, 1) },
                                         ),
-                                        span: Span::new(0, 1, 1),
+                                        span: Span::new(1, 1),
                                     },
                                     ast::Expr {
                                         kind: ast::ExprKind::VarDecl(
                                             ast::VarDecl {
-                                                id: ast::Id { id: "local".to_string(), span: Span::new(0, 2, 1) },
+                                                id: ast::Id { id: "local".to_string(), span: Span::new(2, 1) },
                                                 r#type: None,
                                             },
                                         ),
-                                        span: Span::new(0, 2, 1),
+                                        span: Span::new(2, 1),
                                     },
                                     ast::Expr {
                                         kind: ast::ExprKind::Id(
-                                            ast::Id { id: "local".to_string(), span: Span::new(0, 3, 1) },
+                                            ast::Id { id: "local".to_string(), span: Span::new(3, 1) },
                                         ),
-                                        span: Span::new(0, 3, 1),
+                                        span: Span::new(3, 1),
                                     },
                                 ],
                             },

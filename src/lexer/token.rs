@@ -3,81 +3,80 @@ use crate::parser::ast;
 
 #[macro_export]
 macro_rules! token {
-    ($kind:ident, $line:expr, $column:expr, $len:expr$(,)?) => {
+    ($kind:ident, $begin:expr, $len:expr$(,)?) => {
         {
             use crate::lexer::token::{Span, Token, TokenKind};
-            Token::new(TokenKind::$kind, Span::new($line, $column, $len))
+            Token::new(TokenKind::$kind, Span::new($begin, $len))
         }
     };
 }
 
 #[macro_export]
 macro_rules! id_token {
-    ($id:expr, $line:expr, $column:expr, $len:expr$(,)?) => {
+    ($id:expr, $begin:expr, $len:expr$(,)?) => {
         {
             use crate::lexer::token::{Span, Token, TokenKind};
-            Token::new(TokenKind::Id($id.to_string()), Span::new($line, $column, $len))
+            Token::new(TokenKind::Id($id.to_string()), Span::new($begin, $len))
         }
     };
 }
 
 #[macro_export]
 macro_rules! keyword_token {
-    ($keyword:ident, $line:expr, $column:expr, $len:expr$(,)?) => {
+    ($keyword:ident, $begin:expr, $len:expr$(,)?) => {
         {
             use crate::lexer::token::{Span, Keyword, Token, TokenKind};
-            Token::new(TokenKind::Keyword(Keyword::$keyword), Span::new($line, $column, $len))
+            Token::new(TokenKind::Keyword(Keyword::$keyword), Span::new($begin, $len))
         }
     };
 }
 
 #[macro_export]
 macro_rules! prim_type_token {
-    ($prim_type:ident, $line:expr, $column:expr, $len:expr$(,)?) => {
+    ($prim_type:ident, $begin:expr, $len:expr$(,)?) => {
         {
             use crate::lexer::token::{Span, Token, TokenKind};
             use crate::parser::ast::PrimType;
-            Token::new(TokenKind::PrimType(PrimType::$prim_type), Span::new($line, $column, $len))
+            Token::new(TokenKind::PrimType(PrimType::$prim_type), Span::new($begin, $len))
         }
     };
 }
 
 #[macro_export]
 macro_rules! literal_token {
-    ($literal:expr, $line:expr, $column:expr, $len:expr$(,)?) => {
+    ($literal:expr, $begin:expr, $len:expr$(,)?) => {
         {
             use crate::lexer::token::{Span, Token, TokenKind};
-            Token::new(TokenKind::Literal($literal), Span::new($line, $column, $len))
+            Token::new(TokenKind::Literal($literal), Span::new($begin, $len))
         }
     };
 }
 
 #[derive(Clone, PartialEq)]
 pub struct Span {
-    pub line: u16,
-    pub column: u16,
+    pub begin: u16,
     pub len: u16,
 }
 
 impl Span {
-    pub fn new(line: u16, column: u16, len: u16) -> Span {
-        Span { line, column, len }
+    pub fn new(begin: u16, len: u16) -> Span {
+        Span { begin, len }
     }
 
-    pub fn from_usize(line: usize, column: usize, len: usize) -> Span {
-        Span { line: line as u16, column: column as u16, len: len as u16 }
+    pub fn from_usize(begin: usize, len: usize) -> Span {
+        Span { begin: begin as u16, len: len as u16 }
     }
 }
 
 impl fmt::Debug for Span {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}:{}({})", self.line, self.column, self.len)
+        write!(f, "{}-{}", self.begin, self.begin + self.len)
     }
 }
 
 impl Default for Span {
     fn default() -> Self {
-        Self::new(0, 0, 0)
+        Self::new(0, 0)
     }
 }
 
