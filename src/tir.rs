@@ -1,3 +1,4 @@
+pub mod check;
 pub mod lower;
 
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
