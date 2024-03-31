@@ -9,7 +9,7 @@ use crate::parser::ast;
 
 #[test]
 fn lowers_empty_ast() {
-    let asts = vec![ast::Ast { mod_path: "myhako".into(), items: Vec::new() }];
+    let asts = vec![ast::Ast { mod_path: "my_hako".into(), items: Vec::new() }];
     let lowering = HirLowering::new(&asts);
     let (hir, logs) = lowering.lower();
 
@@ -24,7 +24,7 @@ fn lowers_empty_ast() {
 fn lowers_subitem_in_mod() {
     let asts = vec![
         ast::Ast {
-            mod_path: "myhako".into(),
+            mod_path: "my_hako".into(),
             items: vec![
                 ast::Item {
                     id: ast::Id { id: "f".to_string(), span: Span::new(0, 1) },
@@ -46,7 +46,7 @@ fn lowers_subitem_in_mod() {
         hir,
         Hir {
             items: hashmap! {
-                "myhako::f".into() => (
+                "my_hako::f".into() => (
                     Item::FnDecl(
                         FnDecl {
                             args: Vec::new(),
@@ -67,7 +67,7 @@ fn lowers_subitem_in_mod() {
 fn resolves_item_and_local() {
     let ast = vec![
         ast::Ast {
-            mod_path: "myhako".into(),
+            mod_path: "my_hako".into(),
             items: vec![
                 ast::Item {
                     id: ast::Id { id: "item".to_string(), span: Span::new(0, 1) },
@@ -113,7 +113,7 @@ fn resolves_item_and_local() {
         hir,
         Hir {
             items: hashmap! {
-                "myhako::item".into() => (
+                "my_hako::item".into() => (
                     Item::FnDecl(
                         FnDecl {
                             args: Vec::new(),
@@ -126,7 +126,12 @@ fn resolves_item_and_local() {
                                     ),
                                 ],
                                 exprs: vec![
-                                    Expr::PathRef("myhako::item".into()),
+                                    Expr::PathRef(
+                                        crate::hir::DivPath {
+                                            item_path: "my_hako::item".into(),
+                                            following_path: ast::Path::new(),
+                                        },
+                                    ),
                                     Expr::LocalDecl(0.into()),
                                     Expr::LocalRef(0.into()),
                                 ],

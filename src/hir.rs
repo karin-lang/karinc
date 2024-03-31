@@ -28,6 +28,12 @@ pub struct Body {
 }
 
 #[derive(Clone, Eq, Debug, Hash, PartialEq)]
+pub struct DivPath {
+    pub item_path: ast::Path,
+    pub following_path: ast::Path,
+}
+
+#[derive(Clone, Eq, Debug, Hash, PartialEq)]
 pub struct LocalId {
     id: usize,
 }
@@ -35,6 +41,24 @@ pub struct LocalId {
 impl From<usize> for LocalId {
     fn from(value: usize) -> Self {
         Self { id: value }
+    }
+}
+
+impl From<&usize> for LocalId {
+    fn from(value: &usize) -> Self {
+        Self { id: *value }
+    }
+}
+
+impl From<LocalId> for usize {
+    fn from(value: LocalId) -> Self {
+        value.id
+    }
+}
+
+impl From<&LocalId> for usize {
+    fn from(value: &LocalId) -> Self {
+        value.id
     }
 }
 
@@ -48,7 +72,7 @@ pub enum Local {
 #[derive(Clone, Debug, PartialEq)]
 pub enum Expr {
     FnCall(FnCall),
-    PathRef(ast::Path),
+    PathRef(DivPath),
     LocalDecl(LocalId),
     LocalRef(LocalId),
 }

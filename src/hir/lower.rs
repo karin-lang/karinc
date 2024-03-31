@@ -1,6 +1,8 @@
-use std::collections::HashSet;
+use std::collections::{HashSet, VecDeque};
 
 use resolve::*;
+use self::ast::Path;
+
 use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -46,23 +48,42 @@ impl<'a> HirLowering<'a> {
         (hir, self.logs)
     }
 
-    pub fn resolve(&mut self, id: &str) -> Option<Expr> {
+    pub fn resolve_id(&mut self, id: &str) -> Option<Expr> {
         if let Some(local_id) = self.resolve_local(id) {
             return Some(Expr::LocalRef(local_id));
         }
-        if let Some(path) = self.resolve_item(id) {
-            return Some(Expr::PathRef(path));
+        let path = self.current_mod_path.clone().add_segment(id);
+        if let Some(expr) = self.resolve_path(&path) {
+            return Some(expr);
         }
         None
     }
 
-    pub fn resolve_item(&self, id: &str) -> Option<ast::Path> {
-        let path = self.get_item_path(id);
-        if self.paths.contains(&path) {
-            Some(path)
-        } else {
-            None
+    pub fn resolve_path(&self, path: &ast::Path) -> Option<Expr> {
+        if self.paths.contains(path) {
+            let div_path = DivPath {
+                item_path: path.clone(),
+                following_path: Path::new(),
+            };
+            let expr = Expr::PathRef(div_path);
+            return Some(expr);
         }
+
+        let mut item_path = path.clone();
+        let mut following_segments = VecDeque::new();
+        while let Some(each_segment) = item_path.pop_segment() {
+            if self.paths.contains(&path) {
+                let div_path = DivPath {
+                    item_path,
+                    following_path: Path::from(following_segments.into()),
+                };
+                let expr = Expr::PathRef(div_path);
+                return Some(expr);
+            }
+            following_segments.push_front(each_segment);
+        }
+
+        None
     }
 
     pub fn resolve_local(&self, id: &str) -> Option<LocalId> {
@@ -114,7 +135,7 @@ impl<'a> HirLowering<'a> {
     pub fn lower_expr(&mut self, expr: &ast::Expr) -> Expr {
         // todo: 実装
         match &expr.kind {
-            ast::ExprKind::Id(id) => self.resolve(&id.id).unwrap(), //fix unwrap()
+            ast::ExprKind::Id(id) => self.resolve_id(&id.id).unwrap(), //fix unwrap()
             ast::ExprKind::VarDecl(decl) => {
                 let local = Local::VarDecl(VarDecl { mutable: false }); // fix mutability
                 let local_id = self.body_scope_hierarchy.declare(&decl.id.id, local);

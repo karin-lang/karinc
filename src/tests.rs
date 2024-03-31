@@ -12,7 +12,8 @@ use maplit::hashmap;
 use crate::hir::lower::HirLowering;
 use crate::lexer::token::Span;
 use crate::parser::{ast, Parser};
-use crate::{id_token, keyword_token, token};
+use crate::tir::lower::TirLowering;
+use crate::{id_token, keyword_token, tir, token};
 use crate::lexer::tokenize::Lexer;
 
 #[test]
@@ -80,7 +81,14 @@ fn generates_js() {
                             args: Vec::new(),
                             body: crate::hir::Body {
                                 locals: Vec::new(),
-                                exprs: vec![crate::hir::Expr::PathRef("my_hako::f".into())],
+                                exprs: vec![
+                                    crate::hir::Expr::PathRef(
+                                        crate::hir::DivPath {
+                                            item_path: "my_hako::f".into(),
+                                            following_path: ast::Path::new(),
+                                        },
+                                    ),
+                                ],
                             },
                         },
                     )
@@ -89,4 +97,27 @@ fn generates_js() {
         },
     );
     assert!(hir_lowering_logs.is_empty());
+
+    let tir_lowering = TirLowering::new(&hir);
+    let tir = tir_lowering.lower();
+
+    assert_eq!(
+        tir,
+        tir::Tir {
+            bodies: hashmap! {
+                "my_hako::f".into() => (
+                    tir::Body {
+                        locals: Vec::new(),
+                        exprs: vec![
+                            tir::Expr {
+                                kind: tir::ExprKind::PathRef(
+                                    tir::Type::new(tir::TypeKind::Item("my_hako::f".into())),
+                                ),
+                            },
+                        ],
+                    }
+                ),
+            },
+        }
+    );
 }

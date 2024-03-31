@@ -18,6 +18,14 @@ impl Path {
         Path { segments: Vec::new() }
     }
 
+    pub fn from(segments: Vec<String>) -> Path {
+        Path { segments }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.segments.is_empty()
+    }
+
     pub fn add_segment(mut self, segment: &str) -> Path {
         self.segments.push(segment.to_string());
         self
