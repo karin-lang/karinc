@@ -98,6 +98,7 @@ pub struct Expr {
 pub enum ExprKind {
     Id(Id),
     FormalArg(Id),
+    FnCall(FnCall),
     VarDecl(VarDecl),
     VarInit(VarInit),
 }
@@ -121,6 +122,17 @@ pub enum PrimType {
     U8, U16, U32, U64, Usize,
     F32, F64,
     Char, Str,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FnCall {
+    pub path: Path,
+    pub args: Vec<ActualArg>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ActualArg {
+    pub expr: Expr,
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -1,6 +1,6 @@
 use crate::{id_token, keyword_token, token};
 use crate::lexer::token::Span;
-use crate::parser::ast::*;
+use crate::parser::{ast::*, ParserLog};
 use crate::parser::Parser;
 
 #[test]
@@ -86,6 +86,173 @@ fn parses_continuous_items() {
                         body: Body { exprs: Vec::new() },
                     },
                 ),
+            },
+        ],
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_fn_call_expr() {
+    let tokens = vec![
+        id_token!("f", 0, 1),
+        token!(OpenParen, 1, 1),
+        id_token!("a", 2, 1),
+        token!(ClosingParen, 3, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::FnCall(
+                FnCall {
+                    path: "f".into(),
+                    args: vec![
+                        ActualArg {
+                            expr: Expr {
+                                kind: ExprKind::Id(
+                                    Id { id: "a".to_string(), span: Span::new(2, 1) },
+                                ),
+                                span: Span { begin: 2, len: 1 },
+                            },
+                        },
+                    ],
+                },
+            ),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_actual_args_of_zero_len() {
+    let tokens = vec![
+        token!(OpenParen, 0, 1),
+        token!(ClosingParen, 1, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert!(parser.parse_actual_args().unwrap().is_empty());
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_actual_arg_of_a_len() {
+    let tokens = vec![
+        token!(OpenParen, 0, 1),
+        id_token!("a", 1, 1),
+        token!(ClosingParen, 2, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_actual_args().unwrap(),
+        vec![
+            ActualArg {
+                expr: Expr {
+                    kind: ExprKind::Id(
+                        Id { id: "a".to_string(), span: Span::new(1, 1) },
+                    ),
+                    span: Span { begin: 1, len: 1 },
+                },
+            },
+        ],
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_actual_args_of_two_len() {
+    let tokens = vec![
+        token!(OpenParen, 0, 1),
+        id_token!("a1", 1, 1),
+        token!(Comma, 2, 1),
+        id_token!("a2", 3, 1),
+        token!(ClosingParen, 4, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_actual_args().unwrap(),
+        vec![
+            ActualArg {
+                expr: Expr {
+                    kind: ExprKind::Id(
+                        Id { id: "a1".to_string(), span: Span::new(1, 1) },
+                    ),
+                    span: Span { begin: 1, len: 1 },
+                },
+            },
+            ActualArg {
+                expr: Expr {
+                    kind: ExprKind::Id(
+                        Id { id: "a2".to_string(), span: Span::new(3, 1) },
+                    ),
+                    span: Span { begin: 3, len: 1 },
+                },
+            },
+        ],
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn disallows_comma_before_actual_arg() {
+    let tokens = vec![
+        token!(OpenParen, 0, 1),
+        token!(Comma, 1, 1),
+        id_token!("a", 2, 1),
+        token!(ClosingParen, 3, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_actual_args().unwrap(),
+        vec![
+            ActualArg {
+                expr: Expr {
+                    kind: ExprKind::Id(
+                        Id { id: "a".to_string(), span: Span::new(2, 1) },
+                    ),
+                    span: Span { begin: 2, len: 1 },
+                },
+            },
+        ],
+    );
+    assert_eq!(
+        *parser.get_logs(),
+        vec![ParserLog::ExpectedActualArg { span: Span::new(1, 1) }],
+    );
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn allows_comma_after_actual_arg() {
+    let tokens = vec![
+        token!(OpenParen, 0, 1),
+        id_token!("a", 1, 1),
+        token!(Comma, 2, 1),
+        token!(ClosingParen, 3, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_actual_args().unwrap(),
+        vec![
+            ActualArg {
+                expr: Expr {
+                    kind: ExprKind::Id(
+                        Id { id: "a".to_string(), span: Span::new(1, 1) },
+                    ),
+                    span: Span { begin: 1, len: 1 },
+                },
             },
         ],
     );

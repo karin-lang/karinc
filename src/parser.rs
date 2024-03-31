@@ -12,6 +12,7 @@ pub enum ParserLog {
     ExpectedId { span: Span },
     ExpectedItem { span: Span },
     ExpectedFormalArg { span: Span },
+    ExpectedActualArg { span: Span },
     ExpectedKeyword { keyword: Keyword, span: Span },
     ExpectedToken { kind: TokenKind, span: Span },
     ExpectedType { span: Span },
@@ -245,7 +246,7 @@ impl<'a> Parser<'a> {
             }
 
             if !allow_next_arg {
-                let log = ParserLog::ExpectedExpr { span: self.get_next_span() };
+                let log = ParserLog::ExpectedFormalArg { span: self.get_next_span() };
                 self.record_log(log);
                 self.consume_until(|next| next.kind == TokenKind::ClosingParen);
                 break;
@@ -309,13 +310,58 @@ impl<'a> Parser<'a> {
         if let Some(id) = self.is_next_id() {
             self.expect_any()?;
             let span = id.span.clone();
-            let expr = Expr { kind: ExprKind::Id(id), span };
+            let kind = if self.is_next_eq(TokenKind::OpenParen).is_some() {
+                ExprKind::FnCall(
+                    FnCall {
+                        path: Path::from(vec![id.id.to_string()]),
+                        args: self.parse_actual_args()?,
+                    },
+                )
+            } else {
+                ExprKind::Id(id)
+            };
+            let expr = Expr { kind, span };
             Ok(expr)
         } else if self.is_next_keyword(Keyword::Let).is_some() {
             self.parse_var_decl_or_init()
         } else {
             Err(ParserLog::ExpectedExpr { span: self.get_next_span() })
         }
+    }
+
+    pub fn parse_actual_args(&mut self) -> ParserResult<Vec<ActualArg>> {
+        self.expect(TokenKind::OpenParen)?;
+        let mut args = Vec::new();
+        let mut allow_next_arg = true;
+
+        loop {
+            if self.is_eof() {
+                break;
+            }
+
+            if self.consume(TokenKind::ClosingParen).is_some() {
+                break;
+            }
+
+            if let Some(comma) = self.consume(TokenKind::Comma) {
+                let log = ParserLog::ExpectedActualArg { span: comma.span.clone() };
+                self.record_log(log);
+            }
+
+            if !allow_next_arg {
+                let log = ParserLog::ExpectedActualArg { span: self.get_next_span() };
+                self.record_log(log);
+                self.consume_until(|next| next.kind == TokenKind::ClosingParen);
+                break;
+            }
+
+            let expr = self.parse_expr()?;
+            allow_next_arg = self.consume(TokenKind::Comma).is_some();
+            let new_arg = ActualArg { expr };
+            args.push(new_arg);
+        }
+
+        Ok(args)
     }
 
     pub fn parse_var_decl_or_init(&mut self) -> ParserResult<Expr> {
