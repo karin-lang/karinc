@@ -78,6 +78,23 @@ pub enum Expr {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct Type {
+    pub kind: Box<TypeKind>,
+}
+
+impl Type {
+    pub fn new(kind: TypeKind) -> Type {
+        Type { kind: Box::new(kind) }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum TypeKind {
+    Path(ast::Path),
+    Prim(ast::PrimType),
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct FnCall {
     pub r#fn: ast::Path,
     pub args: Vec<ActualArg>,
@@ -89,7 +106,10 @@ pub struct ActualArg {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct FormalArg;
+pub struct FormalArg {
+    pub r#type: Type,
+    pub mutable: bool,
+}
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct VarDecl {

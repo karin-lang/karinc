@@ -52,7 +52,7 @@ impl<'a> HirLowering<'a> {
         if let Some(local_id) = self.resolve_local(id) {
             return Some(Expr::LocalRef(local_id));
         }
-        let path = self.current_mod_path.clone().add_segment(id);
+        let path = self.get_item_path(id);
         if let Some(expr) = self.resolve_path(&path) {
             return Some(expr);
         }
@@ -127,7 +127,7 @@ impl<'a> HirLowering<'a> {
     }
 
     pub fn lower_formal_arg(&mut self, arg: &ast::FormalArg) -> LocalId {
-        let arg_entity = FormalArg;
+        let arg_entity = FormalArg { r#type: self.lower_type(&arg.r#type), mutable: arg.mutable };
         let local = Local::FormalArg(arg_entity);
         self.body_scope_hierarchy.declare(&arg.id.id, local)
     }
@@ -143,5 +143,13 @@ impl<'a> HirLowering<'a> {
             },
             _ => unimplemented!(),
         }
+    }
+
+    pub fn lower_type(&mut self, r#type: &ast::Type) -> Type {
+        let kind = match &*r#type.kind {
+            ast::TypeKind::Id(id) => TypeKind::Path(self.get_item_path(&id.id)),
+            ast::TypeKind::Prim(prim_type) => TypeKind::Prim(*prim_type),
+        };
+        Type::new(kind)
     }
 }
