@@ -49,26 +49,17 @@ fn constrain_types() {
     assert_eq!(
         TypeConstraintBuilder::build(&hir),
         hashmap! {
-            ExprId::new(0) => TypeConstraintPtr::new(
-                TypeConstraint::Type(Type::Prim(ast::PrimType::Bool)),
-            ),
-            ExprId::new(1) => TypeConstraintPtr::new(
-                TypeConstraint::Expr {
-                    constrained_by: ExprId::new(2),
-                    ptr: TypeConstraintPtr::new(
-                        TypeConstraint::Expr {
-                            constrained_by: ExprId::new(0),
-                            ptr: TypeConstraintPtr::new(TypeConstraint::Type(Type::Prim(ast::PrimType::Bool))),
-                        },
-                    ),
-                },
-            ),
-            ExprId::new(2) => TypeConstraintPtr::new(
-                TypeConstraint::Expr {
-                    constrained_by: ExprId::new(0),
-                    ptr: TypeConstraintPtr::new(TypeConstraint::Type(Type::Prim(ast::PrimType::Bool))),
-                },
-            ),
+            ExprId::new(0) => TypeConstraint::Independent {
+                ptr: TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+            },
+            ExprId::new(1) => TypeConstraint::Dependent {
+                constrained_by: ExprId::new(2),
+                ptr: TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+            },
+            ExprId::new(2) => TypeConstraint::Dependent {
+                constrained_by: ExprId::new(0),
+                ptr: TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+            },
         }.into(),
     );
 }
