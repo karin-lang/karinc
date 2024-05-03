@@ -215,8 +215,8 @@ impl<'a> Parser<'a> {
             } else {
                 Some(self.parse_type()?)
             };
-            let body = self.parse_body()?;
-            let decl = FnDecl { args, ret_type, body };
+            let body = self.parse_body(ret_type, args)?;
+            let decl = FnDecl { body };
             Item { id, kind: ItemKind::FnDecl(decl) }
         } else {
             self.consume_until(|token| token.kind == TokenKind::ClosingCurlyBracket);
@@ -263,7 +263,7 @@ impl<'a> Parser<'a> {
         Ok(args)
     }
 
-    pub fn parse_body(&mut self) -> ParserResult<Body> {
+    pub fn parse_body(&mut self, ret_type: Option<Type>, args: Vec<FormalArg>) -> ParserResult<Body> {
         self.expect(TokenKind::OpenCurlyBracket)?;
         let mut exprs = Vec::new();
 
@@ -282,7 +282,7 @@ impl<'a> Parser<'a> {
             exprs.push(new_expr);
         }
 
-        let body = Body { exprs };
+        let body = Body { ret_type, args, exprs };
         Ok(body)
     }
 
@@ -372,24 +372,24 @@ impl<'a> Parser<'a> {
         // todo: let 式のセミコロンの扱いを検討する（暫定的にセミコロン必須で実装）
         let kind = if self.is_next_eq(TokenKind::Semicolon).is_some() {
             // e.g.) let i;
-            let decl = VarDecl { id, r#type: None };
-            ExprKind::VarDecl(decl)
+            let def = VarDef { id, r#type: None, init: None };
+            ExprKind::VarDef(def)
         } else if self.consume(TokenKind::Equal).is_some() {
             // e.g.) let i = 0;
             let expr = self.parse_expr()?;
-            let init = VarInit { id, r#type: None, expr: Box::new(expr) };
-            ExprKind::VarInit(init)
+            let def = VarDef { id, r#type: None, init: Some(Box::new(expr)) };
+            ExprKind::VarDef(def)
         } else {
             let r#type = Some(self.parse_type()?);
             if self.is_next_eq(TokenKind::Semicolon).is_some() {
                 // e.g.) let i usize;
-                let decl = VarDecl { id, r#type };
-                ExprKind::VarDecl(decl)
+                let def = VarDef { id, r#type, init: None };
+                ExprKind::VarDef(def)
             } else if self.consume(TokenKind::Equal).is_some() {
                 // e.g.) let i usize = 0;
                 let expr = self.parse_expr()?;
-                let init = VarInit { id, r#type, expr: Box::new(expr) };
-                ExprKind::VarInit(init)
+                let def = VarDef { id, r#type, init: Some(Box::new(expr)) };
+                ExprKind::VarDef(def)
             } else {
                 return Err(ParserLog::ExpectedToken { kind: TokenKind::Semicolon, span: self.get_next_span() });
             }

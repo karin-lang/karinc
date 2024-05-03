@@ -71,13 +71,13 @@ impl fmt::Debug for Id {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FnDecl {
-    pub args: Vec<FormalArg>,
-    pub ret_type: Option<Type>,
     pub body: Body,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Body {
+    pub ret_type: Option<Type>,
+    pub args: Vec<FormalArg>,
     pub exprs: Vec<Expr>,
 }
 
@@ -99,8 +99,7 @@ pub enum ExprKind {
     Id(Id),
     FormalArg(Id),
     FnCall(FnCall),
-    VarDecl(VarDecl),
-    VarInit(VarInit),
+    VarDef(VarDef),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -136,14 +135,8 @@ pub struct ActualArg {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct VarDecl {
+pub struct VarDef {
     pub id: Id,
     pub r#type: Option<Type>,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct VarInit {
-    pub id: Id,
-    pub r#type: Option<Type>,
-    pub expr: Box<Expr>,
+    pub init: Option<Box<Expr>>,
 }

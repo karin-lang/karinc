@@ -5,15 +5,18 @@ mod lexer;
 #[cfg(test)]
 mod parser;
 #[cfg(test)]
+mod tir;
+#[cfg(test)]
 mod token;
 
+/*
 use maplit::hashmap;
 
 use crate::hir::lower::HirLowering;
 use crate::lexer::token::Span;
 use crate::parser::{ast, Parser};
 use crate::tir::lower::TirLowering;
-use crate::{id_token, keyword_token, tir, token};
+use crate::{id_token, keyword_token, token};
 use crate::lexer::tokenize::Lexer;
 
 #[test]
@@ -103,15 +106,15 @@ fn generates_js() {
 
     assert_eq!(
         tir,
-        tir::Tir {
+        crate::tir::Tir {
             bodies: hashmap! {
                 "my_hako::f".into() => (
-                    tir::Body {
+                    crate::tir::Body {
                         locals: Vec::new(),
                         exprs: vec![
-                            tir::Expr {
-                                kind: tir::ExprKind::PathRef(
-                                    tir::Type::new(tir::TypeKind::Item("my_hako::f".into())),
+                            crate::tir::Expr {
+                                kind: crate::tir::ExprKind::PathRef(
+                                    crate::tir::Type::new(crate::tir::TypeKind::Item("my_hako::f".into())),
                                 ),
                             },
                         ],
@@ -121,3 +124,4 @@ fn generates_js() {
         }
     );
 }
+*/

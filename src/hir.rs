@@ -1,9 +1,11 @@
+pub mod id;
+pub mod lower;
+pub mod resolve;
+
 use std::collections::HashMap;
 
 use crate::parser::ast;
-
-pub mod lower;
-pub mod resolve;
+use crate::hir::id::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hir {
@@ -17,64 +19,46 @@ pub enum Item {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FnDecl {
-    pub args: Vec<LocalId>,
     pub body: Body,
 }
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Body {
-    pub locals: Vec<Local>,
+    pub args: Vec<FormalArgDef>,
+    pub vars: Vec<VarDef>,
     pub exprs: Vec<Expr>,
 }
 
-#[derive(Clone, Eq, Debug, Hash, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
 pub struct DivPath {
     pub item_path: ast::Path,
     pub following_path: ast::Path,
 }
 
-#[derive(Clone, Eq, Debug, Hash, PartialEq)]
-pub struct LocalId {
-    id: usize,
-}
-
-impl From<usize> for LocalId {
-    fn from(value: usize) -> Self {
-        Self { id: value }
-    }
-}
-
-impl From<&usize> for LocalId {
-    fn from(value: &usize) -> Self {
-        Self { id: *value }
-    }
-}
-
-impl From<LocalId> for usize {
-    fn from(value: LocalId) -> Self {
-        value.id
-    }
-}
-
-impl From<&LocalId> for usize {
-    fn from(value: &LocalId) -> Self {
-        value.id
+impl DivPath {
+    pub fn is_item(&self) -> bool {
+        self.following_path.is_empty()
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Local {
-    FormalArg(FormalArg),
-    VarDecl(VarDecl),
-    VarInit(VarInit),
+pub struct Expr {
+    pub id: ExprId,
+    pub kind: ExprKind,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Expr {
+pub enum ExprKind {
     FnCall(FnCall),
     PathRef(DivPath),
-    LocalDecl(LocalId),
+    VarDef(VarId),
     LocalRef(LocalId),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum LocalDef {
+    FormalArg(FormalArgDef),
+    Var(VarDef),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -90,7 +74,7 @@ impl Type {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeKind {
-    Path(ast::Path),
+    Path(DivPath),
     Prim(ast::PrimType),
 }
 
@@ -106,18 +90,15 @@ pub struct ActualArg {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct FormalArg {
+pub struct FormalArgDef {
+    pub expr_id: ExprId,
     pub r#type: Type,
     pub mutable: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct VarDecl {
+pub struct VarDef {
+    pub r#type: Option<Type>,
     pub mutable: bool,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct VarInit {
-    pub mutable: bool,
-    pub init: Expr,
+    pub init: Option<Expr>,
 }

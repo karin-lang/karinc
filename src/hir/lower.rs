@@ -50,23 +50,32 @@ impl<'a> HirLowering<'a> {
 
     pub fn resolve_id(&mut self, id: &str) -> Option<Expr> {
         if let Some(local_id) = self.resolve_local(id) {
-            return Some(Expr::LocalRef(local_id));
+            return Some(
+                Expr {
+                    id: self.body_scope_hierarchy.generate_expr_id(),
+                    kind: ExprKind::LocalRef(local_id),
+                },
+            );
         }
         let path = self.get_item_path(id);
         if let Some(expr) = self.resolve_path(&path) {
-            return Some(expr);
+            return Some(
+                Expr {
+                    id: self.body_scope_hierarchy.generate_expr_id(),
+                    kind: ExprKind::PathRef(expr),
+                },
+            );
         }
         None
     }
 
-    pub fn resolve_path(&self, path: &ast::Path) -> Option<Expr> {
+    pub fn resolve_path(&self, path: &ast::Path) -> Option<DivPath> {
         if self.paths.contains(path) {
             let div_path = DivPath {
                 item_path: path.clone(),
                 following_path: Path::new(),
             };
-            let expr = Expr::PathRef(div_path);
-            return Some(expr);
+            return Some(div_path);
         }
 
         let mut item_path = path.clone();
@@ -77,8 +86,7 @@ impl<'a> HirLowering<'a> {
                     item_path,
                     following_path: Path::from(following_segments.into()),
                 };
-                let expr = Expr::PathRef(div_path);
-                return Some(expr);
+                return Some(div_path);
             }
             following_segments.push_front(each_segment);
         }
@@ -113,33 +121,47 @@ impl<'a> HirLowering<'a> {
     }
 
     pub fn lower_fn_decl(&mut self, decl: &ast::FnDecl) -> FnDecl {
-        let args = decl.args.iter().map(|v| self.lower_formal_arg(v)).collect();
         let body = self.lower_body(&decl.body);
-        let decl = FnDecl { args, body };
+        let decl = FnDecl { body };
         decl
     }
 
     pub fn lower_body(&mut self, body: &ast::Body) -> Body {
         self.body_scope_hierarchy.enter_scope();
+        body.args.iter().for_each(|v| self.lower_formal_arg(v));
         let exprs = body.exprs.iter().map(|v| self.lower_expr(v)).collect();
-        let locals = self.body_scope_hierarchy.leave_scope();
-        Body { exprs, locals }
+        let (args, vars) = self.body_scope_hierarchy.leave_scope();
+        Body { args, vars, exprs }
     }
 
-    pub fn lower_formal_arg(&mut self, arg: &ast::FormalArg) -> LocalId {
-        let arg_entity = FormalArg { r#type: self.lower_type(&arg.r#type), mutable: arg.mutable };
-        let local = Local::FormalArg(arg_entity);
-        self.body_scope_hierarchy.declare(&arg.id.id, local)
+    pub fn lower_formal_arg(&mut self, arg: &ast::FormalArg) {
+        let arg_def = FormalArgDef {
+            expr_id: self.body_scope_hierarchy.generate_expr_id(),
+            r#type: self.lower_type(&arg.r#type),
+            mutable: arg.mutable,
+        };
+        self.body_scope_hierarchy.declare(&arg.id.id, LocalDef::FormalArg(arg_def));
     }
 
     pub fn lower_expr(&mut self, expr: &ast::Expr) -> Expr {
         // todo: 実装
         match &expr.kind {
             ast::ExprKind::Id(id) => self.resolve_id(&id.id).unwrap(), //fix unwrap()
-            ast::ExprKind::VarDecl(decl) => {
-                let local = Local::VarDecl(VarDecl { mutable: false }); // fix mutability
-                let local_id = self.body_scope_hierarchy.declare(&decl.id.id, local);
-                Expr::LocalDecl(local_id)
+            ast::ExprKind::VarDef(def) => {
+                let new_expr_id = self.body_scope_hierarchy.generate_expr_id();
+                let var_def = VarDef {
+                    r#type: def.r#type.as_ref().map(|r#type| self.lower_type(r#type)),
+                    mutable: false,
+                    init: def.init.as_ref().map(|expr| self.lower_expr(expr)),
+                };
+                let local_id = self.body_scope_hierarchy.declare(&def.id.id, LocalDef::Var(var_def));
+                match local_id {
+                    LocalId::Var(var_id) => Expr {
+                        id: new_expr_id,
+                        kind: ExprKind::VarDef(var_id),
+                    },
+                    _ => unreachable!(),
+                }
             },
             _ => unimplemented!(),
         }
@@ -147,7 +169,14 @@ impl<'a> HirLowering<'a> {
 
     pub fn lower_type(&mut self, r#type: &ast::Type) -> Type {
         let kind = match &*r#type.kind {
-            ast::TypeKind::Id(id) => TypeKind::Path(self.get_item_path(&id.id)),
+            ast::TypeKind::Id(id) => {
+                let path = self.get_item_path(&id.id);
+                let div_path = self.resolve_path(&path);
+                match div_path {
+                    Some(v) => TypeKind::Path(v),
+                    None => unimplemented!(),
+                }
+            },
             ast::TypeKind::Prim(prim_type) => TypeKind::Prim(*prim_type),
         };
         Type::new(kind)

@@ -28,9 +28,11 @@ fn outputs_parser_result() {
                     },
                     kind: ItemKind::FnDecl(
                         FnDecl {
-                            args: Vec::new(),
-                            ret_type: None,
-                            body: Body { exprs: Vec::new() },
+                            body: Body {
+                                ret_type: None,
+                                args: Vec::new(),
+                                exprs: Vec::new(),
+                            },
                         },
                     ),
                 },
@@ -68,9 +70,11 @@ fn parses_continuous_items() {
                 },
                 kind: ItemKind::FnDecl(
                     FnDecl {
-                        args: Vec::new(),
-                        ret_type: None,
-                        body: Body { exprs: Vec::new() },
+                        body: Body {
+                            ret_type: None,
+                            args: Vec::new(),
+                            exprs: Vec::new(),
+                        },
                     },
                 ),
             },
@@ -81,9 +85,11 @@ fn parses_continuous_items() {
                 },
                 kind: ItemKind::FnDecl(
                     FnDecl {
-                        args: Vec::new(),
-                        ret_type: None,
-                        body: Body { exprs: Vec::new() },
+                        body: Body {
+                            ret_type: None,
+                            args: Vec::new(),
+                            exprs: Vec::new(),
+                        },
                     },
                 ),
             },

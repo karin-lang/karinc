@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use maplit::hashmap;
 
 use crate::hir::*;
+use crate::hir::id::*;
 use crate::hir::lower::HirLowering;
 use crate::lexer::token::Span;
 use crate::parser::ast;
@@ -30,9 +31,11 @@ fn lowers_subitem_in_mod() {
                     id: ast::Id { id: "f".to_string(), span: Span::new(0, 1) },
                     kind: ast::ItemKind::FnDecl(
                         ast::FnDecl {
-                            args: Vec::new(),
-                            ret_type: None,
-                            body: ast::Body { exprs: Vec::new() },
+                            body: ast::Body {
+                                ret_type: None,
+                                args: Vec::new(),
+                                exprs: Vec::new(),
+                            },
                         },
                     ),
                 },
@@ -49,9 +52,9 @@ fn lowers_subitem_in_mod() {
                 "my_hako::f".into() => (
                     Item::FnDecl(
                         FnDecl {
-                            args: Vec::new(),
                             body: Body {
-                                locals: Vec::new(),
+                                args: Vec::new(),
+                                vars: Vec::new(),
                                 exprs: Vec::new(),
                             },
                         },
@@ -73,9 +76,9 @@ fn resolves_item_and_local() {
                     id: ast::Id { id: "item".to_string(), span: Span::new(0, 1) },
                     kind: ast::ItemKind::FnDecl(
                         ast::FnDecl {
-                            args: Vec::new(),
-                            ret_type: None,
                             body: ast::Body {
+                                ret_type: None,
+                                args: Vec::new(),
                                 exprs: vec![
                                     ast::Expr {
                                         kind: ast::ExprKind::Id(
@@ -84,10 +87,11 @@ fn resolves_item_and_local() {
                                         span: Span::new(1, 1),
                                     },
                                     ast::Expr {
-                                        kind: ast::ExprKind::VarDecl(
-                                            ast::VarDecl {
+                                        kind: ast::ExprKind::VarDef(
+                                            ast::VarDef {
                                                 id: ast::Id { id: "local".to_string(), span: Span::new(2, 1) },
                                                 r#type: None,
+                                                init: None,
                                             },
                                         ),
                                         span: Span::new(2, 1),
@@ -116,24 +120,33 @@ fn resolves_item_and_local() {
                 "my_hako::item".into() => (
                     Item::FnDecl(
                         FnDecl {
-                            args: Vec::new(),
                             body: Body {
-                                locals: vec![
-                                    Local::VarDecl(
-                                        VarDecl {
-                                            mutable: false,
-                                        },
-                                    ),
+                                args: Vec::new(),
+                                vars: vec![
+                                    VarDef {
+                                        r#type: None,
+                                        mutable: false,
+                                        init: None,
+                                    },
                                 ],
                                 exprs: vec![
-                                    Expr::PathRef(
-                                        crate::hir::DivPath {
-                                            item_path: "my_hako::item".into(),
-                                            following_path: ast::Path::new(),
-                                        },
-                                    ),
-                                    Expr::LocalDecl(0.into()),
-                                    Expr::LocalRef(0.into()),
+                                    Expr {
+                                        id: ExprId::new(0),
+                                        kind: ExprKind::PathRef(
+                                            crate::hir::DivPath {
+                                                item_path: "my_hako::item".into(),
+                                                following_path: ast::Path::new(),
+                                            },
+                                        ),
+                                    },
+                                    Expr {
+                                        id: ExprId::new(1),
+                                        kind: ExprKind::VarDef(VarId::new(0)),
+                                    },
+                                    Expr {
+                                        id: ExprId::new(2),
+                                        kind: ExprKind::LocalRef(LocalId::Var(VarId::new(0))),
+                                    },
                                 ],
                             },
                         },

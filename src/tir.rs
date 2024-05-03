@@ -1,9 +1,11 @@
-pub mod check;
-pub mod lower;
+// pub mod check;
+pub mod constraint;
+// pub mod lower;
 
 use std::{cell::RefCell, collections::HashMap, rc::Rc};
 
-use crate::{hir, parser::ast};
+use crate::parser::ast;
+use crate::hir::id::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Tir {
@@ -24,9 +26,21 @@ pub struct Expr {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
     // todo: フィールドの情報が必要か判断
+    FnCall(FnCall),
     PathRef(Type),
-    LocalDecl(hir::LocalId),
-    LocalRef(hir::LocalId),
+    LocalDecl(LocalId),
+    LocalRef(LocalId),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FnCall {
+    pub r#fn: ast::Path,
+    pub args: Vec<ActualArg>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct ActualArg {
+    pub expr: Expr,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -49,6 +63,7 @@ pub struct VarDecl {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct VarInit {
+    pub r#type: Type,
     pub init: Expr,
 }
 
@@ -65,8 +80,34 @@ impl Type {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeKind {
+    Derived(DerivedType),
+    Infer(InferType),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct DerivedType {
+    pub kind: DerivedTypeKind,
+}
+
+impl DerivedType {
+    pub fn new(kind: DerivedTypeKind) -> DerivedType {
+        DerivedType { kind }
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum DerivedTypeKind {
+    Void,
     Item(ast::Path),
-    PrimType(ast::PrimType),
-    Infer,
+    Prim(ast::PrimType),
     Undefined,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct InferType;
+
+impl InferType {
+    pub fn new() -> InferType {
+        InferType
+    }
 }
