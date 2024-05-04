@@ -38,6 +38,24 @@ impl BodyScopeHierarchy {
         None
     }
 
+    pub fn resolve_arg(&self, id: &str) -> Option<FormalArgId> {
+        for each_scope in self.scopes.iter().rev() {
+            if let Some(id) = each_scope.resolve_arg(id) {
+                return Some(id);
+            }
+        }
+        None
+    }
+
+    pub fn resolve_var(&self, id: &str) -> Option<VarId> {
+        for each_scope in self.scopes.iter().rev() {
+            if let Some(id) = each_scope.resolve_var(id) {
+                return Some(id);
+            }
+        }
+        None
+    }
+
     pub fn generate_expr_id(&mut self) -> ExprId {
         self.get_current_scope_mut().generate_expr_id()
     }
@@ -45,6 +63,7 @@ impl BodyScopeHierarchy {
 
 pub struct BodyScope {
     args: Vec<FormalArgDef>,
+    arg_ids: HashMap<String, FormalArgId>,
     vars: Vec<VarDef>,
     scopes: Vec<LocalScope>,
     next_expr_id: usize,
@@ -54,6 +73,7 @@ impl BodyScope {
     pub fn new() -> BodyScope {
         BodyScope {
             args: Vec::new(),
+            arg_ids: HashMap::new(),
             vars: Vec::new(),
             scopes: vec![LocalScope::new()],
             next_expr_id: 0,
@@ -80,8 +100,8 @@ impl BodyScope {
         match local_def {
             LocalDef::FormalArg(arg) => {
                 let arg_id = FormalArgId::new(self.args.len());
-                self.get_current_scope_mut().declare_arg(id, arg_id);
                 self.args.push(arg);
+                self.arg_ids.insert(id.to_string(), arg_id);
                 LocalId::FormalArg(arg_id)
             },
             LocalDef::Var(var) => {
@@ -94,12 +114,25 @@ impl BodyScope {
     }
 
     pub fn resolve(&self, id: &str) -> Option<LocalId> {
+        if let Some(id) = self.resolve_arg(id) {
+            Some(LocalId::FormalArg(id))
+        } else if let Some(id) = self.resolve_var(id) {
+            Some(LocalId::Var(id))
+        } else {
+            None
+        }
+    }
+
+    pub fn resolve_arg(&self, id: &str) -> Option<FormalArgId> {
+        self.arg_ids.get(id).cloned()
+    }
+
+    pub fn resolve_var(&self, id: &str) -> Option<VarId> {
         for each_scope in self.scopes.iter().rev() {
-            if let Some(local_id) = each_scope.resolve(id) {
-                return Some(local_id);
+            if let Some(var_id) = each_scope.resolve_var(id) {
+                return Some(var_id);
             }
         }
-
         None
     }
 
@@ -111,35 +144,24 @@ impl BodyScope {
 }
 
 pub struct LocalScope {
-    args: Vec<(String, FormalArgId)>,
     vars: Vec<(String, VarId)>,
 }
 
 impl LocalScope {
     pub fn new() -> LocalScope {
         LocalScope {
-            args: Vec::new(),
             vars: Vec::new(),
         }
-    }
-
-    pub fn declare_arg(&mut self, id: &str, arg_id: FormalArgId) {
-        self.args.push((id.to_string(), arg_id));
     }
 
     pub fn declare_var(&mut self, id: &str, var_id: VarId) {
         self.vars.push((id.to_string(), var_id));
     }
 
-    pub fn resolve(&self, id: &str) -> Option<LocalId> {
-        for (each_id, each_arg_id) in self.args.iter().rev() {
-            if each_id == id {
-                return Some(LocalId::FormalArg(*each_arg_id));
-            }
-        }
+    pub fn resolve_var(&self, id: &str) -> Option<VarId> {
         for (each_id, each_var_id) in self.vars.iter().rev() {
             if each_id == id {
-                return Some(LocalId::Var(*each_var_id));
+                return Some(*each_var_id);
             }
         }
         None

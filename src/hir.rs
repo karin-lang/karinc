@@ -4,6 +4,7 @@ pub mod resolve;
 
 use std::collections::HashMap;
 
+use crate::lexer::token;
 use crate::parser::ast;
 use crate::hir::id::*;
 
@@ -49,9 +50,11 @@ pub struct Expr {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
+    Literal(token::Literal),
     FnCall(FnCall),
     PathRef(DivPath),
     VarDef(VarId),
+    VarBind(VarBind),
     LocalRef(LocalId),
 }
 
@@ -101,4 +104,10 @@ pub struct VarDef {
     pub r#type: Option<Type>,
     pub mutable: bool,
     pub init: Option<Expr>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct VarBind {
+    pub var_id: VarId,
+    pub value: Box<Expr>,
 }

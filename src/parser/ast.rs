@@ -1,5 +1,6 @@
 use std::fmt;
 
+use crate::lexer::token;
 use super::Span;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -97,9 +98,10 @@ pub struct Expr {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
     Id(Id),
-    FormalArg(Id),
+    Literal(token::Literal),
     FnCall(FnCall),
     VarDef(VarDef),
+    VarBind(VarBind),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -139,4 +141,10 @@ pub struct VarDef {
     pub id: Id,
     pub r#type: Option<Type>,
     pub init: Option<Box<Expr>>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct VarBind {
+    pub id: Id,
+    pub value: Box<Expr>,
 }

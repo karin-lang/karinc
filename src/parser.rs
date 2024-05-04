@@ -36,6 +36,14 @@ impl<'a> Parser<'a> {
         }
     }
 
+    pub fn clone_tokens_ptr(&mut self) -> Peekable<Iter<'a, Token>> {
+        self.tokens.clone()
+    }
+
+    pub fn set_tokens_ptr(&mut self, ptr: Peekable<Iter<'a, Token>>) {
+        self.tokens = ptr;
+    }
+
     pub fn get_next_span(&mut self) -> Span {
         self.tokens.peek().map(|next| next.span.clone()).unwrap_or(self.last_token_span.clone())
     }
@@ -308,22 +316,29 @@ impl<'a> Parser<'a> {
     pub fn parse_expr(&mut self) -> ParserResult<Expr> {
         // todo: match 式で token_kind を判断して条件分岐を最適化できないか検討する
         if let Some(id) = self.is_next_id() {
-            self.expect_any()?;
-            let span = id.span.clone();
-            let kind = if self.is_next_eq(TokenKind::OpenParen).is_some() {
-                ExprKind::FnCall(
-                    FnCall {
-                        path: Path::from(vec![id.id.to_string()]),
-                        args: self.parse_actual_args()?,
-                    },
-                )
+            if let Some((bind, span)) = self.parse_var_bind()? {
+                let expr = Expr { kind: ExprKind::VarBind(bind), span };
+                Ok(expr)
             } else {
-                ExprKind::Id(id)
-            };
-            let expr = Expr { kind, span };
-            Ok(expr)
+                self.expect_any()?;
+                let span = id.span.clone();
+                let kind = if self.is_next_eq(TokenKind::OpenParen).is_some() {
+                    ExprKind::FnCall(
+                        FnCall {
+                            path: Path::from(vec![id.id.to_string()]),
+                            args: self.parse_actual_args()?,
+                        },
+                    )
+                } else {
+                    ExprKind::Id(id)
+                };
+                let expr = Expr { kind, span };
+                Ok(expr)
+            }
         } else if self.is_next_keyword(Keyword::Let).is_some() {
-            self.parse_var_decl_or_init()
+            let (def, span) = self.parse_var_def()?;
+            let expr = Expr { kind: ExprKind::VarDef(def), span };
+            Ok(expr)
         } else {
             Err(ParserLog::ExpectedExpr { span: self.get_next_span() })
         }
@@ -364,38 +379,50 @@ impl<'a> Parser<'a> {
         Ok(args)
     }
 
-    pub fn parse_var_decl_or_init(&mut self) -> ParserResult<Expr> {
+    pub fn parse_var_def(&mut self) -> ParserResult<(VarDef, Span)> {
         self.expect_keyword(Keyword::Let)?;
         let (_, id) = self.expect_id()?;
         let span = id.span.clone();
-
         // todo: let 式のセミコロンの扱いを検討する（暫定的にセミコロン必須で実装）
-        let kind = if self.is_next_eq(TokenKind::Semicolon).is_some() {
+        let def = if self.is_next_eq(TokenKind::Semicolon).is_some() {
             // e.g.) let i;
-            let def = VarDef { id, r#type: None, init: None };
-            ExprKind::VarDef(def)
+            VarDef { id, r#type: None, init: None }
         } else if self.consume(TokenKind::Equal).is_some() {
             // e.g.) let i = 0;
             let expr = self.parse_expr()?;
-            let def = VarDef { id, r#type: None, init: Some(Box::new(expr)) };
-            ExprKind::VarDef(def)
+            VarDef { id, r#type: None, init: Some(Box::new(expr)) }
         } else {
             let r#type = Some(self.parse_type()?);
             if self.is_next_eq(TokenKind::Semicolon).is_some() {
                 // e.g.) let i usize;
-                let def = VarDef { id, r#type, init: None };
-                ExprKind::VarDef(def)
+                VarDef { id, r#type, init: None }
             } else if self.consume(TokenKind::Equal).is_some() {
                 // e.g.) let i usize = 0;
                 let expr = self.parse_expr()?;
-                let def = VarDef { id, r#type, init: Some(Box::new(expr)) };
-                ExprKind::VarDef(def)
+                VarDef { id, r#type, init: Some(Box::new(expr)) }
             } else {
                 return Err(ParserLog::ExpectedToken { kind: TokenKind::Semicolon, span: self.get_next_span() });
             }
         };
+        Ok((def, span))
+    }
 
-        let expr = Expr { kind, span };
-        Ok(expr)
+    pub fn parse_var_bind(&mut self) -> ParserResult<Option<(VarBind, Span)>> {
+        let tokens_ptr = self.clone_tokens_ptr();
+        let id = match self.is_next_id() {
+            Some(id) => {
+                self.expect_any()?;
+                id
+            },
+            None => return Ok(None),
+        };
+        if self.consume(TokenKind::Equal).is_none() {
+            self.set_tokens_ptr(tokens_ptr);
+            return Ok(None);
+        }
+        let span = id.span.clone();
+        let value = self.parse_expr()?;
+        let bind = VarBind { id, value: Box::new(value) };
+        Ok(Some((bind, span)))
     }
 }

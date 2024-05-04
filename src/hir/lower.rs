@@ -69,6 +69,10 @@ impl<'a> HirLowering<'a> {
         None
     }
 
+    pub fn resolve_var(&mut self, id: &str) -> Option<VarId> {
+        self.body_scope_hierarchy.resolve_var(id)
+    }
+
     pub fn resolve_path(&self, path: &ast::Path) -> Option<DivPath> {
         if self.paths.contains(path) {
             let div_path = DivPath {
@@ -161,6 +165,19 @@ impl<'a> HirLowering<'a> {
                         kind: ExprKind::VarDef(var_id),
                     },
                     _ => unreachable!(),
+                }
+            },
+            ast::ExprKind::VarBind(bind) => {
+                let var_id = self.resolve_var(&bind.id.id).unwrap(); // fix unwrap
+                let value_expr = self.lower_expr(&bind.value);
+                Expr {
+                    id: self.body_scope_hierarchy.generate_expr_id(),
+                    kind: ExprKind::VarBind(
+                        VarBind {
+                            var_id,
+                            value: Box::new(value_expr),
+                        },
+                    ),
                 }
             },
             _ => unimplemented!(),

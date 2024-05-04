@@ -1006,3 +1006,81 @@ fn parses_var_init_with_type_annot() {
     assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 5, 1)));
 }
 */
+
+#[test]
+fn parses_var_bind_expr() {
+    let tokens = vec![
+        id_token!("i", 0, 1),
+        token!(Equal, 1, 1),
+        id_token!("value", 2, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_expr(),
+        Ok(
+            Expr {
+                kind: ExprKind::VarBind(
+                    VarBind {
+                        id: Id {
+                            id: "i".to_string(),
+                            span: Span::new(0, 1),
+                        },
+                        value: Box::new(
+                            Expr {
+                                kind: ExprKind::Id(
+                                    Id {
+                                        id: "value".to_string(),
+                                        span: Span::new(2, 1),
+                                    },
+                                ),
+                                span: Span::new(2, 1),
+                            },
+                        ),
+                    },
+                ),
+                span: Span::new(0, 1),
+            },
+        ),
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_var_bind() {
+    let tokens = vec![
+        id_token!("i", 0, 1),
+        token!(Equal, 1, 1),
+        id_token!("value", 2, 1),
+    ];
+    let mut parser = Parser::new(&tokens);
+
+    assert_eq!(
+        parser.parse_var_bind(),
+        Ok(
+            Some((
+                VarBind {
+                    id: Id {
+                        id: "i".to_string(),
+                        span: Span::new(0, 1),
+                    },
+                    value: Box::new(
+                        Expr {
+                            kind: ExprKind::Id(
+                                Id {
+                                    id: "value".to_string(),
+                                    span: Span::new(2, 1),
+                                },
+                            ),
+                            span: Span::new(2, 1),
+                        },
+                    ),
+                },
+                Span::new(0, 1),
+            )),
+        ),
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
