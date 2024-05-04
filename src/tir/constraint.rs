@@ -72,6 +72,12 @@ impl TypeConstraintTable {
         TypeConstraintTable { table: HashMap::new() }
     }
 
+    pub fn constrain(&mut self, expr_id: ExprId) {
+        if !self.table.contains_key(&expr_id) {
+            self.constrain_independent(expr_id, Type::Unresolved)
+        }
+    }
+
     pub fn constrain_independent(&mut self, expr_id: ExprId, r#type: Type) {
         let constraint = TypeConstraint::Independent { ptr: TypePtr::new(r#type) };
         self.table.insert(expr_id, constraint);
@@ -170,13 +176,16 @@ impl TypeConstraintBuilder {
             hir::ExprKind::VarDef(var_id) => {
                 match body.vars.get(var_id.into_usize()) {
                     Some(var_def) => {
+                        if let Some(r#type) = &var_def.r#type {
+                            self.table.constrain_independent(expr.id, r#type.into());
+                        }
                         match &var_def.init {
                             Some(init_expr) => {
                                 self.build_expr(body, init_expr);
                                 let result = self.table.constrain_dependent(expr.id, init_expr.id);
                                 self.collect_log(result);
                             },
-                            None => self.table.constrain_independent(expr.id, Type::Unresolved),
+                            None => self.table.constrain(expr.id),
                         }
                         self.vars.insert(*var_id, expr.id);
                     },

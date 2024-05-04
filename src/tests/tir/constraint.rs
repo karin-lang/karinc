@@ -6,7 +6,7 @@ use crate::hir::{self, id::*};
 use crate::parser::ast;
 
 #[test]
-fn constrain_types() {
+fn constrains_types() {
     let hir = hir::Hir {
         items: hashmap! {
             "my_hako::item".into() => (
@@ -68,7 +68,7 @@ fn constrain_types() {
 }
 
 #[test]
-fn constrain_var_bind_types() {
+fn constrains_var_bind_types() {
     let hir = hir::Hir {
         items: hashmap! {
             "my_hako::item".into() => (
@@ -129,4 +129,71 @@ fn constrain_var_bind_types() {
         }.into(),
     );
     assert!(logs.is_empty());
+}
+
+#[test]
+fn detects_inconsistent_constraint_of_var_bind() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item::FnDecl(
+                    hir::FnDecl {
+                        body: hir::Body {
+                            args: Vec::new(),
+                            vars: vec![
+                                hir::VarDef {
+                                    r#type: Some(
+                                        hir::Type::new(
+                                            hir::TypeKind::Prim(ast::PrimType::Usize),
+                                        ),
+                                    ),
+                                    mutable: false,
+                                    init: None,
+                                },
+                            ],
+                            exprs: vec![
+                                hir::Expr {
+                                    id: ExprId::new(0),
+                                    kind: hir::ExprKind::VarDef(VarId::new(0)),
+                                },
+                                hir::Expr {
+                                    id: ExprId::new(1),
+                                    kind: hir::ExprKind::VarBind(
+                                        hir::VarBind {
+                                            var_id: VarId::new(0),
+                                            value: Box::new(
+                                                hir::Expr {
+                                                    id: ExprId::new(2),
+                                                    kind: hir::ExprKind::Literal(
+                                                        token::Literal::Bool { value: true },
+                                                    ),
+                                                },
+                                            ),
+                                        },
+                                    ),
+                                },
+                            ],
+                        },
+                    },
+                )
+            ),
+        },
+    };
+    let (table, logs) = TypeConstraintBuilder::build(&hir);
+
+    assert_eq!(
+        table,
+        hashmap! {
+            ExprId::new(0) => TypeConstraint::Independent {
+                ptr: TypePtr::new(Type::Prim(ast::PrimType::Usize)),
+            },
+            ExprId::new(1) => TypeConstraint::Independent {
+                ptr: TypePtr::new(Type::Void),
+            },
+            ExprId::new(2) => TypeConstraint::Independent {
+                ptr: TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+            },
+        }.into(),
+    );
+    assert_eq!(logs, vec![TypeLog::InconsistentConstraint]);
 }
