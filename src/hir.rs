@@ -94,7 +94,6 @@ pub struct ActualArg {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FormalArgDef {
-    pub expr_id: ExprId,
     pub r#type: Type,
     pub mutable: bool,
 }

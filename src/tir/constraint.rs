@@ -64,7 +64,7 @@ impl std::fmt::Debug for TypePtr {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TypeConstraintTable {
-    table: HashMap<ExprId, TypeConstraint>,
+    table: HashMap<TypeId, TypeConstraint>,
 }
 
 impl TypeConstraintTable {
@@ -72,58 +72,109 @@ impl TypeConstraintTable {
         TypeConstraintTable { table: HashMap::new() }
     }
 
-    pub fn constrain(&mut self, expr_id: ExprId) {
-        if !self.table.contains_key(&expr_id) {
-            self.constrain_independent(expr_id, Type::Unresolved)
+    pub fn to_sorted_vec(&self) -> Vec<(&TypeId, &TypeConstraint)> {
+        let mut vec: Vec<(&TypeId, &TypeConstraint)> = self.table.iter().collect();
+        vec.sort_by(|a, b| a.0.cmp(&b.0));
+        vec
+    }
+
+    pub fn add_constraint(&mut self, type_id: TypeId) -> TypeResult<()> {
+        if !self.table.contains_key(&type_id) {
+            self.add_independent_constraint(type_id, Type::Unresolved)?;
         }
+        Ok(())
     }
 
-    pub fn constrain_independent(&mut self, expr_id: ExprId, r#type: Type) {
-        let constraint = TypeConstraint::Independent { ptr: TypePtr::new(r#type) };
-        self.table.insert(expr_id, constraint);
-    }
-
-    pub fn constrain_dependent(&mut self, expr_id: ExprId, constrained_by: ExprId) -> TypeResult<()> {
-        let new_ptr = match self.table.get(&constrained_by) {
-            Some(constraint) => constraint.get_ptr().clone(),
-            None => panic!("unknown expression id"),
-        };
-        if let Some(constraint) = self.table.get_mut(&expr_id) {
+    pub fn add_independent_constraint(&mut self, type_id: TypeId, r#type: Type) -> TypeResult<()> {
+        if let Some(constraint) = self.table.get_mut(&type_id) {
             let ptr = constraint.get_ptr().borrow();
-            if ptr.is_resolved() && *ptr != *new_ptr.borrow() {
+            if ptr.is_resolved() && *ptr != r#type {
+                // detects inconsistent types
                 return Err(TypeLog::InconsistentConstraint);
             }
         }
-        let new_constraint = TypeConstraint::Dependent { ptr: new_ptr, constrained_by };
-        self.table.insert(expr_id, new_constraint);
+        let constraint = TypeConstraint::new(TypePtr::new(r#type));
+        self.table.insert(type_id, constraint);
+        Ok(())
+    }
+
+    pub fn add_dependent_constraint(&mut self, type_id: TypeId, constrained_by: TypeId) -> TypeResult<()> {
+        let new_ptr = match self.table.get_mut(&constrained_by) {
+            Some(constraint) => {
+                constraint.constrain(type_id);
+                constraint.get_ptr().clone()
+            },
+            None => panic!("unknown expression id"),
+        };
+        if let Some(constraint) = self.table.get_mut(&type_id) {
+            {
+                let ptr = constraint.get_ptr().borrow();
+                if ptr.is_resolved() && *ptr != *new_ptr.borrow() {
+                    // detects inconsistent types
+                    return Err(TypeLog::InconsistentConstraint);
+                }
+            }
+            constraint.set_ptr(new_ptr);
+            constraint.set_constrained_by(constrained_by);
+        } else {
+            let new_constraint = TypeConstraint::new_constrained(new_ptr, Vec::new(), Some(constrained_by));
+            self.table.insert(type_id, new_constraint);
+        }
+        Ok(())
+    }
+
+    pub fn copy_and_be_constrained(&mut self, type_id: TypeId, source: TypeId) -> TypeResult<()> {
+        let source_ptr = match self.table.get(&source) {
+            Some(constraint) => constraint.get_ptr().borrow().clone(),
+            None => panic!("unknown expression id"),
+        };
+        self.add_independent_constraint(type_id, source_ptr)?;
+        self.add_dependent_constraint(source, type_id)?;
         Ok(())
     }
 }
 
-impl From<HashMap<ExprId, TypeConstraint>> for TypeConstraintTable {
-    fn from(value: HashMap<ExprId, TypeConstraint>) -> Self {
+impl From<HashMap<TypeId, TypeConstraint>> for TypeConstraintTable {
+    fn from(value: HashMap<TypeId, TypeConstraint>) -> Self {
         Self { table: value }
     }
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum TypeConstraint {
-    Independent { ptr: TypePtr },
-    Dependent { ptr: TypePtr, constrained_by: ExprId },
+pub struct TypeConstraint {
+    ptr: TypePtr,
+    constrains: Vec<TypeId>,
+    constrained_by: Option<TypeId>,
 }
 
 impl TypeConstraint {
+    pub fn new(ptr: TypePtr) -> TypeConstraint {
+        TypeConstraint { ptr, constrains: Vec::new(), constrained_by: None }
+    }
+
+    pub fn new_constrained(ptr: TypePtr, constrains: Vec<TypeId>, constrained_by: Option<TypeId>) -> TypeConstraint {
+        TypeConstraint { ptr, constrains, constrained_by }
+    }
+
     pub fn get_ptr(&self) -> &TypePtr {
-        match self {
-            TypeConstraint::Independent { ptr } => ptr,
-            TypeConstraint::Dependent { ptr, constrained_by: _ } => ptr,
-        }
+        &self.ptr
+    }
+
+    pub fn set_ptr(&mut self, ptr: TypePtr) {
+        self.ptr = ptr;
+    }
+
+    pub fn constrain(&mut self, constrains: TypeId) {
+        self.constrains.push(constrains);
+    }
+
+    pub fn set_constrained_by(&mut self, constrained_by: TypeId) {
+        self.constrained_by = Some(constrained_by);
     }
 }
 
 pub struct TypeConstraintBuilder {
     table: TypeConstraintTable,
-    vars: HashMap<VarId, ExprId>,
     logs: Vec<TypeLog>,
 }
 
@@ -141,7 +192,6 @@ impl TypeConstraintBuilder {
     pub fn build(hir: &hir::Hir) -> (TypeConstraintTable, Vec<TypeLog>) {
         let mut builder = TypeConstraintBuilder {
             table: TypeConstraintTable::new(),
-            vars: HashMap::new(),
             logs: Vec::new(),
         };
         hir.items.iter().for_each(|(_, item)| builder.build_item(item));
@@ -151,8 +201,8 @@ impl TypeConstraintBuilder {
     pub fn build_item(&mut self, item: &hir::Item) {
         match item {
             hir::Item::FnDecl(decl) => {
-                for arg in &decl.body.args {
-                    self.build_formal_arg(arg);
+                for (arg_id, arg) in decl.body.args.iter().enumerate() {
+                    self.build_formal_arg(FormalArgId::new(arg_id), arg);
                 }
                 for expr in &decl.body.exprs {
                     self.build_expr(&decl.body, expr);
@@ -161,51 +211,48 @@ impl TypeConstraintBuilder {
         }
     }
 
-    pub fn build_formal_arg(&mut self, arg: &hir::FormalArgDef) {
-        self.table.constrain_independent(arg.expr_id, (&arg.r#type).into());
+    pub fn build_formal_arg(&mut self, arg_id: FormalArgId, arg: &hir::FormalArgDef) {
+        let result = self.table.add_independent_constraint(TypeId::FormalArg(arg_id), (&arg.r#type).into());
+        self.collect_log(result);
     }
 
     pub fn build_expr(&mut self, body: &hir::Body, expr: &hir::Expr) {
         match &expr.kind {
             hir::ExprKind::Literal(literal) => match literal {
                 token::Literal::Bool { value: _ } => {
-                    self.table.constrain_independent(expr.id, Type::Prim(ast::PrimType::Bool));
+                    let result = self.table.add_independent_constraint(TypeId::Expr(expr.id), Type::Prim(ast::PrimType::Bool));
+                    self.collect_log(result);
                 },
                 _ => unimplemented!(),
             },
             hir::ExprKind::VarDef(var_id) => {
-                match body.vars.get(var_id.into_usize()) {
-                    Some(var_def) => {
-                        if let Some(r#type) = &var_def.r#type {
-                            self.table.constrain_independent(expr.id, r#type.into());
-                        }
-                        match &var_def.init {
-                            Some(init_expr) => {
-                                self.build_expr(body, init_expr);
-                                let result = self.table.constrain_dependent(expr.id, init_expr.id);
-                                self.collect_log(result);
-                            },
-                            None => self.table.constrain(expr.id),
-                        }
-                        self.vars.insert(*var_id, expr.id);
-                    },
+                let var_def = match body.vars.get(var_id.into_usize()) {
+                    Some(v) => v,
                     None => unreachable!("unknown variable id"),
+                };
+                let result = self.table.add_independent_constraint(TypeId::Expr(expr.id), Type::Void);
+                self.collect_log(result);
+                if let Some(r#type) = &var_def.r#type {
+                    let result = self.table.add_independent_constraint(TypeId::Var(*var_id), r#type.into());
+                    self.collect_log(result);
+                }
+                if let Some(init_expr) = &var_def.init {
+                    self.build_expr(body, init_expr);
+                    let result = self.table.add_dependent_constraint(TypeId::Var(*var_id), TypeId::Expr(init_expr.id));
+                    self.collect_log(result);
                 }
             },
             hir::ExprKind::VarBind(bind) => {
-                let def_expr_id = *self.vars.get(&bind.var_id).unwrap(); // fix unwrap
-                self.table.constrain_independent(expr.id, Type::Void);
+                let result = self.table.add_independent_constraint(TypeId::Expr(expr.id), Type::Void);
+                self.collect_log(result);
                 self.build_expr(body, &bind.value);
-                let result = self.table.constrain_dependent(def_expr_id, bind.value.id);
+                let result = self.table.copy_and_be_constrained(TypeId::Var(bind.var_id), TypeId::Expr(bind.value.id));
                 self.collect_log(result);
             },
             hir::ExprKind::LocalRef(local_id) => match local_id {
-                LocalId::FormalArg(arg_id) => match body.args.get(arg_id.into_usize()) {
-                    Some(arg_def) => {
-                        let result = self.table.constrain_dependent(expr.id, arg_def.expr_id);
-                        self.collect_log(result);
-                    },
-                    None => panic!("unknown argument id"),
+                LocalId::FormalArg(arg_id) => {
+                    let result = self.table.add_dependent_constraint(TypeId::Expr(expr.id), TypeId::FormalArg(*arg_id));
+                    self.collect_log(result);
                 },
                 LocalId::Var(_) => unimplemented!(),
             },

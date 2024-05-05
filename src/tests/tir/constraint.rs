@@ -15,7 +15,6 @@ fn constrains_types() {
                         body: hir::Body {
                             args: vec![
                                 hir::FormalArgDef {
-                                    expr_id: ExprId::new(0),
                                     r#type: hir::Type::new(
                                         hir::TypeKind::Prim(ast::PrimType::Bool),
                                     ),
@@ -28,7 +27,7 @@ fn constrains_types() {
                                     mutable: false,
                                     init: Some(
                                         hir::Expr {
-                                            id: ExprId::new(2),
+                                            id: ExprId::new(1),
                                             kind: hir::ExprKind::LocalRef(LocalId::FormalArg(FormalArgId::new(0))),
                                         },
                                     ),
@@ -36,7 +35,7 @@ fn constrains_types() {
                             ],
                             exprs: vec![
                                 hir::Expr {
-                                    id: ExprId::new(1),
+                                    id: ExprId::new(0),
                                     kind: hir::ExprKind::VarDef(VarId::new(0)),
                                 },
                             ],
@@ -49,26 +48,35 @@ fn constrains_types() {
     let (table, logs) = TypeConstraintBuilder::build(&hir);
 
     assert_eq!(
-        table,
-        hashmap! {
-            ExprId::new(0) => TypeConstraint::Independent {
-                ptr: TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::FormalArg(FormalArgId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    vec![TypeId::Expr(ExprId::new(1))],
+                    None,
+                ),
+                TypeId::Var(VarId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    Vec::new(),
+                    Some(TypeId::Expr(ExprId::new(1))),
+                ),
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Void),
+                ),
+                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    vec![TypeId::Var(VarId::new(0))],
+                    Some(TypeId::FormalArg(FormalArgId::new(0))),
+                ),
             },
-            ExprId::new(1) => TypeConstraint::Dependent {
-                constrained_by: ExprId::new(2),
-                ptr: TypePtr::new(Type::Prim(ast::PrimType::Bool)),
-            },
-            ExprId::new(2) => TypeConstraint::Dependent {
-                constrained_by: ExprId::new(0),
-                ptr: TypePtr::new(Type::Prim(ast::PrimType::Bool)),
-            },
-        }.into(),
+        ).to_sorted_vec(),
     );
     assert!(logs.is_empty());
 }
 
 #[test]
-fn constrains_var_bind_types() {
+fn constrains_var_by_bind() {
     let hir = hir::Hir {
         items: hashmap! {
             "my_hako::item".into() => (
@@ -114,19 +122,27 @@ fn constrains_var_bind_types() {
     let (table, logs) = TypeConstraintBuilder::build(&hir);
 
     assert_eq!(
-        table,
-        hashmap! {
-            ExprId::new(0) => TypeConstraint::Dependent {
-                constrained_by: ExprId::new(2),
-                ptr: TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::Var(VarId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    vec![TypeId::Expr(ExprId::new(2))],
+                    None,
+                ),
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Void),
+                ),
+                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+                    TypePtr::new(Type::Void),
+                ),
+                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    Vec::new(),
+                    Some(TypeId::Var(VarId::new(0))),
+                ),
             },
-            ExprId::new(1) => TypeConstraint::Independent {
-                ptr: TypePtr::new(Type::Void),
-            },
-            ExprId::new(2) => TypeConstraint::Independent {
-                ptr: TypePtr::new(Type::Prim(ast::PrimType::Bool)),
-            },
-        }.into(),
+        ).to_sorted_vec(),
     );
     assert!(logs.is_empty());
 }
@@ -182,18 +198,27 @@ fn detects_inconsistent_constraint_of_var_bind() {
     let (table, logs) = TypeConstraintBuilder::build(&hir);
 
     assert_eq!(
-        table,
-        hashmap! {
-            ExprId::new(0) => TypeConstraint::Independent {
-                ptr: TypePtr::new(Type::Prim(ast::PrimType::Usize)),
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::Var(VarId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Usize)),
+                    Vec::new(),
+                    None,
+                ),
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Void),
+                ),
+                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+                    TypePtr::new(Type::Void),
+                ),
+                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    Vec::new(),
+                    None,
+                ),
             },
-            ExprId::new(1) => TypeConstraint::Independent {
-                ptr: TypePtr::new(Type::Void),
-            },
-            ExprId::new(2) => TypeConstraint::Independent {
-                ptr: TypePtr::new(Type::Prim(ast::PrimType::Bool)),
-            },
-        }.into(),
+        ).to_sorted_vec(),
     );
     assert_eq!(logs, vec![TypeLog::InconsistentConstraint]);
 }
