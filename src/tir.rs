@@ -2,10 +2,11 @@
 pub mod constraint;
 // pub mod lower;
 
-use std::{cell::RefCell, collections::HashMap, rc::Rc};
+use std::collections::HashMap;
 
 use crate::parser::ast;
 use crate::hir::id::*;
+use crate::tir::constraint::Type;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Tir {
@@ -65,49 +66,4 @@ pub struct VarDecl {
 pub struct VarInit {
     pub r#type: Type,
     pub init: Expr,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct Type {
-    pub kind: Rc<RefCell<TypeKind>>,
-}
-
-impl Type {
-    pub fn new(kind: TypeKind) -> Type {
-        Type { kind: Rc::new(RefCell::new(kind)) }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum TypeKind {
-    Derived(DerivedType),
-    Infer(InferType),
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct DerivedType {
-    pub kind: DerivedTypeKind,
-}
-
-impl DerivedType {
-    pub fn new(kind: DerivedTypeKind) -> DerivedType {
-        DerivedType { kind }
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum DerivedTypeKind {
-    Void,
-    Item(ast::Path),
-    Prim(ast::PrimType),
-    Undefined,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub struct InferType;
-
-impl InferType {
-    pub fn new() -> InferType {
-        InferType
-    }
 }
