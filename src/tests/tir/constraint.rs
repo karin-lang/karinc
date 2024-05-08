@@ -13,6 +13,7 @@ fn constrains_types() {
                 hir::Item::FnDecl(
                     hir::FnDecl {
                         body: hir::Body {
+                            ret_type: None,
                             args: vec![
                                 hir::FormalArgDef {
                                     r#type: hir::Type::new(
@@ -83,6 +84,7 @@ fn constrains_literal_types() {
                 hir::Item::FnDecl(
                     hir::FnDecl {
                         body: hir::Body {
+                            ret_type: None,
                             args: Vec::new(),
                             vars: Vec::new(),
                             exprs: vec![
@@ -211,6 +213,7 @@ fn constrains_by_local_ref() {
                 hir::Item::FnDecl(
                     hir::FnDecl {
                         body: hir::Body {
+                            ret_type: None,
                             args: vec![
                                 hir::FormalArgDef {
                                     r#type: hir::Type {
@@ -293,6 +296,7 @@ fn constrains_var_by_bind() {
                 hir::Item::FnDecl(
                     hir::FnDecl {
                         body: hir::Body {
+                            ret_type: None,
                             args: Vec::new(),
                             vars: vec![
                                 hir::VarDef {
@@ -365,6 +369,7 @@ fn detects_inconsistent_constraint_of_var_bind() {
                 hir::Item::FnDecl(
                     hir::FnDecl {
                         body: hir::Body {
+                            ret_type: None,
                             args: Vec::new(),
                             vars: vec![
                                 hir::VarDef {

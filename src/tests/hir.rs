@@ -53,6 +53,7 @@ fn lowers_subitem_in_mod() {
                     Item::FnDecl(
                         FnDecl {
                             body: Body {
+                                ret_type: None,
                                 args: Vec::new(),
                                 vars: Vec::new(),
                                 exprs: Vec::new(),
@@ -121,6 +122,7 @@ fn resolves_item_and_local() {
                     Item::FnDecl(
                         FnDecl {
                             body: Body {
+                                ret_type: None,
                                 args: Vec::new(),
                                 vars: vec![
                                     VarDef {

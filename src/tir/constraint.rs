@@ -176,12 +176,13 @@ impl TypeConstraint {
     }
 }
 
-pub struct TypeConstraintBuilder {
+pub struct TypeConstraintBuilder<'a> {
+    hir: &'a hir::Hir,
     table: TypeConstraintTable,
     logs: Vec<TypeLog>,
 }
 
-impl TypeConstraintBuilder {
+impl<'a> TypeConstraintBuilder<'a> {
     fn collect_log<T>(&mut self, result: TypeResult<T>) -> Option<T> {
         match result {
             Ok(v) => Some(v),
@@ -194,10 +195,11 @@ impl TypeConstraintBuilder {
 
     pub fn build(hir: &hir::Hir) -> (TypeConstraintTable, Vec<TypeLog>) {
         let mut builder = TypeConstraintBuilder {
+            hir,
             table: TypeConstraintTable::new(),
             logs: Vec::new(),
         };
-        hir.items.iter().for_each(|(_, item)| builder.build_item(item));
+        builder.hir.items.iter().for_each(|(_, item)| builder.build_item(item));
         (builder.table, builder.logs)
     }
 
@@ -243,6 +245,16 @@ impl TypeConstraintBuilder {
                 let result = self.table.add_independent_constraint(TypeId::Expr(expr.id), r#type);
                 self.collect_log(result);
             },
+            // hir::ExprKind::PathRef(div_path) => {
+            //     let item = self.hir.items.get(&div_path.item_path).unwrap(); // fix unwrap
+            //     let r#type = match item {
+            //         hir::Item::FnDecl(decl) => match &decl.body.ret_type {
+            //             Some(v) => v.into(),
+            //             None => Type::Void,
+            //         },
+            //     };
+            //     let result = self.table.add_de
+            // },
             hir::ExprKind::VarDef(var_id) => {
                 let var_def = match body.vars.get(var_id.into_usize()) {
                     Some(v) => v,
