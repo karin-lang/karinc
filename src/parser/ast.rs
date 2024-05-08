@@ -1,7 +1,8 @@
 use std::fmt;
 
 use crate::lexer::token;
-use super::Span;
+use crate::hir::id::*;
+use crate::parser::Span;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ast {
@@ -49,7 +50,8 @@ impl From<&str> for Path {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Item {
-    pub id: Id,
+    pub id: ItemId,
+    pub name: Id,
     pub kind: ItemKind,
 }
 

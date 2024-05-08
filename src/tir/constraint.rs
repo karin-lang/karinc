@@ -204,8 +204,8 @@ impl<'a> TypeConstraintBuilder<'a> {
     }
 
     pub fn build_item(&mut self, item: &hir::Item) {
-        match item {
-            hir::Item::FnDecl(decl) => {
+        match &item.kind {
+            hir::ItemKind::FnDecl(decl) => {
                 for (arg_id, arg) in decl.body.args.iter().enumerate() {
                     self.build_formal_arg(FormalArgId::new(arg_id), arg);
                 }
@@ -279,15 +279,13 @@ impl<'a> TypeConstraintBuilder<'a> {
                 let result = self.table.copy_and_be_constrained(TypeId::Var(bind.var_id), TypeId::Expr(bind.value.id));
                 self.collect_log(result);
             },
-            hir::ExprKind::LocalRef(local_id) => match local_id {
-                LocalId::FormalArg(arg_id) => {
-                    let result = self.table.add_dependent_constraint(TypeId::Expr(expr.id), TypeId::FormalArg(*arg_id));
-                    self.collect_log(result);
-                },
-                LocalId::Var(var_id) => {
-                    let result = self.table.add_dependent_constraint(TypeId::Expr(expr.id), TypeId::Var(*var_id));
-                    self.collect_log(result);
-                },
+            hir::ExprKind::LocalRef(local_id) => {
+                let type_id = match local_id {
+                    LocalId::FormalArg(id) => TypeId::FormalArg(*id),
+                    LocalId::Var(id) => TypeId::Var(*id),
+                };
+                let result = self.table.add_dependent_constraint(TypeId::Expr(expr.id), type_id);
+                self.collect_log(result);
             },
             _ => unimplemented!(),
         }

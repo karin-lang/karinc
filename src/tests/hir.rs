@@ -28,7 +28,8 @@ fn lowers_subitem_in_mod() {
             mod_path: "my_hako".into(),
             items: vec![
                 ast::Item {
-                    id: ast::Id { id: "f".to_string(), span: Span::new(0, 1) },
+                    id: ItemId::new(0),
+                    name: ast::Id { id: "f".to_string(), span: Span::new(0, 1) },
                     kind: ast::ItemKind::FnDecl(
                         ast::FnDecl {
                             body: ast::Body {
@@ -50,16 +51,19 @@ fn lowers_subitem_in_mod() {
         Hir {
             items: hashmap! {
                 "my_hako::f".into() => (
-                    Item::FnDecl(
-                        FnDecl {
-                            body: Body {
-                                ret_type: None,
-                                args: Vec::new(),
-                                vars: Vec::new(),
-                                exprs: Vec::new(),
+                    Item {
+                        id: ItemId::new(0),
+                        kind: ItemKind::FnDecl(
+                            FnDecl {
+                                body: Body {
+                                    ret_type: None,
+                                    args: Vec::new(),
+                                    vars: Vec::new(),
+                                    exprs: Vec::new(),
+                                },
                             },
-                        },
-                    )
+                        ),
+                    }
                 ),
             },
         },
@@ -74,7 +78,8 @@ fn resolves_item_and_local() {
             mod_path: "my_hako".into(),
             items: vec![
                 ast::Item {
-                    id: ast::Id { id: "item".to_string(), span: Span::new(0, 1) },
+                    id: ItemId::new(0),
+                    name: ast::Id { id: "item".to_string(), span: Span::new(0, 1) },
                     kind: ast::ItemKind::FnDecl(
                         ast::FnDecl {
                             body: ast::Body {
@@ -119,40 +124,43 @@ fn resolves_item_and_local() {
         Hir {
             items: hashmap! {
                 "my_hako::item".into() => (
-                    Item::FnDecl(
-                        FnDecl {
-                            body: Body {
-                                ret_type: None,
-                                args: Vec::new(),
-                                vars: vec![
-                                    VarDef {
-                                        r#type: None,
-                                        mutable: false,
-                                        init: None,
-                                    },
-                                ],
-                                exprs: vec![
-                                    Expr {
-                                        id: ExprId::new(0),
-                                        kind: ExprKind::PathRef(
-                                            crate::hir::DivPath {
-                                                item_path: "my_hako::item".into(),
-                                                following_path: ast::Path::new(),
-                                            },
-                                        ),
-                                    },
-                                    Expr {
-                                        id: ExprId::new(1),
-                                        kind: ExprKind::VarDef(VarId::new(0)),
-                                    },
-                                    Expr {
-                                        id: ExprId::new(2),
-                                        kind: ExprKind::LocalRef(LocalId::Var(VarId::new(0))),
-                                    },
-                                ],
+                    Item {
+                        id: ItemId::new(0),
+                        kind: ItemKind::FnDecl(
+                            FnDecl {
+                                body: Body {
+                                    ret_type: None,
+                                    args: Vec::new(),
+                                    vars: vec![
+                                        VarDef {
+                                            r#type: None,
+                                            mutable: false,
+                                            init: None,
+                                        },
+                                    ],
+                                    exprs: vec![
+                                        Expr {
+                                            id: ExprId::new(0),
+                                            kind: ExprKind::PathRef(
+                                                crate::hir::DivPath {
+                                                    item_path: "my_hako::item".into(),
+                                                    following_path: ast::Path::new(),
+                                                },
+                                            ),
+                                        },
+                                        Expr {
+                                            id: ExprId::new(1),
+                                            kind: ExprKind::VarDef(VarId::new(0)),
+                                        },
+                                        Expr {
+                                            id: ExprId::new(2),
+                                            kind: ExprKind::LocalRef(LocalId::Var(VarId::new(0))),
+                                        },
+                                    ],
+                                },
                             },
-                        },
-                    )
+                        ),
+                    }
                 ),
             },
         },

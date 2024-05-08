@@ -14,7 +14,13 @@ pub struct Hir {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum Item {
+pub struct Item {
+    pub id: ItemId,
+    pub kind: ItemKind,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ItemKind {
     FnDecl(FnDecl),
 }
 

@@ -10,39 +10,42 @@ fn constrains_types() {
     let hir = hir::Hir {
         items: hashmap! {
             "my_hako::item".into() => (
-                hir::Item::FnDecl(
-                    hir::FnDecl {
-                        body: hir::Body {
-                            ret_type: None,
-                            args: vec![
-                                hir::FormalArgDef {
-                                    r#type: hir::Type::new(
-                                        hir::TypeKind::Prim(ast::PrimType::Bool),
-                                    ),
-                                    mutable: false,
-                                },
-                            ],
-                            vars: vec![
-                                hir::VarDef {
-                                    r#type: None,
-                                    mutable: false,
-                                    init: Some(
-                                        hir::Expr {
-                                            id: ExprId::new(1),
-                                            kind: hir::ExprKind::LocalRef(LocalId::FormalArg(FormalArgId::new(0))),
-                                        },
-                                    ),
-                                },
-                            ],
-                            exprs: vec![
-                                hir::Expr {
-                                    id: ExprId::new(0),
-                                    kind: hir::ExprKind::VarDef(VarId::new(0)),
-                                },
-                            ],
+                hir::Item {
+                    id: ItemId::new(0),
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: None,
+                                args: vec![
+                                    hir::FormalArgDef {
+                                        r#type: hir::Type::new(
+                                            hir::TypeKind::Prim(ast::PrimType::Bool),
+                                        ),
+                                        mutable: false,
+                                    },
+                                ],
+                                vars: vec![
+                                    hir::VarDef {
+                                        r#type: None,
+                                        mutable: false,
+                                        init: Some(
+                                            hir::Expr {
+                                                id: ExprId::new(1),
+                                                kind: hir::ExprKind::LocalRef(LocalId::FormalArg(FormalArgId::new(0))),
+                                            },
+                                        ),
+                                    },
+                                ],
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::VarDef(VarId::new(0)),
+                                    },
+                                ],
+                            },
                         },
-                    },
-                )
+                    ),
+                }
             ),
         },
     };
@@ -81,91 +84,94 @@ fn constrains_literal_types() {
     let hir = hir::Hir {
         items: hashmap! {
             "my_hako::item".into() => (
-                hir::Item::FnDecl(
-                    hir::FnDecl {
-                        body: hir::Body {
-                            ret_type: None,
-                            args: Vec::new(),
-                            vars: Vec::new(),
-                            exprs: vec![
-                                /* bool literal */
-                                hir::Expr {
-                                    id: ExprId::new(0),
-                                    kind: hir::ExprKind::Literal(
-                                        token::Literal::Bool { value: true },
-                                    ),
-                                },
-                                /* int literal */
-                                hir::Expr {
-                                    id: ExprId::new(1),
-                                    kind: hir::ExprKind::Literal(
-                                        token::Literal::Int {
-                                            base: token::Base::Dec,
-                                            int_digits: "0".to_string(),
-                                            r#type: None,
-                                        },
-                                    ),
-                                },
-                                /* int literal with type suffix */
-                                hir::Expr {
-                                    id: ExprId::new(2),
-                                    kind: hir::ExprKind::Literal(
-                                        token::Literal::Int {
-                                            base: token::Base::Dec,
-                                            int_digits: "0".to_string(),
-                                            r#type: Some(ast::PrimType::Usize),
-                                        },
-                                    ),
-                                },
-                                /* float literal */
-                                hir::Expr {
-                                    id: ExprId::new(3),
-                                    kind: hir::ExprKind::Literal(
-                                        token::Literal::Float {
-                                            base: token::Base::Dec,
-                                            int_digits: "0".to_string(),
-                                            fraction_digits: "0".to_string(),
-                                            r#type: None,
-                                        },
-                                    ),
-                                },
-                                /* float literal with type suffix */
-                                hir::Expr {
-                                    id: ExprId::new(4),
-                                    kind: hir::ExprKind::Literal(
-                                        token::Literal::Float {
-                                            base: token::Base::Dec,
-                                            int_digits: "0".to_string(),
-                                            fraction_digits: "0".to_string(),
-                                            r#type: Some(ast::PrimType::F32),
-                                        },
-                                    ),
-                                },
-                                /* char literal */
-                                hir::Expr {
-                                    id: ExprId::new(5),
-                                    kind: hir::ExprKind::Literal(
-                                        token::Literal::Char { value: Some('\0') },
-                                    ),
-                                },
-                                /* str literal */
-                                hir::Expr {
-                                    id: ExprId::new(6),
-                                    kind: hir::ExprKind::Literal(
-                                        token::Literal::Str { value: String::new() },
-                                    ),
-                                },
-                                /* byte char literal */
-                                hir::Expr {
-                                    id: ExprId::new(7),
-                                    kind: hir::ExprKind::Literal(
-                                        token::Literal::ByteChar { value: Some('\0') },
-                                    ),
-                                },
-                            ],
+                hir::Item {
+                    id: ItemId::new(0),
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: None,
+                                args: Vec::new(),
+                                vars: Vec::new(),
+                                exprs: vec![
+                                    /* bool literal */
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::Literal(
+                                            token::Literal::Bool { value: true },
+                                        ),
+                                    },
+                                    /* int literal */
+                                    hir::Expr {
+                                        id: ExprId::new(1),
+                                        kind: hir::ExprKind::Literal(
+                                            token::Literal::Int {
+                                                base: token::Base::Dec,
+                                                int_digits: "0".to_string(),
+                                                r#type: None,
+                                            },
+                                        ),
+                                    },
+                                    /* int literal with type suffix */
+                                    hir::Expr {
+                                        id: ExprId::new(2),
+                                        kind: hir::ExprKind::Literal(
+                                            token::Literal::Int {
+                                                base: token::Base::Dec,
+                                                int_digits: "0".to_string(),
+                                                r#type: Some(ast::PrimType::Usize),
+                                            },
+                                        ),
+                                    },
+                                    /* float literal */
+                                    hir::Expr {
+                                        id: ExprId::new(3),
+                                        kind: hir::ExprKind::Literal(
+                                            token::Literal::Float {
+                                                base: token::Base::Dec,
+                                                int_digits: "0".to_string(),
+                                                fraction_digits: "0".to_string(),
+                                                r#type: None,
+                                            },
+                                        ),
+                                    },
+                                    /* float literal with type suffix */
+                                    hir::Expr {
+                                        id: ExprId::new(4),
+                                        kind: hir::ExprKind::Literal(
+                                            token::Literal::Float {
+                                                base: token::Base::Dec,
+                                                int_digits: "0".to_string(),
+                                                fraction_digits: "0".to_string(),
+                                                r#type: Some(ast::PrimType::F32),
+                                            },
+                                        ),
+                                    },
+                                    /* char literal */
+                                    hir::Expr {
+                                        id: ExprId::new(5),
+                                        kind: hir::ExprKind::Literal(
+                                            token::Literal::Char { value: Some('\0') },
+                                        ),
+                                    },
+                                    /* str literal */
+                                    hir::Expr {
+                                        id: ExprId::new(6),
+                                        kind: hir::ExprKind::Literal(
+                                            token::Literal::Str { value: String::new() },
+                                        ),
+                                    },
+                                    /* byte char literal */
+                                    hir::Expr {
+                                        id: ExprId::new(7),
+                                        kind: hir::ExprKind::Literal(
+                                            token::Literal::ByteChar { value: Some('\0') },
+                                        ),
+                                    },
+                                ],
+                            },
                         },
-                    },
-                )
+                    ),
+                }
             ),
         },
     };
@@ -210,46 +216,49 @@ fn constrains_by_local_ref() {
     let hir = hir::Hir {
         items: hashmap! {
             "my_hako::item".into() => (
-                hir::Item::FnDecl(
-                    hir::FnDecl {
-                        body: hir::Body {
-                            ret_type: None,
-                            args: vec![
-                                hir::FormalArgDef {
-                                    r#type: hir::Type {
-                                        kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U8)),
-                                    },
-                                    mutable: false,
-                                },
-                            ],
-                            vars: vec![
-                                hir::VarDef {
-                                    r#type: Some(
-                                        hir::Type {
-                                            kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U16)),
+                hir::Item {
+                    id: ItemId::new(0),
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: None,
+                                args: vec![
+                                    hir::FormalArgDef {
+                                        r#type: hir::Type {
+                                            kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U8)),
                                         },
-                                    ),
-                                    mutable: false,
-                                    init: None,
-                                },
-                            ],
-                            exprs: vec![
-                                hir::Expr {
-                                    id: ExprId::new(0),
-                                    kind: hir::ExprKind::VarDef(VarId::new(0)),
-                                },
-                                hir::Expr {
-                                    id: ExprId::new(1),
-                                    kind: hir::ExprKind::LocalRef(LocalId::FormalArg(FormalArgId::new(0))),
-                                },
-                                hir::Expr {
-                                    id: ExprId::new(2),
-                                    kind: hir::ExprKind::LocalRef(LocalId::Var(VarId::new(0))),
-                                },
-                            ],
+                                        mutable: false,
+                                    },
+                                ],
+                                vars: vec![
+                                    hir::VarDef {
+                                        r#type: Some(
+                                            hir::Type {
+                                                kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U16)),
+                                            },
+                                        ),
+                                        mutable: false,
+                                        init: None,
+                                    },
+                                ],
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::VarDef(VarId::new(0)),
+                                    },
+                                    hir::Expr {
+                                        id: ExprId::new(1),
+                                        kind: hir::ExprKind::LocalRef(LocalId::FormalArg(FormalArgId::new(0))),
+                                    },
+                                    hir::Expr {
+                                        id: ExprId::new(2),
+                                        kind: hir::ExprKind::LocalRef(LocalId::Var(VarId::new(0))),
+                                    },
+                                ],
+                            },
                         },
-                    },
-                )
+                    ),
+                }
             ),
         },
     };
@@ -293,43 +302,46 @@ fn constrains_var_by_bind() {
     let hir = hir::Hir {
         items: hashmap! {
             "my_hako::item".into() => (
-                hir::Item::FnDecl(
-                    hir::FnDecl {
-                        body: hir::Body {
-                            ret_type: None,
-                            args: Vec::new(),
-                            vars: vec![
-                                hir::VarDef {
-                                    r#type: None,
-                                    mutable: false,
-                                    init: None,
-                                },
-                            ],
-                            exprs: vec![
-                                hir::Expr {
-                                    id: ExprId::new(0),
-                                    kind: hir::ExprKind::VarDef(VarId::new(0)),
-                                },
-                                hir::Expr {
-                                    id: ExprId::new(1),
-                                    kind: hir::ExprKind::VarBind(
-                                        hir::VarBind {
-                                            var_id: VarId::new(0),
-                                            value: Box::new(
-                                                hir::Expr {
-                                                    id: ExprId::new(2),
-                                                    kind: hir::ExprKind::Literal(
-                                                        token::Literal::Bool { value: true },
-                                                    ),
-                                                },
-                                            ),
-                                        },
-                                    ),
-                                },
-                            ],
+                hir::Item {
+                    id: ItemId::new(0),
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: None,
+                                args: Vec::new(),
+                                vars: vec![
+                                    hir::VarDef {
+                                        r#type: None,
+                                        mutable: false,
+                                        init: None,
+                                    },
+                                ],
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::VarDef(VarId::new(0)),
+                                    },
+                                    hir::Expr {
+                                        id: ExprId::new(1),
+                                        kind: hir::ExprKind::VarBind(
+                                            hir::VarBind {
+                                                var_id: VarId::new(0),
+                                                value: Box::new(
+                                                    hir::Expr {
+                                                        id: ExprId::new(2),
+                                                        kind: hir::ExprKind::Literal(
+                                                            token::Literal::Bool { value: true },
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
                         },
-                    },
-                )
+                    ),
+                }
             ),
         },
     };
@@ -366,47 +378,50 @@ fn detects_inconsistent_constraint_of_var_bind() {
     let hir = hir::Hir {
         items: hashmap! {
             "my_hako::item".into() => (
-                hir::Item::FnDecl(
-                    hir::FnDecl {
-                        body: hir::Body {
-                            ret_type: None,
-                            args: Vec::new(),
-                            vars: vec![
-                                hir::VarDef {
-                                    r#type: Some(
-                                        hir::Type::new(
-                                            hir::TypeKind::Prim(ast::PrimType::Usize),
-                                        ),
-                                    ),
-                                    mutable: false,
-                                    init: None,
-                                },
-                            ],
-                            exprs: vec![
-                                hir::Expr {
-                                    id: ExprId::new(0),
-                                    kind: hir::ExprKind::VarDef(VarId::new(0)),
-                                },
-                                hir::Expr {
-                                    id: ExprId::new(1),
-                                    kind: hir::ExprKind::VarBind(
-                                        hir::VarBind {
-                                            var_id: VarId::new(0),
-                                            value: Box::new(
-                                                hir::Expr {
-                                                    id: ExprId::new(2),
-                                                    kind: hir::ExprKind::Literal(
-                                                        token::Literal::Bool { value: true },
-                                                    ),
-                                                },
+                hir::Item {
+                    id: ItemId::new(0),
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: None,
+                                args: Vec::new(),
+                                vars: vec![
+                                    hir::VarDef {
+                                        r#type: Some(
+                                            hir::Type::new(
+                                                hir::TypeKind::Prim(ast::PrimType::Usize),
                                             ),
-                                        },
-                                    ),
-                                },
-                            ],
+                                        ),
+                                        mutable: false,
+                                        init: None,
+                                    },
+                                ],
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::VarDef(VarId::new(0)),
+                                    },
+                                    hir::Expr {
+                                        id: ExprId::new(1),
+                                        kind: hir::ExprKind::VarBind(
+                                            hir::VarBind {
+                                                var_id: VarId::new(0),
+                                                value: Box::new(
+                                                    hir::Expr {
+                                                        id: ExprId::new(2),
+                                                        kind: hir::ExprKind::Literal(
+                                                            token::Literal::Bool { value: true },
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
                         },
-                    },
-                )
+                    ),
+                }
             ),
         },
     };

@@ -3,8 +3,9 @@ pub mod ast;
 use std::iter::Peekable;
 use std::slice::Iter;
 
-use crate::lexer::token::*;
 use self::ast::*;
+use crate::lexer::token::*;
+use crate::hir::id::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParserLog {
@@ -21,16 +22,35 @@ pub enum ParserLog {
 
 pub type ParserResult<T> = Result<T, ParserLog>;
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct ParserCrateContext {
+    next_item_id: usize,
+}
+
+impl ParserCrateContext {
+    pub fn new() -> ParserCrateContext {
+        ParserCrateContext { next_item_id: 0 }
+    }
+
+    pub fn generate_item_id(&mut self) -> ItemId {
+        let next = self.next_item_id;
+        self.next_item_id += 1;
+        ItemId::new(next)
+    }
+}
+
 pub struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>,
+    crate_context: &'a mut ParserCrateContext,
     last_token_span: Span,
     logs: Vec<ParserLog>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(tokens: &'a Vec<Token>) -> Parser<'a> {
+    pub fn new(tokens: &'a Vec<Token>, crate_context: &'a mut ParserCrateContext) -> Parser<'a> {
         Parser {
             tokens: tokens.iter().peekable(),
+            crate_context,
             last_token_span: tokens.last().map(|token| token.span.clone()).unwrap_or_default(),
             logs: Vec::new(),
         }
@@ -214,9 +234,9 @@ impl<'a> Parser<'a> {
 
     pub fn parse_single_item(&mut self) -> ParserResult<Item> {
         let span = self.get_next_span();
-
         let item = if self.consume_keyword(Keyword::Fn).is_some() {
-            let (_, id) = self.expect_id()?;
+            let id = self.crate_context.generate_item_id();
+            let (_, name) = self.expect_id()?;
             let args = self.parse_formal_args()?;
             let ret_type = if self.is_next_eq(TokenKind::OpenCurlyBracket).is_some() {
                 None
@@ -225,12 +245,11 @@ impl<'a> Parser<'a> {
             };
             let body = self.parse_body(ret_type, args)?;
             let decl = FnDecl { body };
-            Item { id, kind: ItemKind::FnDecl(decl) }
+            Item { id, name, kind: ItemKind::FnDecl(decl) }
         } else {
             self.consume_until(|token| token.kind == TokenKind::ClosingCurlyBracket);
             return Err(ParserLog::ExpectedItem { span });
         };
-
         Ok(item)
     }
 

@@ -33,7 +33,7 @@ impl<'a> HirLowering<'a> {
         for each_ast in self.asts {
             self.paths.insert(each_ast.mod_path.clone());
             for each_item in &each_ast.items {
-                let new_item_path = each_ast.mod_path.clone().add_segment(&each_item.id.id);
+                let new_item_path = each_ast.mod_path.clone().add_segment(&each_item.name.id);
                 self.paths.insert(new_item_path);
             }
         }
@@ -110,18 +110,19 @@ impl<'a> HirLowering<'a> {
         self.current_mod_path = ast.mod_path.clone();
         for each_item in &ast.items {
             let new_hir_item = self.lower_item(each_item);
-            let new_hir_path = self.get_item_path(&each_item.id.id);
+            let new_hir_path = self.get_item_path(&each_item.name.id);
             hir_items.insert(new_hir_path, new_hir_item);
         }
     }
 
     pub fn lower_item(&mut self, item: &ast::Item) -> Item {
-        match &item.kind {
+        let kind = match &item.kind {
             ast::ItemKind::FnDecl(decl) => {
                 let hir_decl = self.lower_fn_decl(decl);
-                Item::FnDecl(hir_decl)
+                ItemKind::FnDecl(hir_decl)
             },
-        }
+        };
+        Item { id: item.id, kind }
     }
 
     pub fn lower_fn_decl(&mut self, decl: &ast::FnDecl) -> FnDecl {
