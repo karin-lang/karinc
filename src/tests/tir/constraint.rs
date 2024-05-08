@@ -204,6 +204,88 @@ fn constrains_literal_types() {
 }
 
 #[test]
+fn constrains_by_local_ref() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item::FnDecl(
+                    hir::FnDecl {
+                        body: hir::Body {
+                            args: vec![
+                                hir::FormalArgDef {
+                                    r#type: hir::Type {
+                                        kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U8)),
+                                    },
+                                    mutable: false,
+                                },
+                            ],
+                            vars: vec![
+                                hir::VarDef {
+                                    r#type: Some(
+                                        hir::Type {
+                                            kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U16)),
+                                        },
+                                    ),
+                                    mutable: false,
+                                    init: None,
+                                },
+                            ],
+                            exprs: vec![
+                                hir::Expr {
+                                    id: ExprId::new(0),
+                                    kind: hir::ExprKind::VarDef(VarId::new(0)),
+                                },
+                                hir::Expr {
+                                    id: ExprId::new(1),
+                                    kind: hir::ExprKind::LocalRef(LocalId::FormalArg(FormalArgId::new(0))),
+                                },
+                                hir::Expr {
+                                    id: ExprId::new(2),
+                                    kind: hir::ExprKind::LocalRef(LocalId::Var(VarId::new(0))),
+                                },
+                            ],
+                        },
+                    },
+                )
+            ),
+        },
+    };
+    let (table, logs) = TypeConstraintBuilder::build(&hir);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::FormalArg(FormalArgId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::U8)),
+                    vec![TypeId::Expr(ExprId::new(1))],
+                    None,
+                ),
+                TypeId::Var(VarId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::U16)),
+                    vec![TypeId::Expr(ExprId::new(2))],
+                    None,
+                ),
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Void),
+                ),
+                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::U8)),
+                    Vec::new(),
+                    Some(TypeId::FormalArg(FormalArgId::new(0))),
+                ),
+                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::U16)),
+                    Vec::new(),
+                    Some(TypeId::Var(VarId::new(0))),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert!(logs.is_empty());
+}
+
+#[test]
 fn constrains_var_by_bind() {
     let hir = hir::Hir {
         items: hashmap! {

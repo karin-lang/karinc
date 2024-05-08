@@ -272,7 +272,10 @@ impl TypeConstraintBuilder {
                     let result = self.table.add_dependent_constraint(TypeId::Expr(expr.id), TypeId::FormalArg(*arg_id));
                     self.collect_log(result);
                 },
-                LocalId::Var(_) => unimplemented!(),
+                LocalId::Var(var_id) => {
+                    let result = self.table.add_dependent_constraint(TypeId::Expr(expr.id), TypeId::Var(*var_id));
+                    self.collect_log(result);
+                },
             },
             _ => unimplemented!(),
         }
