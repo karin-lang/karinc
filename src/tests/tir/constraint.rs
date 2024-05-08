@@ -76,6 +76,134 @@ fn constrains_types() {
 }
 
 #[test]
+fn constrains_literal_types() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item::FnDecl(
+                    hir::FnDecl {
+                        body: hir::Body {
+                            args: Vec::new(),
+                            vars: Vec::new(),
+                            exprs: vec![
+                                /* bool literal */
+                                hir::Expr {
+                                    id: ExprId::new(0),
+                                    kind: hir::ExprKind::Literal(
+                                        token::Literal::Bool { value: true },
+                                    ),
+                                },
+                                /* int literal */
+                                hir::Expr {
+                                    id: ExprId::new(1),
+                                    kind: hir::ExprKind::Literal(
+                                        token::Literal::Int {
+                                            base: token::Base::Dec,
+                                            int_digits: "0".to_string(),
+                                            r#type: None,
+                                        },
+                                    ),
+                                },
+                                /* int literal with type suffix */
+                                hir::Expr {
+                                    id: ExprId::new(2),
+                                    kind: hir::ExprKind::Literal(
+                                        token::Literal::Int {
+                                            base: token::Base::Dec,
+                                            int_digits: "0".to_string(),
+                                            r#type: Some(ast::PrimType::Usize),
+                                        },
+                                    ),
+                                },
+                                /* float literal */
+                                hir::Expr {
+                                    id: ExprId::new(3),
+                                    kind: hir::ExprKind::Literal(
+                                        token::Literal::Float {
+                                            base: token::Base::Dec,
+                                            int_digits: "0".to_string(),
+                                            fraction_digits: "0".to_string(),
+                                            r#type: None,
+                                        },
+                                    ),
+                                },
+                                /* float literal with type suffix */
+                                hir::Expr {
+                                    id: ExprId::new(4),
+                                    kind: hir::ExprKind::Literal(
+                                        token::Literal::Float {
+                                            base: token::Base::Dec,
+                                            int_digits: "0".to_string(),
+                                            fraction_digits: "0".to_string(),
+                                            r#type: Some(ast::PrimType::F32),
+                                        },
+                                    ),
+                                },
+                                /* char literal */
+                                hir::Expr {
+                                    id: ExprId::new(5),
+                                    kind: hir::ExprKind::Literal(
+                                        token::Literal::Char { value: Some('\0') },
+                                    ),
+                                },
+                                /* str literal */
+                                hir::Expr {
+                                    id: ExprId::new(6),
+                                    kind: hir::ExprKind::Literal(
+                                        token::Literal::Str { value: String::new() },
+                                    ),
+                                },
+                                /* byte char literal */
+                                hir::Expr {
+                                    id: ExprId::new(7),
+                                    kind: hir::ExprKind::Literal(
+                                        token::Literal::ByteChar { value: Some('\0') },
+                                    ),
+                                },
+                            ],
+                        },
+                    },
+                )
+            ),
+        },
+    };
+    let (table, logs) = TypeConstraintBuilder::build(&hir);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                ),
+                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+                    TypePtr::new(Type::Int),
+                ),
+                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Usize)),
+                ),
+                TypeId::Expr(ExprId::new(3)) => TypeConstraint::new(
+                    TypePtr::new(Type::Float),
+                ),
+                TypeId::Expr(ExprId::new(4)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::F32)),
+                ),
+                TypeId::Expr(ExprId::new(5)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Char)),
+                ),
+                TypeId::Expr(ExprId::new(6)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Str)),
+                ),
+                TypeId::Expr(ExprId::new(7)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::U32)),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert!(logs.is_empty());
+}
+
+#[test]
 fn constrains_var_by_bind() {
     let hir = hir::Hir {
         items: hashmap! {

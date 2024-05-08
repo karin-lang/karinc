@@ -16,6 +16,9 @@ pub type TypeResult<T> = Result<T, TypeLog>;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Type {
     Void,
+    Num,
+    Int,
+    Float,
     Item(ast::Path),
     Prim(ast::PrimType),
     Undefined,
@@ -218,12 +221,27 @@ impl TypeConstraintBuilder {
 
     pub fn build_expr(&mut self, body: &hir::Body, expr: &hir::Expr) {
         match &expr.kind {
-            hir::ExprKind::Literal(literal) => match literal {
-                token::Literal::Bool { value: _ } => {
-                    let result = self.table.add_independent_constraint(TypeId::Expr(expr.id), Type::Prim(ast::PrimType::Bool));
-                    self.collect_log(result);
-                },
-                _ => unimplemented!(),
+            hir::ExprKind::Literal(literal) => {
+                let r#type = match literal {
+                    token::Literal::Bool { value: _ } => Type::Prim(ast::PrimType::Bool),
+                    // todo: 桁などの型検査を実施する & テスト追加
+                    token::Literal::Int { base: _, int_digits: _, r#type } => match r#type {
+                        Some(r#type) => Type::Prim(*r#type),
+                        None => Type::Int,
+                    },
+                    token::Literal::Float { base: _, int_digits: _, fraction_digits: _, r#type } => match r#type {
+                        Some(r#type) => Type::Prim(*r#type),
+                        None => Type::Float,
+                    },
+                    token::Literal::Char { value: _ } => Type::Prim(ast::PrimType::Char),
+                    token::Literal::Str { value: _ } => Type::Prim(ast::PrimType::Str),
+                    token::Literal::ByteChar { value: _ } => Type::Prim(ast::PrimType::U32),
+                    // todo: 配列型を実装する & テスト追加
+                    // token::Literal::ByteStr { value: _ } => Type::Prim(ast::PrimType::Arr),
+                    _ => unimplemented!(),
+                };
+                let result = self.table.add_independent_constraint(TypeId::Expr(expr.id), r#type);
+                self.collect_log(result);
             },
             hir::ExprKind::VarDef(var_id) => {
                 let var_def = match body.vars.get(var_id.into_usize()) {
