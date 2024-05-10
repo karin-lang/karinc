@@ -100,10 +100,13 @@ fn generates_js() {
     assert_eq!(
         top_level_type_table,
         hashmap! {
-            TopLevelId::Item(ItemId::new(0, 0)) => constraint::Type::Fn {
-                ret_type: Box::new(constraint::Type::Void),
-                arg_types: Vec::new(),
-            },
+            TopLevelId::Item(ItemId::new(0, 0)) => constraint::Type::Fn(
+                constraint::FnType {
+                    ret_type: Box::new(constraint::Type::Void),
+                    arg_types: Vec::new(),
+                },
+            ),
+            TopLevelId::FnRet(ItemId::new(0, 0)) => constraint::Type::Void,
         }.into(),
     );
 
@@ -117,10 +120,12 @@ fn generates_js() {
             hashmap! {
                 TypeId::Expr(ExprId::new(0)) => constraint::TypeConstraint::new_constrained(
                     constraint::TypePtr::new(
-                        constraint::Type::Fn {
-                            ret_type: Box::new(constraint::Type::Void),
-                            arg_types: Vec::new(),
-                        },
+                        constraint::Type::Fn(
+                            constraint::FnType {
+                                ret_type: Box::new(constraint::Type::Void),
+                                arg_types: Vec::new(),
+                            },
+                        ),
                     ),
                     Vec::new(),
                     Some(TypeId::TopLevel(TopLevelId::Item(ItemId::new(0, 0)))),

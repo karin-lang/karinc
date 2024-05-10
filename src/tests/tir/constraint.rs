@@ -84,75 +84,6 @@ fn constrains_types() {
 }
 
 #[test]
-fn constrains_top_level_types() {
-    let hir = hir::Hir {
-        items: hashmap! {
-            "my_hako::item".into() => (
-                hir::Item {
-                    id: ItemId::new(0, 0),
-                    kind: hir::ItemKind::FnDecl(
-                        hir::FnDecl {
-                            body: hir::Body {
-                                ret_type: Some(
-                                    hir::Type {
-                                        kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U8)),
-                                    },
-                                ),
-                                args: vec![
-                                    FormalArgDef {
-                                        id: FormalArgId::new(0),
-                                        r#type: hir::Type {
-                                            kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U16)),
-                                        },
-                                        mutable: false,
-                                    },
-                                ],
-                                vars: Vec::new(),
-                                exprs: vec![
-                                    hir::Expr {
-                                        id: ExprId::new(0),
-                                        kind: hir::ExprKind::TopLevelRef(TopLevelId::Item(ItemId::new(0, 0))),
-                                    },
-                                ],
-                            },
-                        },
-                    ),
-                }
-            ),
-        },
-    };
-    let top_level_type_table = hashmap! {
-        TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn {
-            ret_type: Box::new(Type::Prim(ast::PrimType::U8)),
-            arg_types: vec![Type::Prim(ast::PrimType::U16)],
-        },
-    }.into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
-
-    assert_eq!(
-        table.to_sorted_vec(),
-        TypeConstraintTable::from(
-            hashmap! {
-                TypeId::FormalArg(FormalArgId::new(0)) => TypeConstraint::new(
-                    TypePtr::new(Type::Prim(ast::PrimType::U16)),
-                ),
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
-                    TypePtr::new(
-                        Type::Fn {
-                            ret_type: Box::new(Type::Prim(ast::PrimType::U8)),
-                            arg_types: vec![Type::Prim(ast::PrimType::U16)],
-                        },
-                    ),
-                    Vec::new(),
-                    Some(TypeId::TopLevel(TopLevelId::Item(ItemId::new(0, 0)))),
-                ),
-            },
-        ).to_sorted_vec(),
-    );
-    assert!(logs.is_empty());
-}
-
-#[test]
 fn constrains_literal_types() {
     let hir = hir::Hir {
         items: hashmap! {
@@ -286,6 +217,79 @@ fn constrains_literal_types() {
 }
 
 #[test]
+fn constrains_by_top_level_ref() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: Some(
+                                    hir::Type {
+                                        kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U8)),
+                                    },
+                                ),
+                                args: vec![
+                                    FormalArgDef {
+                                        id: FormalArgId::new(0),
+                                        r#type: hir::Type {
+                                            kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U16)),
+                                        },
+                                        mutable: false,
+                                    },
+                                ],
+                                vars: Vec::new(),
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::TopLevelRef(TopLevelId::Item(ItemId::new(0, 0))),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = hashmap! {
+        TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn(
+            FnType {
+                ret_type: Box::new(Type::Prim(ast::PrimType::U8)),
+                arg_types: vec![Type::Prim(ast::PrimType::U16)],
+            },
+        ),
+    }.into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::FormalArg(FormalArgId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::U16)),
+                ),
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(
+                        Type::Fn(
+                            FnType {
+                                ret_type: Box::new(Type::Prim(ast::PrimType::U8)),
+                                arg_types: vec![Type::Prim(ast::PrimType::U16)],
+                            },
+                        ),
+                    ),
+                    Vec::new(),
+                    Some(TypeId::TopLevel(TopLevelId::Item(ItemId::new(0, 0)))),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert!(logs.is_empty());
+}
+
+#[test]
 fn constrains_by_local_ref() {
     let hir = hir::Hir {
         items: hashmap! {
@@ -371,6 +375,197 @@ fn constrains_by_local_ref() {
         ).to_sorted_vec(),
     );
     assert!(logs.is_empty());
+}
+
+#[test]
+fn constrains_by_fn_call() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: None,
+                                args: vec![
+                                    hir::FormalArgDef {
+                                        id: FormalArgId::new(0),
+                                        r#type: hir::Type {
+                                            kind: Box::new(hir::TypeKind::Prim(ast::PrimType::Bool)),
+                                        },
+                                        mutable: false,
+                                    },
+                                ],
+                                vars: Vec::new(),
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::FnCall(
+                                            hir::FnCall {
+                                                r#fn: ItemId::new(0, 0),
+                                                args: vec![
+                                                    hir::ActualArg {
+                                                        expr: hir::Expr {
+                                                            id: ExprId::new(1),
+                                                            kind: hir::ExprKind::Literal(
+                                                                token::Literal::Bool { value: true },
+                                                            ),
+                                                        },
+                                                    },
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = hashmap! {
+        TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn(
+            FnType {
+                ret_type: Box::new(Type::Void),
+                arg_types: vec![Type::Prim(ast::PrimType::Bool)],
+            },
+        ),
+        TopLevelId::FnRet(ItemId::new(0, 0)) => Type::Void,
+        TopLevelId::FnArg(ItemId::new(0, 0), FormalArgId::new(0)) => Type::Prim(ast::PrimType::Bool),
+    }.into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::FormalArg(FormalArgId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    Vec::new(),
+                    None,
+                ),
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Void),
+                    Vec::new(),
+                    Some(TypeId::TopLevel(TopLevelId::FnRet(ItemId::new(0, 0)))),
+                ),
+                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    Vec::new(),
+                    Some(TypeId::TopLevel(TopLevelId::FnArg(ItemId::new(0, 0), FormalArgId::new(0)))),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert!(logs.is_empty());
+}
+
+// todo: 関数呼び出しの引数の型ミスマッチを検査する
+#[test]
+fn detects_inconsistent_constraint_of_fn_call() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: None,
+                                args: vec![
+                                    hir::FormalArgDef {
+                                        id: FormalArgId::new(0),
+                                        r#type: hir::Type {
+                                            kind: Box::new(hir::TypeKind::Prim(ast::PrimType::Bool)),
+                                        },
+                                        mutable: false,
+                                    },
+                                ],
+                                vars: Vec::new(),
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::FnCall(
+                                            hir::FnCall {
+                                                r#fn: ItemId::new(0, 0),
+                                                args: Vec::new(),
+                                            },
+                                        ),
+                                    },
+                                    hir::Expr {
+                                        id: ExprId::new(1),
+                                        kind: hir::ExprKind::FnCall(
+                                            hir::FnCall {
+                                                r#fn: ItemId::new(0, 0),
+                                                args: vec![
+                                                    hir::ActualArg {
+                                                        expr: hir::Expr {
+                                                            id: ExprId::new(2),
+                                                            kind: hir::ExprKind::Literal(
+                                                                token::Literal::Char { value: Some('\0') },
+                                                            ),
+                                                        },
+                                                    },
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = hashmap! {
+        TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn(
+            FnType {
+                ret_type: Box::new(Type::Void),
+                arg_types: vec![Type::Prim(ast::PrimType::Bool)],
+            },
+        ),
+        TopLevelId::FnRet(ItemId::new(0, 0)) => Type::Void,
+        TopLevelId::FnArg(ItemId::new(0, 0), FormalArgId::new(0)) => Type::Prim(ast::PrimType::Bool),
+    }.into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::FormalArg(FormalArgId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    Vec::new(),
+                    None,
+                ),
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Void),
+                    Vec::new(),
+                    Some(TypeId::TopLevel(TopLevelId::FnRet(ItemId::new(0, 0)))),
+                ),
+                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Void),
+                    Vec::new(),
+                    Some(TypeId::TopLevel(TopLevelId::FnRet(ItemId::new(0, 0)))),
+                ),
+                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Char)),
+                    Vec::new(),
+                    None,
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert_eq!(
+        logs,
+        vec![
+            TypeLog::FnCallWithInvalidArgLen { expected: 1, provided: 0 },
+            TypeLog::InconsistentConstraint,
+        ],
+    );
 }
 
 #[test]

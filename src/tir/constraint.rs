@@ -8,6 +8,7 @@ use crate::{hir, hir::id::*};
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeLog {
+    FnCallWithInvalidArgLen { expected: usize, provided: usize },
     InconsistentConstraint,
 }
 
@@ -21,7 +22,7 @@ pub enum Type {
     Float,
     Item(ast::Path),
     Prim(ast::PrimType),
-    Fn { ret_type: Box<Type>, arg_types: Vec<Type> },
+    Fn(FnType),
     Undefined,
     Unresolved,
 }
@@ -48,6 +49,12 @@ impl From<&hir::Type> for Type {
             hir::TypeKind::Prim(prim_type) => Type::Prim(prim_type.clone()),
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FnType {
+    pub ret_type: Box<Type>,
+    pub arg_types: Vec<Type>,
 }
 
 #[derive(PartialEq)]
@@ -91,6 +98,15 @@ impl TypeConstraintTable {
         vec
     }
 
+    pub fn is_suitable_for_key(type_id: TypeId) -> bool {
+        match type_id {
+            TypeId::TopLevel(_) => false,
+            TypeId::FormalArg(_) => true,
+            TypeId::Var(_) => true,
+            TypeId::Expr(_) => true,
+        }
+    }
+
     pub fn get(&self, type_id: &TypeId) -> Option<&TypeConstraint> {
         self.table.get(&type_id)
     }
@@ -104,7 +120,7 @@ impl TypeConstraintTable {
     }
 
     pub fn insert(&mut self, type_id: TypeId, constraint: TypeConstraint) -> Option<TypeConstraint> {
-        if let TypeId::TopLevel(_) = &type_id {
+        if !TypeConstraintTable::is_suitable_for_key(type_id) {
             panic!("cannot constraint type with top level id");
         }
         self.table.insert(type_id, constraint)
@@ -138,6 +154,10 @@ impl<'a> TypeConstraintBuilder<'a> {
         self.table
     }
 
+    pub fn is_consistent(type_id: &Type, constrained_by: &Type) -> bool {
+        !(type_id.is_resolved() && *type_id != *constrained_by)
+    }
+
     pub fn add_constraint(&mut self, type_id: TypeId) -> TypeResult<()> {
         if !self.table.contains_type_id(&type_id) {
             self.add_independent_constraint(type_id, Type::Unresolved)?;
@@ -159,47 +179,56 @@ impl<'a> TypeConstraintBuilder<'a> {
     }
 
     pub fn add_dependent_constraint(&mut self, type_id: TypeId, constrained_by: TypeId) -> TypeResult<()> {
-        if let TypeId::TopLevel(top_level_id) = &constrained_by {
-            match self.top_level_type_table.get(top_level_id) {
-                Some(r#type) => {
-                    let new_constraint = TypeConstraint::new_constrained(
-                        TypePtr::new(r#type.clone()),
-                        Vec::new(),
-                        Some(constrained_by),
-                    );
-                    self.table.insert(type_id, new_constraint);
-                },
-                None => panic!("unknown top level id"),
-            }
-        } else {
-            let new_ptr = match self.table.get_mut(&constrained_by) {
-                Some(constraint) => {
-                    constraint.constrain(type_id);
-                    constraint.get_ptr().clone()
-                },
-                None => panic!("unknown expression id"),
-            };
-            match self.table.get_mut(&type_id) {
-                Some(constraint) => {
-                    {
-                        let ptr = constraint.get_ptr().borrow();
-                        if ptr.is_resolved() && *ptr != *new_ptr.borrow() {
+        // todo: constrained_by が unresolved の場合の処理を考える 
+        // type_id が解決済みで constrained_by が未解決の場合に前者を unresolved で上書きしないように
+        match &constrained_by {
+            TypeId::TopLevel(top_level_id) => {
+                match self.top_level_type_table.get(top_level_id) {
+                    Some(r#type) => {
+                        if let Some(constraint) = self.table.get(&type_id) {
+                            let ptr = constraint.get_ptr().borrow();
+                            if !TypeConstraintBuilder::is_consistent(&ptr, r#type) {
+                                // detects inconsistent types
+                                return Err(TypeLog::InconsistentConstraint);
+                            }
+                        }
+                        let new_constraint = TypeConstraint::new_constrained(
+                            TypePtr::new(r#type.clone()),
+                            Vec::new(),
+                            Some(constrained_by),
+                        );
+                        self.table.insert(type_id, new_constraint);
+                    },
+                    None => panic!("unknown top level id"),
+                }
+            },
+            _ => {
+                let new_ptr = match self.table.get_mut(&constrained_by) {
+                    Some(constraint) => {
+                        constraint.constrain(type_id);
+                        constraint.get_ptr().clone()
+                    },
+                    None => panic!("unknown expression id: {:?}", constrained_by),
+                };
+                match self.table.get_mut(&type_id) {
+                    Some(constraint) => {
+                        if !TypeConstraintBuilder::is_consistent(&constraint.get_ptr().borrow(), &new_ptr.borrow()) {
                             // detects inconsistent types
                             return Err(TypeLog::InconsistentConstraint);
                         }
-                    }
-                    constraint.set_ptr(new_ptr);
-                    constraint.set_constrained_by(constrained_by);
-                },
-                None => {
-                    let new_constraint = TypeConstraint::new_constrained(
-                        new_ptr,
-                        Vec::new(),
-                        Some(constrained_by),
-                    );
-                    self.table.insert(type_id, new_constraint);
-                },
-            }
+                        constraint.set_ptr(new_ptr);
+                        constraint.set_constrained_by(constrained_by);
+                    },
+                    None => {
+                        let new_constraint = TypeConstraint::new_constrained(
+                            new_ptr,
+                            Vec::new(),
+                            Some(constrained_by),
+                        );
+                        self.table.insert(type_id, new_constraint);
+                    },
+                }
+            },
         }
         Ok(())
     }
@@ -325,6 +354,28 @@ impl<'a> TypeConstraintLowering<'a> {
                 let result = self.builder.add_dependent_constraint(TypeId::Expr(expr.id), type_id);
                 self.collect_log(result);
             },
+            hir::ExprKind::FnCall(call) => {
+                let type_id = TypeId::TopLevel(TopLevelId::FnRet(call.r#fn));
+                let result = self.builder.add_dependent_constraint(TypeId::Expr(expr.id), type_id);
+                self.collect_log(result);
+
+                let fn_type = match self.builder.top_level_type_table.get_fn(&call.r#fn) {
+                    Some(v) => v,
+                    None => unreachable!("called unknown function"),
+                };
+                let arg_len_match = fn_type.arg_types.len() == call.args.len();
+                if !arg_len_match {
+                    self.collect_log::<()>(Err(TypeLog::FnCallWithInvalidArgLen { expected: fn_type.arg_types.len(), provided: call.args.len() }));
+                }
+                for (i, each_arg) in call.args.iter().enumerate() {
+                    self.lower_expr(body, &each_arg.expr);
+                    if arg_len_match {
+                        let type_id = TypeId::TopLevel(TopLevelId::FnArg(call.r#fn, FormalArgId::new(i)));
+                        let result = self.builder.add_dependent_constraint(TypeId::Expr(each_arg.expr.id), type_id);
+                        self.collect_log(result);
+                    }
+                }
+            },
             hir::ExprKind::TopLevelRef(top_level_id) => {
                 let type_id = TypeId::TopLevel(*top_level_id);
                 let result = self.builder.add_dependent_constraint(TypeId::Expr(expr.id), type_id);
@@ -354,7 +405,6 @@ impl<'a> TypeConstraintLowering<'a> {
                 let result = self.builder.copy_and_be_constrained(TypeId::Var(bind.var_id), TypeId::Expr(bind.value.id));
                 self.collect_log(result);
             },
-            _ => unimplemented!(),
         }
     }
 }

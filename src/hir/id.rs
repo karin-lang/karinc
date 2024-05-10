@@ -22,6 +22,8 @@ impl std::fmt::Debug for GlobalId {
 pub enum TopLevelId {
     Item(ItemId),
     ItemMember(ItemMemberId),
+    FnRet(ItemId),
+    FnArg(ItemId, FormalArgId),
 }
 
 impl std::fmt::Debug for TopLevelId {
@@ -29,6 +31,8 @@ impl std::fmt::Debug for TopLevelId {
         let s = match self {
             TopLevelId::Item(id) => format!("{:?}", id),
             TopLevelId::ItemMember(id) => format!("{:?}", id),
+            TopLevelId::FnRet(id) => format!("FnRet({:?})", id),
+            TopLevelId::FnArg(item_id, formal_arg_id) => format!("FnArg({:?}, {:?})", item_id, formal_arg_id),
         };
         write!(f, "{:?}", s)
     }

@@ -78,7 +78,7 @@ pub enum TypeKind {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FnCall {
-    pub r#fn: ast::Path,
+    pub r#fn: ItemId,
     pub args: Vec<ActualArg>,
 }
 
