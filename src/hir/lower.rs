@@ -11,7 +11,7 @@ pub enum HirLoweringLog {
 pub type HirLoweringResult<T> = Result<T, HirLoweringLog>;
 
 pub struct HirLowering<'a> {
-    asts: &'a Vec<ast::Ast>,
+    asts: &'a Vec<&'a ast::Ast>,
     current_mod_path: ast::Path,
     paths: HashMap<ast::Path, GlobalId>,
     body_scope_hierarchy: BodyScopeHierarchy,
@@ -19,7 +19,7 @@ pub struct HirLowering<'a> {
 }
 
 impl<'a> HirLowering<'a> {
-    pub fn new(asts: &'a Vec<ast::Ast>) -> HirLowering<'a> {
+    pub fn new(asts: &'a Vec<&'a ast::Ast>) -> HirLowering<'a> {
         let mut lowering = HirLowering {
             asts,
             current_mod_path: ast::Path::new(),
@@ -52,12 +52,12 @@ impl<'a> HirLowering<'a> {
         }
     }
 
-    pub fn lower(mut self, mod_id: ModId) -> (Hir, Vec<HirLoweringLog>) {
+    pub fn lower(mut self) -> (Hir, Vec<HirLoweringLog>) {
         let mut items = HashMap::new();
         for each_ast in self.asts {
             self.lower_ast(&mut items, each_ast);
         }
-        let hir = Hir { mod_id, items };
+        let hir = Hir { items };
         (hir, self.logs)
     }
 

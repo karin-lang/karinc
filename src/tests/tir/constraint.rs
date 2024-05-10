@@ -10,7 +10,6 @@ use crate::parser::ast;
 #[test]
 fn constrains_types() {
     let hir = hir::Hir {
-        mod_id: ModId::new(0, 0),
         items: hashmap! {
             "my_hako::item".into() => (
                 hir::Item {
@@ -86,7 +85,6 @@ fn constrains_types() {
 #[test]
 fn constrains_top_level_types() {
     let hir = hir::Hir {
-        mod_id: ModId::new(0, 0),
         items: hashmap! {
             "my_hako::item".into() => (
                 hir::Item {
@@ -155,7 +153,6 @@ fn constrains_top_level_types() {
 #[test]
 fn constrains_literal_types() {
     let hir = hir::Hir {
-        mod_id: ModId::new(0, 0),
         items: hashmap! {
             "my_hako::item".into() => (
                 hir::Item {
@@ -289,7 +286,6 @@ fn constrains_literal_types() {
 #[test]
 fn constrains_by_local_ref() {
     let hir = hir::Hir {
-        mod_id: ModId::new(0, 0),
         items: hashmap! {
             "my_hako::item".into() => (
                 hir::Item {
@@ -377,7 +373,6 @@ fn constrains_by_local_ref() {
 #[test]
 fn constrains_var_by_bind() {
     let hir = hir::Hir {
-        mod_id: ModId::new(0, 0),
         items: hashmap! {
             "my_hako::item".into() => (
                 hir::Item {
@@ -455,7 +450,6 @@ fn constrains_var_by_bind() {
 #[test]
 fn detects_inconsistent_constraint_of_var_bind() {
     let hir = hir::Hir {
-        mod_id: ModId::new(0, 0),
         items: hashmap! {
             "my_hako::item".into() => (
                 hir::Item {

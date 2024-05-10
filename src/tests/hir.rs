@@ -10,56 +10,47 @@ use crate::parser::ast;
 
 #[test]
 fn lowers_empty_ast() {
-    let asts = vec![
-        ast::Ast {
-            mod_id: ModId::new(0, 0),
-            mod_path: "my_hako".into(),
-            items: Vec::new(),
-        },
-    ];
+    let ast = ast::Ast {
+        mod_id: ModId::new(0, 0),
+        mod_path: "my_hako".into(),
+        items: Vec::new(),
+    };
+    let asts = vec![&ast];
     let lowering = HirLowering::new(&asts);
-    let (hir, logs) = lowering.lower(ModId::new(0, 0));
+    let (hir, logs) = lowering.lower();
 
-    assert_eq!(
-        hir,
-        Hir {
-            mod_id: ModId::new(0, 0),
-            items: HashMap::new(),
-        },
-    );
+    assert_eq!(hir, Hir { items: HashMap::new() });
     assert!(logs.is_empty());
 }
 
 #[test]
 fn lowers_subitem_in_mod() {
-    let asts = vec![
-        ast::Ast {
-            mod_id: ModId::new(0, 0),
-            mod_path: "my_hako".into(),
-            items: vec![
-                ast::Item {
-                    id: ItemId::new(0, 0),
-                    name: ast::Id { id: "f".to_string(), span: Span::new(0, 1) },
-                    kind: ast::ItemKind::FnDecl(
-                        ast::FnDecl {
-                            body: ast::Body {
-                                ret_type: None,
-                                args: Vec::new(),
-                                exprs: Vec::new(),
-                            },
+    let ast = ast::Ast {
+        mod_id: ModId::new(0, 0),
+        mod_path: "my_hako".into(),
+        items: vec![
+            ast::Item {
+                id: ItemId::new(0, 0),
+                name: ast::Id { id: "f".to_string(), span: Span::new(0, 1) },
+                kind: ast::ItemKind::FnDecl(
+                    ast::FnDecl {
+                        body: ast::Body {
+                            ret_type: None,
+                            args: Vec::new(),
+                            exprs: Vec::new(),
                         },
-                    ),
-                },
-            ],
-        },
-    ];
+                    },
+                ),
+            },
+        ],
+    };
+    let asts = vec![&ast];
     let lowering = HirLowering::new(&asts);
-    let (hir, logs) = lowering.lower(ModId::new(0, 0));
+    let (hir, logs) = lowering.lower();
 
     assert_eq!(
         hir,
         Hir {
-            mod_id: ModId::new(0, 0),
             items: hashmap! {
                 "my_hako::f".into() => (
                     Item {
@@ -84,57 +75,55 @@ fn lowers_subitem_in_mod() {
 
 #[test]
 fn resolves_item_and_local() {
-    let ast = vec![
-        ast::Ast {
-            mod_id: ModId::new(0, 0),
-            mod_path: "my_hako".into(),
-            items: vec![
-                ast::Item {
-                    id: ItemId::new(0, 0),
-                    name: ast::Id { id: "item".to_string(), span: Span::new(0, 1) },
-                    kind: ast::ItemKind::FnDecl(
-                        ast::FnDecl {
-                            body: ast::Body {
-                                ret_type: None,
-                                args: Vec::new(),
-                                exprs: vec![
-                                    ast::Expr {
-                                        kind: ast::ExprKind::Id(
-                                            ast::Id { id: "item".to_string(), span: Span::new(1, 1) },
-                                        ),
-                                        span: Span::new(1, 1),
-                                    },
-                                    ast::Expr {
-                                        kind: ast::ExprKind::VarDef(
-                                            ast::VarDef {
-                                                id: ast::Id { id: "local".to_string(), span: Span::new(2, 1) },
-                                                r#type: None,
-                                                init: None,
-                                            },
-                                        ),
-                                        span: Span::new(2, 1),
-                                    },
-                                    ast::Expr {
-                                        kind: ast::ExprKind::Id(
-                                            ast::Id { id: "local".to_string(), span: Span::new(3, 1) },
-                                        ),
-                                        span: Span::new(3, 1),
-                                    },
-                                ],
-                            },
+    let ast = ast::Ast {
+        mod_id: ModId::new(0, 0),
+        mod_path: "my_hako".into(),
+        items: vec![
+            ast::Item {
+                id: ItemId::new(0, 0),
+                name: ast::Id { id: "item".to_string(), span: Span::new(0, 1) },
+                kind: ast::ItemKind::FnDecl(
+                    ast::FnDecl {
+                        body: ast::Body {
+                            ret_type: None,
+                            args: Vec::new(),
+                            exprs: vec![
+                                ast::Expr {
+                                    kind: ast::ExprKind::Id(
+                                        ast::Id { id: "item".to_string(), span: Span::new(1, 1) },
+                                    ),
+                                    span: Span::new(1, 1),
+                                },
+                                ast::Expr {
+                                    kind: ast::ExprKind::VarDef(
+                                        ast::VarDef {
+                                            id: ast::Id { id: "local".to_string(), span: Span::new(2, 1) },
+                                            r#type: None,
+                                            init: None,
+                                        },
+                                    ),
+                                    span: Span::new(2, 1),
+                                },
+                                ast::Expr {
+                                    kind: ast::ExprKind::Id(
+                                        ast::Id { id: "local".to_string(), span: Span::new(3, 1) },
+                                    ),
+                                    span: Span::new(3, 1),
+                                },
+                            ],
                         },
-                    ),
-                },
-            ],
-        },
-    ];
-    let lowering = HirLowering::new(&ast);
-    let (hir, logs) = lowering.lower(ModId::new(0, 0));
+                    },
+                ),
+            },
+        ],
+    };
+    let asts = vec![&ast];
+    let lowering = HirLowering::new(&asts);
+    let (hir, logs) = lowering.lower();
 
     assert_eq!(
         hir,
         Hir {
-            mod_id: ModId::new(0, 0),
             items: hashmap! {
                 "my_hako::item".into() => (
                     Item {

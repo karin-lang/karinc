@@ -10,7 +10,6 @@ use crate::hir::id::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hir {
-    pub mod_id: ModId,
     pub items: HashMap<ast::Path, Item>,
 }
 
