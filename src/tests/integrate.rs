@@ -1,12 +1,10 @@
 use maplit::hashmap;
 
-use crate::hir::{self, id::*};
-use crate::lexer::token::Span;
-use crate::parser::ast::tltype;
-use crate::parser::{self, ast, ParserHakoContext};
-use crate::tir::constraint;
 use crate::{id_token, keyword_token, token};
-use crate::lexer::tokenize::Lexer;
+use crate::lexer::{token::Span, tokenize::Lexer};
+use crate::parser::{self, ast, ast::tltype, ParserHakoContext};
+use crate::hir::{self, id::*};
+use crate::tir;
 
 #[test]
 fn generates_js() {
@@ -100,29 +98,29 @@ fn generates_js() {
     assert_eq!(
         top_level_type_table,
         hashmap! {
-            TopLevelId::Item(ItemId::new(0, 0)) => constraint::Type::Fn(
-                constraint::FnType {
-                    ret_type: Box::new(constraint::Type::Void),
+            TopLevelId::Item(ItemId::new(0, 0)) => tir::r#type::Type::Fn(
+                tir::r#type::FnType {
+                    ret_type: Box::new(tir::r#type::Type::Void),
                     arg_types: Vec::new(),
                 },
             ),
-            TopLevelId::FnRet(ItemId::new(0, 0)) => constraint::Type::Void,
+            TopLevelId::FnRet(ItemId::new(0, 0)) => tir::r#type::Type::Void,
         }.into(),
     );
 
     let (
         type_constraint_table,
         type_constraint_lowering_logs,
-    ) = constraint::TypeConstraintLowering::lower(&hir, &top_level_type_table);
+    ) = tir::constraint::lower::TypeConstraintLowering::lower(&hir, &top_level_type_table);
     assert_eq!(
         type_constraint_table.to_sorted_vec(),
-        constraint::TypeConstraintTable::from(
+        tir::constraint::TypeConstraintTable::from(
             hashmap! {
-                TypeId::Expr(ExprId::new(0)) => constraint::TypeConstraint::new_constrained(
-                    constraint::TypePtr::new(
-                        constraint::Type::Fn(
-                            constraint::FnType {
-                                ret_type: Box::new(constraint::Type::Void),
+                TypeId::Expr(ExprId::new(0)) => tir::constraint::TypeConstraint::new_constrained(
+                    tir::r#type::TypePtr::new(
+                        tir::r#type::Type::Fn(
+                            tir::r#type::FnType {
+                                ret_type: Box::new(tir::r#type::Type::Void),
                                 arg_types: Vec::new(),
                             },
                         ),

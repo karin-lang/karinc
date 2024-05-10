@@ -1,12 +1,13 @@
 // pub mod check;
 pub mod constraint;
 // pub mod lower;
+pub mod r#type;
 
 use std::collections::HashMap;
 
 use crate::parser::ast;
 use crate::hir::id::*;
-use crate::tir::constraint::Type;
+use crate::tir::r#type::Type;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Tir {

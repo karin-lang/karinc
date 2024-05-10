@@ -3,9 +3,10 @@ use std::collections::HashMap;
 use maplit::hashmap;
 
 use crate::lexer::token;
-use crate::tir::constraint::*;
-use crate::hir::{self, id::*, FormalArgDef};
 use crate::parser::ast;
+use crate::hir::{self, id::*};
+use crate::tir::r#type::*;
+use crate::tir::constraint::{*, lower::*};
 
 #[test]
 fn constrains_types() {
@@ -232,7 +233,7 @@ fn constrains_by_top_level_ref() {
                                     },
                                 ),
                                 args: vec![
-                                    FormalArgDef {
+                                    hir::FormalArgDef {
                                         id: FormalArgId::new(0),
                                         r#type: hir::Type {
                                             kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U16)),

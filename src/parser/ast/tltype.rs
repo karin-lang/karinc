@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use crate::parser::ast;
 use crate::hir::id::*;
-use crate::tir::constraint::{FnType, Type};
+use crate::tir::r#type::{FnType, Type};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TopLevelTypeTable {
