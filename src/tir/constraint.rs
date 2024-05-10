@@ -155,7 +155,7 @@ impl<'a> TypeConstraintBuilder<'a> {
     }
 
     pub fn is_consistent(type_id: &Type, constrained_by: &Type) -> bool {
-        !(type_id.is_resolved() && *type_id != *constrained_by)
+        !type_id.is_resolved() || *type_id == *constrained_by
     }
 
     pub fn add_constraint(&mut self, type_id: TypeId) -> TypeResult<()> {
@@ -168,7 +168,7 @@ impl<'a> TypeConstraintBuilder<'a> {
     pub fn add_independent_constraint(&mut self, type_id: TypeId, r#type: Type) -> TypeResult<()> {
         if let Some(constraint) = self.table.get_mut(&type_id) {
             let ptr = constraint.get_ptr().borrow();
-            if ptr.is_resolved() && *ptr != r#type {
+            if !TypeConstraintBuilder::is_consistent(&*ptr, &r#type) {
                 // detects inconsistent types
                 return Err(TypeLog::InconsistentConstraint);
             }
@@ -179,8 +179,6 @@ impl<'a> TypeConstraintBuilder<'a> {
     }
 
     pub fn add_dependent_constraint(&mut self, type_id: TypeId, constrained_by: TypeId) -> TypeResult<()> {
-        // todo: constrained_by が unresolved の場合の処理を考える 
-        // type_id が解決済みで constrained_by が未解決の場合に前者を unresolved で上書きしないように
         match &constrained_by {
             TypeId::TopLevel(top_level_id) => {
                 match self.top_level_type_table.get(top_level_id) {

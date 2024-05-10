@@ -462,7 +462,6 @@ fn constrains_by_fn_call() {
     assert!(logs.is_empty());
 }
 
-// todo: 関数呼び出しの引数の型ミスマッチを検査する
 #[test]
 fn detects_inconsistent_constraint_of_fn_call() {
     let hir = hir::Hir {
