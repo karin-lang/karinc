@@ -20,6 +20,7 @@ fn constrains_types() {
                                 ret_type: None,
                                 args: vec![
                                     hir::FormalArgDef {
+                                        id: FormalArgId::new(0),
                                         r#type: hir::Type::new(
                                             hir::TypeKind::Prim(ast::PrimType::Bool),
                                         ),
@@ -99,6 +100,7 @@ fn constrains_top_level_types() {
                                 ),
                                 args: vec![
                                     FormalArgDef {
+                                        id: FormalArgId::new(0),
                                         r#type: hir::Type {
                                             kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U16)),
                                         },
@@ -296,6 +298,7 @@ fn constrains_by_local_ref() {
                                 ret_type: None,
                                 args: vec![
                                     hir::FormalArgDef {
+                                        id: FormalArgId::new(0),
                                         r#type: hir::Type {
                                             kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U8)),
                                         },

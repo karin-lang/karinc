@@ -89,6 +89,7 @@ pub struct ActualArg {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FormalArgDef {
+    pub id: FormalArgId,
     pub r#type: Type,
     pub mutable: bool,
 }
