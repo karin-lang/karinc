@@ -1,3 +1,5 @@
+pub mod tltype;
+
 use std::fmt;
 
 use crate::lexer::token;
@@ -6,6 +8,7 @@ use crate::parser::Span;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Ast {
+    pub mod_id: ModId,
     pub mod_path: Path,
     pub items: Vec<Item>,
 }

@@ -1,17 +1,19 @@
-use std::collections::{HashSet, VecDeque};
-
 use resolve::*;
-use self::ast::Path;
 
 use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum HirLoweringLog {}
+pub enum HirLoweringLog {
+    ExpectedExprFoundHako(token::Span, HakoId),
+    ExpectedExprFoundMod(token::Span, ModId),
+}
+
+pub type HirLoweringResult<T> = Result<T, HirLoweringLog>;
 
 pub struct HirLowering<'a> {
     asts: &'a Vec<ast::Ast>,
     current_mod_path: ast::Path,
-    paths: HashSet<ast::Path>,
+    paths: HashMap<ast::Path, GlobalId>,
     body_scope_hierarchy: BodyScopeHierarchy,
     logs: Vec<HirLoweringLog>,
 }
@@ -21,7 +23,7 @@ impl<'a> HirLowering<'a> {
         let mut lowering = HirLowering {
             asts,
             current_mod_path: ast::Path::new(),
-            paths: HashSet::new(),
+            paths: HashMap::new(),
             body_scope_hierarchy: BodyScopeHierarchy::new(),
             logs: Vec::new(),
         };
@@ -30,25 +32,36 @@ impl<'a> HirLowering<'a> {
     }
 
     pub fn collect(&mut self) {
+        // todo: HakoIdとItemMemberIdを収集する
         for each_ast in self.asts {
-            self.paths.insert(each_ast.mod_path.clone());
+            self.paths.insert(each_ast.mod_path.clone(), GlobalId::Mod(each_ast.mod_id));
             for each_item in &each_ast.items {
                 let new_item_path = each_ast.mod_path.clone().add_segment(&each_item.name.id);
-                self.paths.insert(new_item_path);
+                self.paths.insert(new_item_path, GlobalId::Item(each_item.id));
             }
         }
     }
 
-    pub fn lower(mut self) -> (Hir, Vec<HirLoweringLog>) {
+    pub fn collect_log<T>(&mut self, result: HirLoweringResult<T>) -> Option<T> {
+        match result {
+            Ok(v) => Some(v),
+            Err(e) => {
+                self.logs.push(e);
+                None
+            },
+        }
+    }
+
+    pub fn lower(mut self, mod_id: ModId) -> (Hir, Vec<HirLoweringLog>) {
         let mut items = HashMap::new();
         for each_ast in self.asts {
             self.lower_ast(&mut items, each_ast);
         }
-        let hir = Hir { items };
+        let hir = Hir { mod_id, items };
         (hir, self.logs)
     }
 
-    pub fn resolve_id(&mut self, id: &str) -> Option<Expr> {
+    pub fn resolve_id(&mut self, span: &token::Span, id: &str) -> Option<Expr> {
         if let Some(local_id) = self.resolve_local(id) {
             return Some(
                 Expr {
@@ -58,11 +71,24 @@ impl<'a> HirLowering<'a> {
             );
         }
         let path = self.get_item_path(id);
-        if let Some(expr) = self.resolve_path(&path) {
+        if let Some(global_id) = self.resolve_path(&path) {
+            // todo: test errors
+            let top_level_id = match global_id {
+                GlobalId::Hako(hako_id) => {
+                    self.collect_log::<()>(Err(HirLoweringLog::ExpectedExprFoundHako(span.clone(), hako_id)));
+                    return None;
+                },
+                GlobalId::Mod(mod_id) => {
+                    self.collect_log::<()>(Err(HirLoweringLog::ExpectedExprFoundMod(span.clone(), mod_id)));
+                    return None;
+                },
+                GlobalId::Item(item_id) => TopLevelId::Item(item_id),
+                GlobalId::ItemMember(item_member_id) => TopLevelId::ItemMember(item_member_id),
+            };
             return Some(
                 Expr {
                     id: self.body_scope_hierarchy.generate_expr_id(),
-                    kind: ExprKind::PathRef(expr),
+                    kind: ExprKind::TopLevelRef(top_level_id),
                 },
             );
         }
@@ -73,26 +99,16 @@ impl<'a> HirLowering<'a> {
         self.body_scope_hierarchy.resolve_var(id)
     }
 
-    pub fn resolve_path(&self, path: &ast::Path) -> Option<DivPath> {
-        if self.paths.contains(path) {
-            let div_path = DivPath {
-                item_path: path.clone(),
-                following_path: Path::new(),
-            };
-            return Some(div_path);
+    pub fn resolve_path(&self, path: &ast::Path) -> Option<GlobalId> {
+        if let Some(global_id) = self.paths.get(path) {
+            return Some(*global_id);
         }
 
         let mut item_path = path.clone();
-        let mut following_segments = VecDeque::new();
-        while let Some(each_segment) = item_path.pop_segment() {
-            if self.paths.contains(&path) {
-                let div_path = DivPath {
-                    item_path,
-                    following_path: Path::from(following_segments.into()),
-                };
-                return Some(div_path);
+        while let Some(_) = item_path.pop_segment() {
+            if let Some(global_id) = self.paths.get(&path) {
+                return Some(*global_id);
             }
-            following_segments.push_front(each_segment);
         }
 
         None
@@ -151,7 +167,7 @@ impl<'a> HirLowering<'a> {
     pub fn lower_expr(&mut self, expr: &ast::Expr) -> Expr {
         // todo: 実装
         match &expr.kind {
-            ast::ExprKind::Id(id) => self.resolve_id(&id.id).unwrap(), //fix unwrap()
+            ast::ExprKind::Id(id) => self.resolve_id(&expr.span, &id.id).unwrap(), //fix unwrap()
             ast::ExprKind::VarDef(def) => {
                 let new_expr_id = self.body_scope_hierarchy.generate_expr_id();
                 let var_def = VarDef {
@@ -189,9 +205,11 @@ impl<'a> HirLowering<'a> {
         let kind = match &*r#type.kind {
             ast::TypeKind::Id(id) => {
                 let path = self.get_item_path(&id.id);
-                let div_path = self.resolve_path(&path);
-                match div_path {
-                    Some(v) => TypeKind::Path(v),
+                match self.resolve_path(&path) {
+                    Some(global_id) => match global_id {
+                        GlobalId::Item(item_id) => TypeKind::Item(item_id),
+                        _ => unimplemented!(),
+                    },
                     None => unimplemented!(),
                 }
             },

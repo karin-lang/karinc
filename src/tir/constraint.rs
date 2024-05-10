@@ -3,7 +3,7 @@ use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
 use crate::lexer::token;
-use crate::parser::ast;
+use crate::parser::{ast, ast::tltype::TopLevelTypeTable};
 use crate::{hir, hir::id::*};
 
 #[derive(Clone, Debug, PartialEq)]
@@ -21,6 +21,7 @@ pub enum Type {
     Float,
     Item(ast::Path),
     Prim(ast::PrimType),
+    Fn { ret_type: Box<Type>, arg_types: Vec<Type> },
     Undefined,
     Unresolved,
 }
@@ -31,10 +32,19 @@ impl Type {
     }
 }
 
+impl From<&ast::Type> for Type {
+    fn from(value: &ast::Type) -> Self {
+        match &*value.kind {
+            ast::TypeKind::Id(_) => unimplemented!(),
+            ast::TypeKind::Prim(prim_type) => Type::Prim(prim_type.clone()),
+        }
+    }
+}
+
 impl From<&hir::Type> for Type {
     fn from(value: &hir::Type) -> Self {
         match &*value.kind {
-            hir::TypeKind::Path(_) => unimplemented!(),
+            hir::TypeKind::Item(_) => unimplemented!(),
             hir::TypeKind::Prim(prim_type) => Type::Prim(prim_type.clone()),
         }
     }
@@ -81,8 +91,55 @@ impl TypeConstraintTable {
         vec
     }
 
+    pub fn get(&self, type_id: &TypeId) -> Option<&TypeConstraint> {
+        self.table.get(&type_id)
+    }
+
+    pub fn get_mut(&mut self, type_id: &TypeId) -> Option<&mut TypeConstraint> {
+        self.table.get_mut(&type_id)
+    }
+
+    pub fn contains_type_id(&self, type_id: &TypeId) -> bool {
+        self.table.contains_key(type_id)
+    }
+
+    pub fn insert(&mut self, type_id: TypeId, constraint: TypeConstraint) -> Option<TypeConstraint> {
+        if let TypeId::TopLevel(_) = &type_id {
+            panic!("cannot constraint type with top level id");
+        }
+        self.table.insert(type_id, constraint)
+    }
+}
+
+impl From<HashMap<TypeId, TypeConstraint>> for TypeConstraintTable {
+    fn from(value: HashMap<TypeId, TypeConstraint>) -> Self {
+        Self { table: value }
+    }
+}
+
+impl Into<HashMap<TypeId, TypeConstraint>> for TypeConstraintTable {
+    fn into(self) -> HashMap<TypeId, TypeConstraint> {
+        self.table
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct TypeConstraintBuilder<'a> {
+    top_level_type_table: &'a TopLevelTypeTable,
+    table: TypeConstraintTable,
+}
+
+impl<'a> TypeConstraintBuilder<'a> {
+    pub fn new(top_level_type_table: &'a TopLevelTypeTable) -> TypeConstraintBuilder<'a> {
+        TypeConstraintBuilder { top_level_type_table, table: TypeConstraintTable::new() }
+    }
+
+    pub fn into_table(self) -> TypeConstraintTable {
+        self.table
+    }
+
     pub fn add_constraint(&mut self, type_id: TypeId) -> TypeResult<()> {
-        if !self.table.contains_key(&type_id) {
+        if !self.table.contains_type_id(&type_id) {
             self.add_independent_constraint(type_id, Type::Unresolved)?;
         }
         Ok(())
@@ -102,26 +159,47 @@ impl TypeConstraintTable {
     }
 
     pub fn add_dependent_constraint(&mut self, type_id: TypeId, constrained_by: TypeId) -> TypeResult<()> {
-        let new_ptr = match self.table.get_mut(&constrained_by) {
-            Some(constraint) => {
-                constraint.constrain(type_id);
-                constraint.get_ptr().clone()
-            },
-            None => panic!("unknown expression id"),
-        };
-        if let Some(constraint) = self.table.get_mut(&type_id) {
-            {
-                let ptr = constraint.get_ptr().borrow();
-                if ptr.is_resolved() && *ptr != *new_ptr.borrow() {
-                    // detects inconsistent types
-                    return Err(TypeLog::InconsistentConstraint);
-                }
+        if let TypeId::TopLevel(top_level_id) = &constrained_by {
+            match self.top_level_type_table.get(top_level_id) {
+                Some(r#type) => {
+                    let new_constraint = TypeConstraint::new_constrained(
+                        TypePtr::new(r#type.clone()),
+                        Vec::new(),
+                        Some(constrained_by),
+                    );
+                    self.table.insert(type_id, new_constraint);
+                },
+                None => panic!("unknown top level id"),
             }
-            constraint.set_ptr(new_ptr);
-            constraint.set_constrained_by(constrained_by);
         } else {
-            let new_constraint = TypeConstraint::new_constrained(new_ptr, Vec::new(), Some(constrained_by));
-            self.table.insert(type_id, new_constraint);
+            let new_ptr = match self.table.get_mut(&constrained_by) {
+                Some(constraint) => {
+                    constraint.constrain(type_id);
+                    constraint.get_ptr().clone()
+                },
+                None => panic!("unknown expression id"),
+            };
+            match self.table.get_mut(&type_id) {
+                Some(constraint) => {
+                    {
+                        let ptr = constraint.get_ptr().borrow();
+                        if ptr.is_resolved() && *ptr != *new_ptr.borrow() {
+                            // detects inconsistent types
+                            return Err(TypeLog::InconsistentConstraint);
+                        }
+                    }
+                    constraint.set_ptr(new_ptr);
+                    constraint.set_constrained_by(constrained_by);
+                },
+                None => {
+                    let new_constraint = TypeConstraint::new_constrained(
+                        new_ptr,
+                        Vec::new(),
+                        Some(constrained_by),
+                    );
+                    self.table.insert(type_id, new_constraint);
+                },
+            }
         }
         Ok(())
     }
@@ -134,12 +212,6 @@ impl TypeConstraintTable {
         self.add_independent_constraint(type_id, source_ptr)?;
         self.add_dependent_constraint(source, type_id)?;
         Ok(())
-    }
-}
-
-impl From<HashMap<TypeId, TypeConstraint>> for TypeConstraintTable {
-    fn from(value: HashMap<TypeId, TypeConstraint>) -> Self {
-        Self { table: value }
     }
 }
 
@@ -176,13 +248,13 @@ impl TypeConstraint {
     }
 }
 
-pub struct TypeConstraintBuilder<'a> {
+pub struct TypeConstraintLowering<'a> {
     hir: &'a hir::Hir,
-    table: TypeConstraintTable,
+    builder: TypeConstraintBuilder<'a>,
     logs: Vec<TypeLog>,
 }
 
-impl<'a> TypeConstraintBuilder<'a> {
+impl<'a> TypeConstraintLowering<'a> {
     fn collect_log<T>(&mut self, result: TypeResult<T>) -> Option<T> {
         match result {
             Ok(v) => Some(v),
@@ -193,35 +265,35 @@ impl<'a> TypeConstraintBuilder<'a> {
         }
     }
 
-    pub fn build(hir: &hir::Hir) -> (TypeConstraintTable, Vec<TypeLog>) {
-        let mut builder = TypeConstraintBuilder {
+    pub fn lower(hir: &hir::Hir, top_level_type_table: &'a TopLevelTypeTable) -> (TypeConstraintTable, Vec<TypeLog>) {
+        let mut lowering = TypeConstraintLowering {
             hir,
-            table: TypeConstraintTable::new(),
+            builder: TypeConstraintBuilder::new(top_level_type_table),
             logs: Vec::new(),
         };
-        builder.hir.items.iter().for_each(|(_, item)| builder.build_item(item));
-        (builder.table, builder.logs)
+        lowering.hir.items.iter().for_each(|(_, item)| lowering.lower_item(item));
+        (lowering.builder.into_table(), lowering.logs)
     }
 
-    pub fn build_item(&mut self, item: &hir::Item) {
+    pub fn lower_item(&mut self, item: &hir::Item) {
         match &item.kind {
             hir::ItemKind::FnDecl(decl) => {
                 for (arg_id, arg) in decl.body.args.iter().enumerate() {
-                    self.build_formal_arg(FormalArgId::new(arg_id), arg);
+                    self.lower_formal_arg(FormalArgId::new(arg_id), arg);
                 }
                 for expr in &decl.body.exprs {
-                    self.build_expr(&decl.body, expr);
+                    self.lower_expr(&decl.body, expr);
                 }
             },
         }
     }
 
-    pub fn build_formal_arg(&mut self, arg_id: FormalArgId, arg: &hir::FormalArgDef) {
-        let result = self.table.add_independent_constraint(TypeId::FormalArg(arg_id), (&arg.r#type).into());
+    pub fn lower_formal_arg(&mut self, arg_id: FormalArgId, arg: &hir::FormalArgDef) {
+        let result = self.builder.add_independent_constraint(TypeId::FormalArg(arg_id), (&arg.r#type).into());
         self.collect_log(result);
     }
 
-    pub fn build_expr(&mut self, body: &hir::Body, expr: &hir::Expr) {
+    pub fn lower_expr(&mut self, body: &hir::Body, expr: &hir::Expr) {
         match &expr.kind {
             hir::ExprKind::Literal(literal) => {
                 let r#type = match literal {
@@ -242,41 +314,7 @@ impl<'a> TypeConstraintBuilder<'a> {
                     // token::Literal::ByteStr { value: _ } => Type::Prim(ast::PrimType::Arr),
                     _ => unimplemented!(),
                 };
-                let result = self.table.add_independent_constraint(TypeId::Expr(expr.id), r#type);
-                self.collect_log(result);
-            },
-            // hir::ExprKind::PathRef(div_path) => {
-            //     let item = self.hir.items.get(&div_path.item_path).unwrap(); // fix unwrap
-            //     let r#type = match item {
-            //         hir::Item::FnDecl(decl) => match &decl.body.ret_type {
-            //             Some(v) => v.into(),
-            //             None => Type::Void,
-            //         },
-            //     };
-            //     let result = self.table.add_de
-            // },
-            hir::ExprKind::VarDef(var_id) => {
-                let var_def = match body.vars.get(var_id.into_usize()) {
-                    Some(v) => v,
-                    None => unreachable!("unknown variable id"),
-                };
-                let result = self.table.add_independent_constraint(TypeId::Expr(expr.id), Type::Void);
-                self.collect_log(result);
-                if let Some(r#type) = &var_def.r#type {
-                    let result = self.table.add_independent_constraint(TypeId::Var(*var_id), r#type.into());
-                    self.collect_log(result);
-                }
-                if let Some(init_expr) = &var_def.init {
-                    self.build_expr(body, init_expr);
-                    let result = self.table.add_dependent_constraint(TypeId::Var(*var_id), TypeId::Expr(init_expr.id));
-                    self.collect_log(result);
-                }
-            },
-            hir::ExprKind::VarBind(bind) => {
-                let result = self.table.add_independent_constraint(TypeId::Expr(expr.id), Type::Void);
-                self.collect_log(result);
-                self.build_expr(body, &bind.value);
-                let result = self.table.copy_and_be_constrained(TypeId::Var(bind.var_id), TypeId::Expr(bind.value.id));
+                let result = self.builder.add_independent_constraint(TypeId::Expr(expr.id), r#type);
                 self.collect_log(result);
             },
             hir::ExprKind::LocalRef(local_id) => {
@@ -284,7 +322,36 @@ impl<'a> TypeConstraintBuilder<'a> {
                     LocalId::FormalArg(id) => TypeId::FormalArg(*id),
                     LocalId::Var(id) => TypeId::Var(*id),
                 };
-                let result = self.table.add_dependent_constraint(TypeId::Expr(expr.id), type_id);
+                let result = self.builder.add_dependent_constraint(TypeId::Expr(expr.id), type_id);
+                self.collect_log(result);
+            },
+            hir::ExprKind::TopLevelRef(top_level_id) => {
+                let type_id = TypeId::TopLevel(*top_level_id);
+                let result = self.builder.add_dependent_constraint(TypeId::Expr(expr.id), type_id);
+                self.collect_log(result);
+            },
+            hir::ExprKind::VarDef(var_id) => {
+                let var_def = match body.vars.get(var_id.into_usize()) {
+                    Some(v) => v,
+                    None => unreachable!("unknown variable id"),
+                };
+                let result = self.builder.add_independent_constraint(TypeId::Expr(expr.id), Type::Void);
+                self.collect_log(result);
+                if let Some(r#type) = &var_def.r#type {
+                    let result = self.builder.add_independent_constraint(TypeId::Var(*var_id), r#type.into());
+                    self.collect_log(result);
+                }
+                if let Some(init_expr) = &var_def.init {
+                    self.lower_expr(body, init_expr);
+                    let result = self.builder.add_dependent_constraint(TypeId::Var(*var_id), TypeId::Expr(init_expr.id));
+                    self.collect_log(result);
+                }
+            },
+            hir::ExprKind::VarBind(bind) => {
+                let result = self.builder.add_independent_constraint(TypeId::Expr(expr.id), Type::Void);
+                self.collect_log(result);
+                self.lower_expr(body, &bind.value);
+                let result = self.builder.copy_and_be_constrained(TypeId::Var(bind.var_id), TypeId::Expr(bind.value.id));
                 self.collect_log(result);
             },
             _ => unimplemented!(),

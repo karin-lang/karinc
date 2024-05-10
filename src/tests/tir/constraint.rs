@@ -1,17 +1,20 @@
+use std::collections::HashMap;
+
 use maplit::hashmap;
 
 use crate::lexer::token;
 use crate::tir::constraint::*;
-use crate::hir::{self, id::*};
+use crate::hir::{self, id::*, FormalArgDef};
 use crate::parser::ast;
 
 #[test]
 fn constrains_types() {
     let hir = hir::Hir {
+        mod_id: ModId::new(0, 0),
         items: hashmap! {
             "my_hako::item".into() => (
                 hir::Item {
-                    id: ItemId::new(0),
+                    id: ItemId::new(0, 0),
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -49,7 +52,8 @@ fn constrains_types() {
             ),
         },
     };
-    let (table, logs) = TypeConstraintBuilder::build(&hir);
+    let top_level_type_table = HashMap::new().into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
 
     assert_eq!(
         table.to_sorted_vec(),
@@ -80,12 +84,82 @@ fn constrains_types() {
 }
 
 #[test]
-fn constrains_literal_types() {
+fn constrains_top_level_types() {
     let hir = hir::Hir {
+        mod_id: ModId::new(0, 0),
         items: hashmap! {
             "my_hako::item".into() => (
                 hir::Item {
-                    id: ItemId::new(0),
+                    id: ItemId::new(0, 0),
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: Some(
+                                    hir::Type {
+                                        kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U8)),
+                                    },
+                                ),
+                                args: vec![
+                                    FormalArgDef {
+                                        r#type: hir::Type {
+                                            kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U16)),
+                                        },
+                                        mutable: false,
+                                    },
+                                ],
+                                vars: Vec::new(),
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::TopLevelRef(TopLevelId::Item(ItemId::new(0, 0))),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = hashmap! {
+        TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn {
+            ret_type: Box::new(Type::Prim(ast::PrimType::U8)),
+            arg_types: vec![Type::Prim(ast::PrimType::U16)],
+        },
+    }.into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::FormalArg(FormalArgId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::U16)),
+                ),
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(
+                        Type::Fn {
+                            ret_type: Box::new(Type::Prim(ast::PrimType::U8)),
+                            arg_types: vec![Type::Prim(ast::PrimType::U16)],
+                        },
+                    ),
+                    Vec::new(),
+                    Some(TypeId::TopLevel(TopLevelId::Item(ItemId::new(0, 0)))),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert!(logs.is_empty());
+}
+
+#[test]
+fn constrains_literal_types() {
+    let hir = hir::Hir {
+        mod_id: ModId::new(0, 0),
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -175,7 +249,8 @@ fn constrains_literal_types() {
             ),
         },
     };
-    let (table, logs) = TypeConstraintBuilder::build(&hir);
+    let top_level_type_table = HashMap::new().into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
 
     assert_eq!(
         table.to_sorted_vec(),
@@ -214,10 +289,11 @@ fn constrains_literal_types() {
 #[test]
 fn constrains_by_local_ref() {
     let hir = hir::Hir {
+        mod_id: ModId::new(0, 0),
         items: hashmap! {
             "my_hako::item".into() => (
                 hir::Item {
-                    id: ItemId::new(0),
+                    id: ItemId::new(0, 0),
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -262,7 +338,8 @@ fn constrains_by_local_ref() {
             ),
         },
     };
-    let (table, logs) = TypeConstraintBuilder::build(&hir);
+    let top_level_type_table = HashMap::new().into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
 
     assert_eq!(
         table.to_sorted_vec(),
@@ -300,10 +377,11 @@ fn constrains_by_local_ref() {
 #[test]
 fn constrains_var_by_bind() {
     let hir = hir::Hir {
+        mod_id: ModId::new(0, 0),
         items: hashmap! {
             "my_hako::item".into() => (
                 hir::Item {
-                    id: ItemId::new(0),
+                    id: ItemId::new(0, 0),
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -345,7 +423,8 @@ fn constrains_var_by_bind() {
             ),
         },
     };
-    let (table, logs) = TypeConstraintBuilder::build(&hir);
+    let top_level_type_table = HashMap::new().into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
 
     assert_eq!(
         table.to_sorted_vec(),
@@ -376,10 +455,11 @@ fn constrains_var_by_bind() {
 #[test]
 fn detects_inconsistent_constraint_of_var_bind() {
     let hir = hir::Hir {
+        mod_id: ModId::new(0, 0),
         items: hashmap! {
             "my_hako::item".into() => (
                 hir::Item {
-                    id: ItemId::new(0),
+                    id: ItemId::new(0, 0),
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -425,8 +505,8 @@ fn detects_inconsistent_constraint_of_var_bind() {
             ),
         },
     };
-    let (table, logs) = TypeConstraintBuilder::build(&hir);
-
+    let top_level_type_table = HashMap::new().into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
     assert_eq!(
         table.to_sorted_vec(),
         TypeConstraintTable::from(

@@ -1,4 +1,40 @@
 #[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum GlobalId {
+    Hako(HakoId),
+    Mod(ModId),
+    Item(ItemId),
+    ItemMember(ItemMemberId),
+}
+
+impl std::fmt::Debug for GlobalId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            GlobalId::Hako(id) => format!("{:?}", id),
+            GlobalId::Mod(id) => format!("{:?}", id),
+            GlobalId::Item(id) => format!("{:?}", id),
+            GlobalId::ItemMember(id) => format!("{:?}", id),
+        };
+        write!(f, "{:?}", s)
+    }
+}
+
+#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
+pub enum TopLevelId {
+    Item(ItemId),
+    ItemMember(ItemMemberId),
+}
+
+impl std::fmt::Debug for TopLevelId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let s = match self {
+            TopLevelId::Item(id) => format!("{:?}", id),
+            TopLevelId::ItemMember(id) => format!("{:?}", id),
+        };
+        write!(f, "{:?}", s)
+    }
+}
+
+#[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum LocalId {
     FormalArg(FormalArgId),
     Var(VarId),
@@ -16,7 +52,7 @@ impl std::fmt::Debug for LocalId {
 
 #[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum TypeId {
-    Item(ItemId),
+    TopLevel(TopLevelId),
     FormalArg(FormalArgId),
     Var(VarId),
     Expr(ExprId),
@@ -25,7 +61,7 @@ pub enum TypeId {
 impl std::fmt::Debug for TypeId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
-            TypeId::Item(id) => format!("{:?}", id),
+            TypeId::TopLevel(id) => format!("{:?}", id),
             TypeId::FormalArg(id) => format!("{:?}", id),
             TypeId::Var(id) => format!("{:?}", id),
             TypeId::Expr(id) => format!("{:?}", id),
@@ -40,18 +76,79 @@ pub trait NumId: Clone + Copy + std::fmt::Debug + Eq + std::hash::Hash + Ord + P
     fn into_usize(self) -> usize;
 }
 
+pub trait DoubleNumId: Clone + Copy + std::fmt::Debug + Eq + std::hash::Hash + Ord + PartialEq + PartialOrd {
+    fn new(first_id: usize, second_id: usize) -> Self;
+
+    fn into_usize(self) -> (usize, usize);
+}
+
+pub trait TripleNumId: Clone + Copy + std::fmt::Debug + Eq + std::hash::Hash + Ord + PartialEq + PartialOrd {
+    fn new(first_id: usize, second_id: usize, third_id: usize) -> Self;
+
+    fn into_usize(self) -> (usize, usize, usize);
+}
+
 #[derive(Clone, Copy, std::fmt::Debug, Eq, std::hash::Hash, Ord, PartialEq, PartialOrd)]
-pub struct ItemId {
+pub struct HakoId {
     id: usize,
 }
 
-impl NumId for ItemId {
+impl NumId for HakoId {
     fn new(id: usize) -> Self {
         Self { id }
     }
 
     fn into_usize(self) -> usize {
         self.id
+    }
+}
+
+#[derive(Clone, Copy, std::fmt::Debug, Eq, std::hash::Hash, Ord, PartialEq, PartialOrd)]
+pub struct ModId {
+    hako_id: usize,
+    mod_id: usize,
+}
+
+impl DoubleNumId for ModId {
+    fn new(hako_id: usize, mod_id: usize) -> Self {
+        Self { hako_id, mod_id }
+    }
+
+    fn into_usize(self) -> (usize, usize) {
+        (self.hako_id, self.mod_id)
+    }
+}
+
+#[derive(Clone, Copy, std::fmt::Debug, Eq, std::hash::Hash, Ord, PartialEq, PartialOrd)]
+pub struct ItemId {
+    hako_id: usize,
+    item_id: usize,
+}
+
+impl DoubleNumId for ItemId {
+    fn new(hako_id: usize, item_id: usize) -> Self {
+        Self { hako_id, item_id }
+    }
+
+    fn into_usize(self) -> (usize, usize) {
+        (self.hako_id, self.item_id)
+    }
+}
+
+#[derive(Clone, Copy, std::fmt::Debug, Eq, std::hash::Hash, Ord, PartialEq, PartialOrd)]
+pub struct ItemMemberId {
+    hako_id: usize,
+    item_id: usize,
+    member_id: usize,
+}
+
+impl TripleNumId for ItemMemberId {
+    fn new(hako_id: usize, item_id: usize, member_id: usize) -> Self {
+        Self { hako_id, item_id, member_id }
+    }
+
+    fn into_usize(self) -> (usize, usize, usize) {
+        (self.hako_id, self.item_id, self.member_id)
     }
 }
 

@@ -10,6 +10,7 @@ use crate::hir::id::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hir {
+    pub mod_id: ModId,
     pub items: HashMap<ast::Path, Item>,
 }
 
@@ -38,18 +39,6 @@ pub struct Body {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct DivPath {
-    pub item_path: ast::Path,
-    pub following_path: ast::Path,
-}
-
-impl DivPath {
-    pub fn is_item(&self) -> bool {
-        self.following_path.is_empty()
-    }
-}
-
-#[derive(Clone, Debug, PartialEq)]
 pub struct Expr {
     pub id: ExprId,
     pub kind: ExprKind,
@@ -58,11 +47,11 @@ pub struct Expr {
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
     Literal(token::Literal),
+    TopLevelRef(TopLevelId),
+    LocalRef(LocalId),
     FnCall(FnCall),
-    PathRef(DivPath),
     VarDef(VarId),
     VarBind(VarBind),
-    LocalRef(LocalId),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -84,7 +73,7 @@ impl Type {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeKind {
-    Path(DivPath),
+    Item(ItemId),
     Prim(ast::PrimType),
 }
 

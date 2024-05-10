@@ -1,6 +1,6 @@
 use crate::{id_token, keyword_token, token};
 use crate::lexer::token::Span;
-use crate::parser::{ast::*, ParserCrateContext, ParserLog};
+use crate::parser::{ast::*, ParserHakoContext, ParserLog};
 use crate::parser::Parser;
 use crate::hir::id::*;
 
@@ -14,17 +14,18 @@ fn outputs_parser_result() {
         token!(OpenCurlyBracket, 4, 1),
         token!(ClosingCurlyBracket, 5, 1),
     ];
-    let mut crate_context = ParserCrateContext::new();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let parser = Parser::new(&tokens, &mut crate_context);
-    let (ast, logs) = parser.parse("myhako".into());
+    let (ast, logs) = parser.parse(ModId::new(0, 0), "myhako".into());
 
     assert_eq!(
         ast,
         Ast {
+            mod_id: ModId::new(0, 0),
             mod_path: "myhako".into(),
             items: vec![
                 Item {
-                    id: ItemId::new(0),
+                    id: ItemId::new(0, 0),
                     name: Id {
                         id: "f".to_string(),
                         span: Span::new(1, 1),
@@ -61,14 +62,14 @@ fn parses_continuous_items() {
         token!(OpenCurlyBracket, 10, 1),
         token!(ClosingCurlyBracket, 11, 1),
     ];
-    let mut crate_context = ParserCrateContext::new();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(
         parser.parse_items(),
         vec![
             Item {
-                id: ItemId::new(0),
+                id: ItemId::new(0, 0),
                 name: Id {
                     id: "f1".to_string(),
                     span: Span::new(1, 1),
@@ -84,7 +85,7 @@ fn parses_continuous_items() {
                 ),
             },
             Item {
-                id: ItemId::new(1),
+                id: ItemId::new(0, 1),
                 name: Id {
                     id: "f2".to_string(),
                     span: Span::new(7, 1),
@@ -113,7 +114,7 @@ fn parses_fn_call_expr() {
         id_token!("a", 2, 1),
         token!(ClosingParen, 3, 1),
     ];
-    let mut crate_context = ParserCrateContext::new();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(
@@ -147,7 +148,7 @@ fn parses_actual_args_of_zero_len() {
         token!(OpenParen, 0, 1),
         token!(ClosingParen, 1, 1),
     ];
-    let mut crate_context = ParserCrateContext::new();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert!(parser.parse_actual_args().unwrap().is_empty());
@@ -162,7 +163,7 @@ fn parses_actual_arg_of_a_len() {
         id_token!("a", 1, 1),
         token!(ClosingParen, 2, 1),
     ];
-    let mut crate_context = ParserCrateContext::new();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(
@@ -191,7 +192,7 @@ fn parses_actual_args_of_two_len() {
         id_token!("a2", 3, 1),
         token!(ClosingParen, 4, 1),
     ];
-    let mut crate_context = ParserCrateContext::new();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(
@@ -227,7 +228,7 @@ fn disallows_comma_before_actual_arg() {
         id_token!("a", 2, 1),
         token!(ClosingParen, 3, 1),
     ];
-    let mut crate_context = ParserCrateContext::new();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(
@@ -258,7 +259,7 @@ fn allows_comma_after_actual_arg() {
         token!(Comma, 2, 1),
         token!(ClosingParen, 3, 1),
     ];
-    let mut crate_context = ParserCrateContext::new();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(
@@ -1026,7 +1027,7 @@ fn parses_var_bind_expr() {
         token!(Equal, 1, 1),
         id_token!("value", 2, 1),
     ];
-    let mut crate_context = ParserCrateContext::new();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(
@@ -1067,7 +1068,7 @@ fn parses_var_bind() {
         token!(Equal, 1, 1),
         id_token!("value", 2, 1),
     ];
-    let mut crate_context = ParserCrateContext::new();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(

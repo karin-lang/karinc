@@ -23,34 +23,35 @@ pub enum ParserLog {
 pub type ParserResult<T> = Result<T, ParserLog>;
 
 #[derive(Clone, Debug, PartialEq)]
-pub struct ParserCrateContext {
+pub struct ParserHakoContext {
+    hako_id: HakoId,
     next_item_id: usize,
 }
 
-impl ParserCrateContext {
-    pub fn new() -> ParserCrateContext {
-        ParserCrateContext { next_item_id: 0 }
+impl ParserHakoContext {
+    pub fn new(hako_id: HakoId) -> ParserHakoContext {
+        ParserHakoContext { hako_id, next_item_id: 0 }
     }
 
     pub fn generate_item_id(&mut self) -> ItemId {
         let next = self.next_item_id;
         self.next_item_id += 1;
-        ItemId::new(next)
+        ItemId::new(self.hako_id.into_usize(), next)
     }
 }
 
 pub struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>,
-    crate_context: &'a mut ParserCrateContext,
+    hako_context: &'a mut ParserHakoContext,
     last_token_span: Span,
     logs: Vec<ParserLog>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(tokens: &'a Vec<Token>, crate_context: &'a mut ParserCrateContext) -> Parser<'a> {
+    pub fn new(tokens: &'a Vec<Token>, hako_context: &'a mut ParserHakoContext) -> Parser<'a> {
         Parser {
             tokens: tokens.iter().peekable(),
-            crate_context,
+            hako_context,
             last_token_span: tokens.last().map(|token| token.span.clone()).unwrap_or_default(),
             logs: Vec::new(),
         }
@@ -212,9 +213,9 @@ impl<'a> Parser<'a> {
         }
     }
 
-    pub fn parse(mut self, mod_path: Path) -> (Ast, Vec<ParserLog>) {
+    pub fn parse(mut self, mod_id: ModId, mod_path: Path) -> (Ast, Vec<ParserLog>) {
         let items = self.parse_items();
-        let ast = Ast { mod_path, items };
+        let ast = Ast { mod_id, mod_path, items };
         (ast, self.logs)
     }
 
@@ -235,7 +236,7 @@ impl<'a> Parser<'a> {
     pub fn parse_single_item(&mut self) -> ParserResult<Item> {
         let span = self.get_next_span();
         let item = if self.consume_keyword(Keyword::Fn).is_some() {
-            let id = self.crate_context.generate_item_id();
+            let id = self.hako_context.generate_item_id();
             let (_, name) = self.expect_id()?;
             let args = self.parse_formal_args()?;
             let ret_type = if self.is_next_eq(TokenKind::OpenCurlyBracket).is_some() {
