@@ -9,7 +9,10 @@ use crate::tir::r#type::*;
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeLog {
     FnCallWithInvalidArgLen { expected: usize, provided: usize },
+    // todo: 引数を追加
     InconsistentConstraint,
+    UndefinedType { type_id: TypeId },
+    UnresolvedType { type_id: TypeId },
 }
 
 pub type TypeResult<T> = Result<T, TypeLog>;
@@ -80,6 +83,13 @@ pub struct TypeConstraintBuilder<'a> {
 impl<'a> TypeConstraintBuilder<'a> {
     pub fn new(top_level_type_table: &'a TopLevelTypeTable) -> TypeConstraintBuilder<'a> {
         TypeConstraintBuilder { top_level_type_table, table: TypeConstraintTable::new() }
+    }
+
+    pub fn from_table(
+        top_level_type_table: &'a TopLevelTypeTable,
+        type_constraint_table: TypeConstraintTable,
+    ) -> TypeConstraintBuilder<'a> {
+        TypeConstraintBuilder { top_level_type_table, table: type_constraint_table }
     }
 
     pub fn into_table(self) -> TypeConstraintTable {
@@ -173,6 +183,24 @@ impl<'a> TypeConstraintBuilder<'a> {
         self.constrain_by_type(to, source_ptr)?;
         self.constrain_by_other(from, to)?;
         Ok(())
+    }
+
+    pub fn finalize(&self) -> Vec<TypeLog> {
+        let mut logs = Vec::new();
+        for (type_id, constraint) in self.table.to_sorted_vec() {
+            match &*constraint.get_ptr().borrow() {
+                Type::Undefined => {
+                    let new_log = TypeLog::UndefinedType { type_id: *type_id };
+                    logs.push(new_log);
+                },
+                Type::Unresolved => {
+                    let new_log = TypeLog::UnresolvedType { type_id: *type_id };
+                    logs.push(new_log);
+                },
+                _ => (),
+            }
+        }
+        logs
     }
 }
 

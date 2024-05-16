@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use maplit::hashmap;
 
 use crate::lexer::token;
-use crate::parser::ast;
+use crate::parser::ast::{self, tltype::TopLevelTypeTable};
 use crate::hir::{self, id::*};
 use crate::tir::r#type::*;
 use crate::tir::constraint::{*, lower::*};
@@ -723,4 +723,26 @@ fn detects_inconsistent_constraint_of_var_bind() {
         ).to_sorted_vec(),
     );
     assert_eq!(logs, vec![TypeLog::InconsistentConstraint]);
+}
+
+#[test]
+fn detects_invalid_types_on_finalization() {
+    let type_constraint_table = hashmap! {
+        TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+            TypePtr::new(Type::Undefined),
+        ),
+        TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+            TypePtr::new(Type::Unresolved),
+        ),
+    }.into();
+    let top_level_type_table = TopLevelTypeTable::new();
+    let builder = TypeConstraintBuilder::from_table(&top_level_type_table, type_constraint_table);
+
+    assert_eq!(
+        builder.finalize(),
+        vec![
+            TypeLog::UndefinedType { type_id: TypeId::Expr(ExprId::new(0)) },
+            TypeLog::UnresolvedType { type_id: TypeId::Expr(ExprId::new(1)) },
+        ],
+    );
 }
