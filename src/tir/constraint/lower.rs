@@ -111,7 +111,7 @@ impl<'a> TypeConstraintLowering<'a> {
                     Some(v) => v,
                     None => unreachable!("unknown variable id"),
                 };
-                let result = self.builder.constrain_by_type(TypeId::Expr(expr.id), Type::Void);
+                let result = self.builder.constrain_by_type(TypeId::Expr(expr.id), Type::Prim(ast::PrimType::Void));
                 self.collect_log(result);
                 if let Some(r#type) = &var_def.r#type {
                     let result = self.builder.constrain_by_type(TypeId::Var(*var_id), r#type.into());
@@ -124,7 +124,7 @@ impl<'a> TypeConstraintLowering<'a> {
                 }
             },
             hir::ExprKind::VarBind(bind) => {
-                let result = self.builder.constrain_by_type(TypeId::Expr(expr.id), Type::Void);
+                let result = self.builder.constrain_by_type(TypeId::Expr(expr.id), Type::Prim(ast::PrimType::Void));
                 self.collect_log(result);
                 self.lower_expr(body, &bind.value);
                 let result = self.builder.copy_constraint(TypeId::Var(bind.var_id), TypeId::Expr(bind.value.id));

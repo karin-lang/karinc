@@ -71,7 +71,7 @@ fn constrains_types() {
                     Some(TypeId::Expr(ExprId::new(1))),
                 ),
                 TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
-                    TypePtr::new(Type::Void),
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
                 TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
@@ -360,7 +360,7 @@ fn constrains_by_local_ref() {
                     None,
                 ),
                 TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
-                    TypePtr::new(Type::Void),
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
                 TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::U8)),
@@ -429,11 +429,11 @@ fn constrains_by_fn_call() {
     let top_level_type_table = hashmap! {
         TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn(
             FnType {
-                ret_type: Box::new(Type::Void),
+                ret_type: Box::new(Type::Prim(ast::PrimType::Void)),
                 arg_types: vec![Type::Prim(ast::PrimType::Bool)],
             },
         ),
-        TopLevelId::FnRet(ItemId::new(0, 0)) => Type::Void,
+        TopLevelId::FnRet(ItemId::new(0, 0)) => Type::Prim(ast::PrimType::Void),
         TopLevelId::FnArg(ItemId::new(0, 0), FormalArgId::new(0)) => Type::Prim(ast::PrimType::Bool),
     }.into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
@@ -448,7 +448,7 @@ fn constrains_by_fn_call() {
                     None,
                 ),
                 TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
-                    TypePtr::new(Type::Void),
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
                     Vec::new(),
                     Some(TypeId::TopLevel(TopLevelId::FnRet(ItemId::new(0, 0)))),
                 ),
@@ -523,11 +523,11 @@ fn detects_inconsistent_constraint_of_fn_call() {
     let top_level_type_table = hashmap! {
         TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn(
             FnType {
-                ret_type: Box::new(Type::Void),
+                ret_type: Box::new(Type::Prim(ast::PrimType::Void)),
                 arg_types: vec![Type::Prim(ast::PrimType::Bool)],
             },
         ),
-        TopLevelId::FnRet(ItemId::new(0, 0)) => Type::Void,
+        TopLevelId::FnRet(ItemId::new(0, 0)) => Type::Prim(ast::PrimType::Void),
         TopLevelId::FnArg(ItemId::new(0, 0), FormalArgId::new(0)) => Type::Prim(ast::PrimType::Bool),
     }.into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
@@ -542,12 +542,12 @@ fn detects_inconsistent_constraint_of_fn_call() {
                     None,
                 ),
                 TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
-                    TypePtr::new(Type::Void),
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
                     Vec::new(),
                     Some(TypeId::TopLevel(TopLevelId::FnRet(ItemId::new(0, 0)))),
                 ),
                 TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
-                    TypePtr::new(Type::Void),
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
                     Vec::new(),
                     Some(TypeId::TopLevel(TopLevelId::FnRet(ItemId::new(0, 0)))),
                 ),
@@ -629,10 +629,10 @@ fn constrains_var_by_bind() {
                     None,
                 ),
                 TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
-                    TypePtr::new(Type::Void),
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
                 TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
-                    TypePtr::new(Type::Void),
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
                 TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
@@ -709,10 +709,10 @@ fn detects_inconsistent_constraint_of_var_bind() {
                     None,
                 ),
                 TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
-                    TypePtr::new(Type::Void),
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
                 TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
-                    TypePtr::new(Type::Void),
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
                 TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),

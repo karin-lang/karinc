@@ -6,7 +6,6 @@ use crate::hir;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Type {
-    Void,
     Infer(InferType),
     Item(ast::Path),
     Prim(ast::PrimType),

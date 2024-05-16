@@ -100,11 +100,11 @@ fn generates_js() {
         hashmap! {
             TopLevelId::Item(ItemId::new(0, 0)) => tir::r#type::Type::Fn(
                 tir::r#type::FnType {
-                    ret_type: Box::new(tir::r#type::Type::Void),
+                    ret_type: Box::new(tir::r#type::Type::Prim(ast::PrimType::Void)),
                     arg_types: Vec::new(),
                 },
             ),
-            TopLevelId::FnRet(ItemId::new(0, 0)) => tir::r#type::Type::Void,
+            TopLevelId::FnRet(ItemId::new(0, 0)) => tir::r#type::Type::Prim(ast::PrimType::Void),
         }.into(),
     );
 
@@ -120,7 +120,7 @@ fn generates_js() {
                     tir::r#type::TypePtr::new(
                         tir::r#type::Type::Fn(
                             tir::r#type::FnType {
-                                ret_type: Box::new(tir::r#type::Type::Void),
+                                ret_type: Box::new(tir::r#type::Type::Prim(ast::PrimType::Void)),
                                 arg_types: Vec::new(),
                             },
                         ),

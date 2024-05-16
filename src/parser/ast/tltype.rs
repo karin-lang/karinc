@@ -21,7 +21,7 @@ impl TopLevelTypeTable {
                     // item constraint
                     let ret_type = match &decl.body.ret_type {
                         Some(r#type) => r#type.into(),
-                        None => Type::Void,
+                        None => Type::Prim(ast::PrimType::Void),
                     };
                     let arg_types = decl.body.args.iter().map(|arg| (&arg.r#type).into()).collect();
                     let r#type = Type::Fn(FnType { ret_type: Box::new(ret_type.clone()), arg_types });
