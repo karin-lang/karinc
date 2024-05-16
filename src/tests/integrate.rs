@@ -2,9 +2,9 @@ use maplit::hashmap;
 
 use crate::{id_token, keyword_token, token};
 use crate::lexer::{token::Span, tokenize::Lexer};
-use crate::parser::{self, ast, ast::tltype, ParserHakoContext};
+use crate::parser::{self, ast, ast::tltype::TopLevelTypeTable, ParserHakoContext};
 use crate::hir::{self, id::*};
-use crate::tir;
+use crate::typesys;
 
 #[test]
 fn generates_js() {
@@ -93,34 +93,34 @@ fn generates_js() {
     );
     assert!(hir_lowering_logs.is_empty());
 
-    let mut top_level_type_table = tltype::TopLevelTypeTable::new();
+    let mut top_level_type_table = TopLevelTypeTable::new();
     top_level_type_table.absorb(&ast);
     assert_eq!(
         top_level_type_table,
         hashmap! {
-            TopLevelId::Item(ItemId::new(0, 0)) => tir::r#type::Type::Fn(
-                tir::r#type::FnType {
-                    ret_type: Box::new(tir::r#type::Type::Prim(ast::PrimType::Void)),
+            TopLevelId::Item(ItemId::new(0, 0)) => typesys::Type::Fn(
+                typesys::FnType {
+                    ret_type: Box::new(typesys::Type::Prim(ast::PrimType::Void)),
                     arg_types: Vec::new(),
                 },
             ),
-            TopLevelId::FnRet(ItemId::new(0, 0)) => tir::r#type::Type::Prim(ast::PrimType::Void),
+            TopLevelId::FnRet(ItemId::new(0, 0)) => typesys::Type::Prim(ast::PrimType::Void),
         }.into(),
     );
 
     let (
         type_constraint_table,
         type_constraint_lowering_logs,
-    ) = tir::constraint::lower::TypeConstraintLowering::lower(&hir, &top_level_type_table);
+    ) = typesys::constraint::lower::TypeConstraintLowering::lower(&hir, &top_level_type_table);
     assert_eq!(
         type_constraint_table.to_sorted_vec(),
-        tir::constraint::TypeConstraintTable::from(
+        typesys::constraint::TypeConstraintTable::from(
             hashmap! {
-                TypeId::Expr(ExprId::new(0)) => tir::constraint::TypeConstraint::new_constrained(
-                    tir::r#type::TypePtr::new(
-                        tir::r#type::Type::Fn(
-                            tir::r#type::FnType {
-                                ret_type: Box::new(tir::r#type::Type::Prim(ast::PrimType::Void)),
+                TypeId::Expr(ExprId::new(0)) => typesys::constraint::TypeConstraint::new_constrained(
+                    typesys::TypePtr::new(
+                        typesys::Type::Fn(
+                            typesys::FnType {
+                                ret_type: Box::new(typesys::Type::Prim(ast::PrimType::Void)),
                                 arg_types: Vec::new(),
                             },
                         ),

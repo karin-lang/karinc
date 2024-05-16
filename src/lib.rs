@@ -2,7 +2,7 @@ pub mod hir;
 // pub mod jsir;
 pub mod lexer;
 pub mod parser;
-pub mod tir;
+pub mod typesys;
 #[cfg(test)]
 mod tests;
 

@@ -5,8 +5,8 @@ use maplit::hashmap;
 use crate::lexer::token;
 use crate::parser::ast::{self, tltype::TopLevelTypeTable};
 use crate::hir::{self, id::*};
-use crate::tir::r#type::*;
-use crate::tir::constraint::{*, lower::*};
+use crate::typesys::*;
+use crate::typesys::constraint::{*, lower::*};
 
 #[test]
 fn constrains_types() {

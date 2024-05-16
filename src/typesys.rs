@@ -1,3 +1,5 @@
+pub mod constraint;
+
 use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 

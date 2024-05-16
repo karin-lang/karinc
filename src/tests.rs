@@ -7,6 +7,6 @@ mod lexer;
 #[cfg(test)]
 mod parser;
 #[cfg(test)]
-mod tir;
+mod typesys;
 #[cfg(test)]
 mod token;

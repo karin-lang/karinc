@@ -4,7 +4,7 @@ use std::collections::HashMap;
 
 use crate::parser::{ast, ast::tltype::TopLevelTypeTable};
 use crate::{hir, hir::id::*};
-use crate::tir::r#type::*;
+use crate::typesys::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeLog {
