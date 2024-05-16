@@ -43,8 +43,16 @@ impl From<&hir::Type> for Type {
 pub enum InferType {
     Num,
     Int,
-    Uint,
     Float,
+}
+
+impl InferType {
+    pub fn derive_default(&self) -> ast::PrimType {
+        match self {
+            InferType::Num | InferType::Int => ast::PrimType::I32,
+            InferType::Float => ast::PrimType::F32,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
