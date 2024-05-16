@@ -7,9 +7,7 @@ use crate::hir;
 #[derive(Clone, Debug, PartialEq)]
 pub enum Type {
     Void,
-    Num,
-    Int,
-    Float,
+    Infer(InferType),
     Item(ast::Path),
     Prim(ast::PrimType),
     Fn(FnType),
@@ -39,6 +37,14 @@ impl From<&hir::Type> for Type {
             hir::TypeKind::Prim(prim_type) => Type::Prim(prim_type.clone()),
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum InferType {
+    Num,
+    Int,
+    Uint,
+    Float,
 }
 
 #[derive(Clone, Debug, PartialEq)]

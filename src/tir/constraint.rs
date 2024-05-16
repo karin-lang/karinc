@@ -86,18 +86,19 @@ impl<'a> TypeConstraintBuilder<'a> {
         self.table
     }
 
+    // todo: 部分型に対応
     pub fn is_consistent(type_id: &Type, constrained_by: &Type) -> bool {
         !type_id.is_resolved() || *type_id == *constrained_by
     }
 
-    pub fn add_constraint(&mut self, type_id: TypeId) -> TypeResult<()> {
+    pub fn constrain(&mut self, type_id: TypeId) -> TypeResult<()> {
         if !self.table.contains_type_id(&type_id) {
-            self.add_independent_constraint(type_id, Type::Unresolved)?;
+            self.constrain_by_type(type_id, Type::Unresolved)?;
         }
         Ok(())
     }
 
-    pub fn add_independent_constraint(&mut self, type_id: TypeId, r#type: Type) -> TypeResult<()> {
+    pub fn constrain_by_type(&mut self, type_id: TypeId, r#type: Type) -> TypeResult<()> {
         if let Some(constraint) = self.table.get_mut(&type_id) {
             let ptr = constraint.get_ptr().borrow();
             if !TypeConstraintBuilder::is_consistent(&*ptr, &r#type) {
@@ -110,7 +111,7 @@ impl<'a> TypeConstraintBuilder<'a> {
         Ok(())
     }
 
-    pub fn add_dependent_constraint(&mut self, type_id: TypeId, constrained_by: TypeId) -> TypeResult<()> {
+    pub fn constrain_by_other(&mut self, type_id: TypeId, constrained_by: TypeId) -> TypeResult<()> {
         match &constrained_by {
             TypeId::TopLevel(top_level_id) => {
                 match self.top_level_type_table.get(top_level_id) {
@@ -163,13 +164,14 @@ impl<'a> TypeConstraintBuilder<'a> {
         Ok(())
     }
 
-    pub fn copy_and_be_constrained(&mut self, type_id: TypeId, source: TypeId) -> TypeResult<()> {
-        let source_ptr = match self.table.get(&source) {
+    // Make target dependent on source: copy source type to target and constrains source by target.
+    pub fn copy_constraint(&mut self, to: TypeId, from: TypeId) -> TypeResult<()> {
+        let source_ptr = match self.table.get(&from) {
             Some(constraint) => constraint.get_ptr().borrow().clone(),
             None => panic!("unknown expression id"),
         };
-        self.add_independent_constraint(type_id, source_ptr)?;
-        self.add_dependent_constraint(source, type_id)?;
+        self.constrain_by_type(to, source_ptr)?;
+        self.constrain_by_other(from, to)?;
         Ok(())
     }
 }
