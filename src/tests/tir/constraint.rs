@@ -379,6 +379,78 @@ fn constrains_by_local_ref() {
 }
 
 #[test]
+fn detects_inconsistent_constraint_of_var_init() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: None,
+                                args: Vec::new(),
+                                vars: vec![
+                                    hir::VarDef {
+                                        r#type: Some(
+                                            hir::Type {
+                                                kind: Box::new(hir::TypeKind::Prim(ast::PrimType::I32)),
+                                            },
+                                        ),
+                                        mutable: false,
+                                        init: Some(
+                                            hir::Expr {
+                                                id: ExprId::new(1),
+                                                kind: hir::ExprKind::Literal(
+                                                    token::Literal::Bool { value: true },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ],
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::VarDef(VarId::new(0)),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = HashMap::new().into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::Var(VarId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::I32)),
+                ),
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
+                ),
+                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    vec![TypeId::Var(VarId::new(0))],
+                    None,
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert_eq!(
+        logs,
+        vec![
+            TypeLog::InconsistentConstraint,
+        ],
+    );
+}
+
+#[test]
 fn constrains_by_fn_call() {
     let hir = hir::Hir {
         items: hashmap! {
