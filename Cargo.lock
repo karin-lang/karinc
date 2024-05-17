@@ -3,7 +3,7 @@
 version = 3
 
 [[package]]
-name = "karin-js"
+name = "karinc"
 version = "0.1.0"
 dependencies = [
  "maplit",
