@@ -809,9 +809,10 @@ fn detects_invalid_types_on_finalization() {
     }.into();
     let top_level_type_table = TopLevelTypeTable::new();
     let builder = TypeConstraintBuilder::from_table(&top_level_type_table, type_constraint_table);
+    let (_, logs) = builder.finalize();
 
     assert_eq!(
-        builder.finalize(),
+        logs,
         vec![
             TypeLog::UndefinedType { type_id: TypeId::Expr(ExprId::new(0)) },
             TypeLog::UnresolvedType { type_id: TypeId::Expr(ExprId::new(1)) },

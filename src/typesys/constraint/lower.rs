@@ -5,7 +5,6 @@ use crate::hir::id::*;
 pub struct TypeConstraintLowering<'a> {
     hir: &'a hir::Hir,
     builder: TypeConstraintBuilder<'a>,
-    logs: Vec<TypeLog>,
 }
 
 impl<'a> TypeConstraintLowering<'a> {
@@ -13,7 +12,7 @@ impl<'a> TypeConstraintLowering<'a> {
         match result {
             Ok(v) => Some(v),
             Err(log) => {
-                self.logs.push(log);
+                self.builder.logs.push(log);
                 None
             },
         }
@@ -23,10 +22,9 @@ impl<'a> TypeConstraintLowering<'a> {
         let mut lowering = TypeConstraintLowering {
             hir,
             builder: TypeConstraintBuilder::new(top_level_type_table),
-            logs: Vec::new(),
         };
         lowering.hir.items.iter().for_each(|(_, item)| lowering.lower_item(item));
-        (lowering.builder.into_table(), lowering.logs)
+        lowering.builder.finalize()
     }
 
     pub fn lower_item(&mut self, item: &hir::Item) {

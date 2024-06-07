@@ -4,8 +4,8 @@ use super::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum HirLoweringLog {
-    ExpectedExprFoundHako(token::Span, HakoId),
-    ExpectedExprFoundMod(token::Span, ModId),
+    ExpectedExprButFoundHako { hako_id: HakoId, span: token::Span },
+    ExpectedExprButFoundMod { mod_id: ModId, span: token::Span },
 }
 
 pub type HirLoweringResult<T> = Result<T, HirLoweringLog>;
@@ -75,11 +75,13 @@ impl<'a> HirLowering<'a> {
             // todo: test errors
             let top_level_id = match global_id {
                 GlobalId::Hako(hako_id) => {
-                    self.collect_log::<()>(Err(HirLoweringLog::ExpectedExprFoundHako(span.clone(), hako_id)));
+                    let log = HirLoweringLog::ExpectedExprButFoundHako { hako_id, span: span.clone() };
+                    self.collect_log::<()>(Err(log));
                     return None;
                 },
                 GlobalId::Mod(mod_id) => {
-                    self.collect_log::<()>(Err(HirLoweringLog::ExpectedExprFoundMod(span.clone(), mod_id)));
+                    let log = HirLoweringLog::ExpectedExprButFoundMod { mod_id, span: span.clone() };
+                    self.collect_log::<()>(Err(log));
                     return None;
                 },
                 GlobalId::Item(item_id) => TopLevelId::Item(item_id),

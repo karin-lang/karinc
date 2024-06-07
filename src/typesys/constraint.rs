@@ -78,18 +78,27 @@ impl Into<HashMap<TypeId, TypeConstraint>> for TypeConstraintTable {
 pub struct TypeConstraintBuilder<'a> {
     top_level_type_table: &'a TopLevelTypeTable,
     table: TypeConstraintTable,
+    logs: Vec<TypeLog>,
 }
 
 impl<'a> TypeConstraintBuilder<'a> {
     pub fn new(top_level_type_table: &'a TopLevelTypeTable) -> TypeConstraintBuilder<'a> {
-        TypeConstraintBuilder { top_level_type_table, table: TypeConstraintTable::new() }
+        TypeConstraintBuilder {
+            top_level_type_table,
+            table: TypeConstraintTable::new(),
+            logs: Vec::new(),
+        }
     }
 
     pub fn from_table(
         top_level_type_table: &'a TopLevelTypeTable,
         type_constraint_table: TypeConstraintTable,
     ) -> TypeConstraintBuilder<'a> {
-        TypeConstraintBuilder { top_level_type_table, table: type_constraint_table }
+        TypeConstraintBuilder {
+            top_level_type_table,
+            table: type_constraint_table,
+            logs: Vec::new(),
+        }
     }
 
     pub fn into_table(self) -> TypeConstraintTable {
@@ -185,22 +194,21 @@ impl<'a> TypeConstraintBuilder<'a> {
         Ok(())
     }
 
-    pub fn finalize(&self) -> Vec<TypeLog> {
-        let mut logs = Vec::new();
+    pub fn finalize(mut self) -> (TypeConstraintTable, Vec<TypeLog>) {
         for (type_id, constraint) in self.table.to_sorted_vec() {
             match &*constraint.get_ptr().borrow() {
                 Type::Undefined => {
                     let new_log = TypeLog::UndefinedType { type_id: *type_id };
-                    logs.push(new_log);
+                    self.logs.push(new_log);
                 },
                 Type::Unresolved => {
                     let new_log = TypeLog::UnresolvedType { type_id: *type_id };
-                    logs.push(new_log);
+                    self.logs.push(new_log);
                 },
                 _ => (),
             }
         }
-        logs
+        (self.table, self.logs)
     }
 }
 
