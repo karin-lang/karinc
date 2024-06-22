@@ -1,20 +1,8 @@
 use std::iter::{Enumerate, Peekable};
 use std::str::Chars;
+
 use crate::{lexer::token::*, parser::ast};
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum LexerLog {
-    EmptyCharLiteral { span: Span },
-    ExpectedTypeSuffix { span: Span },
-    LineBreakInCharLiteral { span: Span },
-    LineBreakInStrLiteral { span: Span },
-    TooLongCharLiteral { span: Span },
-    UnclosedCharLiteral { span: Span },
-    UnclosedStrLiteral { span: Span },
-    UnknownEscseq { span: Span },
-}
-
-pub type LexerResult<T> = Result<T, LexerLog>;
+use crate::lexer::log::{LexerLog, LexerResult};
 
 pub struct LexerInput<'a> {
     input: Peekable<Enumerate<Chars<'a>>>,

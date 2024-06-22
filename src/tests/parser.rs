@@ -1,7 +1,8 @@
 use crate::{id_token, keyword_token, token};
 use crate::lexer::token::Span;
-use crate::parser::{ast::*, ParserHakoContext, ParserLog};
-use crate::parser::Parser;
+use crate::parser::{Parser, ParserHakoContext};
+use crate::parser::ast::*;
+use crate::parser::log::ParserLog;
 use crate::hir::id::*;
 
 #[test]

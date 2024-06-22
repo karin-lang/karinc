@@ -1,26 +1,13 @@
 pub mod ast;
+pub mod log;
 
 use std::iter::Peekable;
 use std::slice::Iter;
 
-use self::ast::*;
 use crate::lexer::token::*;
+use crate::parser::ast::*;
+use crate::parser::log::{ParserLog, ParserResult};
 use crate::hir::id::*;
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum ParserLog {
-    ExpectedExpr { span: Span },
-    ExpectedId { span: Span },
-    ExpectedItem { span: Span },
-    ExpectedFormalArg { span: Span },
-    ExpectedActualArg { span: Span },
-    ExpectedKeyword { keyword: Keyword, span: Span },
-    ExpectedToken { kind: TokenKind, span: Span },
-    ExpectedType { span: Span },
-    UnexpectedEof { span: Span },
-}
-
-pub type ParserResult<T> = Result<T, ParserLog>;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ParserHakoContext {

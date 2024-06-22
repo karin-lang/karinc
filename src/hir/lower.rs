@@ -1,31 +1,25 @@
-use resolve::*;
-
-use super::*;
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum HirLoweringLog {
-    ExpectedExprButFoundHako { hako_id: HakoId, span: token::Span },
-    ExpectedExprButFoundMod { mod_id: ModId, span: token::Span },
-}
-
-pub type HirLoweringResult<T> = Result<T, HirLoweringLog>;
+use crate::hir::*;
+use crate::hir::log::{HirLoweringLog, HirLoweringResult};
+use crate::hir::resolve::*;
 
 pub struct HirLowering<'a> {
     asts: &'a Vec<&'a ast::Ast>,
+    current_mod_id: Option<ModId>,
     current_mod_path: ast::Path,
     paths: HashMap<ast::Path, GlobalId>,
     body_scope_hierarchy: BodyScopeHierarchy,
-    logs: Vec<HirLoweringLog>,
+    logs: HashMap<ModId, Vec<HirLoweringLog>>,
 }
 
 impl<'a> HirLowering<'a> {
     pub fn new(asts: &'a Vec<&'a ast::Ast>) -> HirLowering<'a> {
         let mut lowering = HirLowering {
             asts,
+            current_mod_id: None,
             current_mod_path: ast::Path::new(),
             paths: HashMap::new(),
             body_scope_hierarchy: BodyScopeHierarchy::new(),
-            logs: Vec::new(),
+            logs: HashMap::new(),
         };
         lowering.collect();
         lowering
@@ -46,13 +40,19 @@ impl<'a> HirLowering<'a> {
         match result {
             Ok(v) => Some(v),
             Err(e) => {
-                self.logs.push(e);
+                let mod_id = self.current_mod_id.expect("current module id is not set.");
+                match self.logs.get_mut(&mod_id) {
+                    Some(v) => v.push(e),
+                    None => {
+                        let _ = self.logs.insert(mod_id, vec![e]);
+                    },
+                }
                 None
             },
         }
     }
 
-    pub fn lower(mut self) -> (Hir, Vec<HirLoweringLog>) {
+    pub fn lower(mut self) -> (Hir, HashMap<ModId, Vec<HirLoweringLog>>) {
         let mut items = HashMap::new();
         for each_ast in self.asts {
             self.lower_ast(&mut items, each_ast);
@@ -125,6 +125,7 @@ impl<'a> HirLowering<'a> {
     }
 
     pub fn lower_ast(&mut self, hir_items: &mut HashMap<ast::Path, Item>, ast: &ast::Ast) {
+        self.current_mod_id = Some(ast.mod_id);
         self.current_mod_path = ast.mod_path.clone();
         for each_item in &ast.items {
             let new_hir_item = self.lower_item(each_item);

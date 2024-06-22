@@ -1,6 +1,7 @@
 use crate::parser::ast;
 use crate::{id_token, keyword_token, literal_token, prim_type_token, token};
-use crate::lexer::tokenize::{Lexer, LexerLog};
+use crate::lexer::log::LexerLog;
+use crate::lexer::tokenize::Lexer;
 use crate::lexer::token::*;
 
 #[test]
