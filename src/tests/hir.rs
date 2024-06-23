@@ -32,6 +32,7 @@ fn lowers_subitem_in_mod() {
             ast::Item {
                 id: ItemId::new(0, 0),
                 name: ast::Id { id: "f".to_string(), span: Span::new(0, 1) },
+                accessibility: ast::Accessibility::Default,
                 kind: ast::ItemKind::FnDecl(
                     ast::FnDecl {
                         body: ast::Body {
@@ -82,6 +83,7 @@ fn resolves_item_and_local() {
             ast::Item {
                 id: ItemId::new(0, 0),
                 name: ast::Id { id: "item".to_string(), span: Span::new(0, 1) },
+                accessibility: ast::Accessibility::Default,
                 kind: ast::ItemKind::FnDecl(
                     ast::FnDecl {
                         body: ast::Body {

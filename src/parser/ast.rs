@@ -52,9 +52,16 @@ impl From<&str> for Path {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub enum Accessibility {
+    Default,
+    Pub,
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Item {
     pub id: ItemId,
     pub name: Id,
+    pub accessibility: Accessibility,
     pub kind: ItemKind,
 }
 

@@ -221,7 +221,12 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_single_item(&mut self) -> ParserResult<Item> {
-        let span = self.get_next_span();
+        let beginning_span = self.get_next_span();
+        let accessibility = if self.consume_keyword(Keyword::Pub).is_some() {
+            Accessibility::Pub
+        } else {
+            Accessibility::Default
+        };
         let item = if self.consume_keyword(Keyword::Fn).is_some() {
             let id = self.hako_context.generate_item_id();
             let (_, name) = self.expect_id()?;
@@ -233,10 +238,10 @@ impl<'a> Parser<'a> {
             };
             let body = self.parse_body(ret_type, args)?;
             let decl = FnDecl { body };
-            Item { id, name, kind: ItemKind::FnDecl(decl) }
+            Item { id, name, accessibility, kind: ItemKind::FnDecl(decl) }
         } else {
             self.consume_until(|token| token.kind == TokenKind::ClosingCurlyBracket);
-            return Err(ParserLog::ExpectedItem { span });
+            return Err(ParserLog::ExpectedItem { span: beginning_span });
         };
         Ok(item)
     }
