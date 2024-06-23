@@ -356,6 +356,10 @@ impl<'a> Parser<'a> {
             let r#if = self.parse_if()?;
             let expr = Expr { kind: ExprKind::If(r#if), span: beginning_span };
             Ok(expr)
+        } else if self.is_next_keyword(Keyword::For).is_some() {
+            let r#for = self.parse_for()?;
+            let expr = Expr { kind: ExprKind::For(r#for), span: beginning_span };
+            Ok(expr)
         } else {
             Err(ParserLog::ExpectedExpr { span: beginning_span })
         }
@@ -462,5 +466,23 @@ impl<'a> Parser<'a> {
         };
         let r#if = If { cond: Box::new(cond), body, elifs, r#else };
         Ok(r#if)
+    }
+
+    pub fn parse_for(&mut self) -> ParserResult<For> {
+        self.expect_keyword(Keyword::For)?;
+        let kind = if self.is_next_eq(TokenKind::OpenCurlyBracket).is_some() {
+            ForKind::Endless
+        } else {
+            let first_expr = self.parse_expr()?;
+            if self.consume_keyword(Keyword::In).is_some() {
+                let range = self.parse_expr()?;
+                ForKind::Range { index: Box::new(first_expr), range: Box::new(range) }
+            } else {
+                ForKind::Cond { cond: Box::new(first_expr) }
+            }
+        };
+        let body = self.parse_body(None, Vec::new())?;
+        let r#for = For { kind, body };
+        Ok(r#for)
     }
 }

@@ -115,6 +115,7 @@ pub enum ExprKind {
     VarDef(VarDef),
     VarBind(VarBind),
     If(If),
+    For(For),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -175,4 +176,17 @@ pub struct If {
 pub struct Elif {
     pub cond: Box<Expr>,
     pub body: Body,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct For {
+    pub kind: ForKind,
+    pub body: Body,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum ForKind {
+    Endless,
+    Cond { cond: Box<Expr> },
+    Range { index: Box<Expr>, range: Box<Expr> },
 }

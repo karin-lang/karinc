@@ -1190,3 +1190,118 @@ fn parses_if_with_elifs_and_else() {
     assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
+
+/* for */
+
+#[test]
+fn parses_for_expr() {
+    let tokens = vec![
+        // for {}
+        keyword_token!(For, 0, 1),
+        token!(OpenCurlyBracket, 1, 1),
+        token!(ClosingCurlyBracket, 2, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::For(
+                For {
+                    kind: ForKind::Endless,
+                    body: Body {
+                        ret_type: None,
+                        args: Vec::new(),
+                        exprs: Vec::new(),
+                    },
+                },
+            ),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_for_with_cond() {
+    let tokens = vec![
+        // for cond {}
+        keyword_token!(For, 0, 1),
+        id_token!("cond", 1, 1),
+        token!(OpenCurlyBracket, 2, 1),
+        token!(ClosingCurlyBracket, 3, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_for().unwrap(),
+        For {
+            kind: ForKind::Cond {
+                cond: Box::new(
+                    Expr {
+                        kind: ExprKind::Id(
+                            Id { id: "cond".to_string(), span: Span::new(1, 1) }
+                        ),
+                        span: Span::new(1, 1),
+                    },
+                ),
+            },
+            body: Body {
+                ret_type: None,
+                args: Vec::new(),
+                exprs: Vec::new(),
+            },
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_for_in() {
+    let tokens = vec![
+        // for index in range {}
+        keyword_token!(For, 0, 1),
+        id_token!("index", 1, 1),
+        keyword_token!(In, 2, 1),
+        id_token!("range", 3, 1),
+        token!(OpenCurlyBracket, 4, 1),
+        token!(ClosingCurlyBracket, 5, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_for().unwrap(),
+        For {
+            kind: ForKind::Range {
+                index: Box::new(
+                    Expr {
+                        kind: ExprKind::Id(
+                            Id { id: "index".to_string(), span: Span::new(1, 1) }
+                        ),
+                        span: Span::new(1, 1),
+                    },
+                ),
+                range: Box::new(
+                    Expr {
+                        kind: ExprKind::Id(
+                            Id { id: "range".to_string(), span: Span::new(3, 1) }
+                        ),
+                        span: Span::new(3, 1),
+                    },
+                ),
+            },
+            body: Body {
+                ret_type: None,
+                args: Vec::new(),
+                exprs: Vec::new(),
+            },
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
