@@ -1,9 +1,11 @@
-use crate::{id_token, keyword_token, token};
+use crate::{id_token, keyword_token, prim_type_token, token};
 use crate::lexer::token::Span;
 use crate::parser::{Parser, ParserHakoContext};
 use crate::parser::ast::*;
 use crate::parser::log::ParserLog;
 use crate::hir::id::*;
+
+/* integrated */
 
 #[test]
 fn outputs_parser_result() {
@@ -107,6 +109,8 @@ fn parses_continuous_items() {
     assert!(parser.peek().is_none());
 }
 
+/* function call */
+
 #[test]
 fn parses_fn_call_expr() {
     let tokens = vec![
@@ -142,6 +146,8 @@ fn parses_fn_call_expr() {
     assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
+
+/* actual argument */
 
 #[test]
 fn parses_actual_args_of_zero_len() {
@@ -805,221 +811,172 @@ fn parses_id_expr() {
     assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
+*/
 
 #[test]
-fn parses_var_decl_or_init_expr() {
+fn parses_var_def_expr() {
     let tokens = vec![
-        keyword_token!(Let, 0, 0, 1),
-        id_token!("i", 0, 1, 1),
-        token!(Semicolon, 0, 0, 1),
+        keyword_token!(Let, 0, 1),
+        id_token!("i", 1, 1),
+        token!(Semicolon, 2, 1),
     ];
-    let mut parser = Parser::new(&tokens);
-    parser.body_scope_hierarchy.enter_scope();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(
         parser.parse_expr(),
         Ok(
             Expr {
-                kind: Box::new(ExprKind::LocalEntity(0.into())),
-                span: Span::new(0, 1, 1),
+                kind: ExprKind::VarDef(
+                    VarDef {
+                        id: Id { id: "i".to_string(), span: Span::new(1, 1) },
+                        r#type: None,
+                        init: None,
+                    },
+                ),
+                span: Span::new(1, 1),
             },
         ),
     );
-    assert_eq!(
-        *parser.body_scope_hierarchy.get_current_symbol_table(),
-        hashmap! {
-            0.into() => (
-                LocalEntity::VarDecl(
-                    VarDecl {
-                        id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
-                        r#type: None,
-                    },
-                )
-            ),
-        }.into(),
-    );
     assert!(parser.get_logs().is_empty());
-    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 0, 1)));
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 2, 1)));
 }
 
 #[test]
-fn parses_var_decl() {
+fn parses_var_def() {
     let tokens = vec![
-        keyword_token!(Let, 0, 0, 1),
-        id_token!("i", 0, 1, 1),
-        token!(Semicolon, 0, 2, 1),
+        keyword_token!(Let, 0, 1),
+        id_token!("i", 1, 1),
+        token!(Semicolon, 2, 1),
     ];
-    let mut parser = Parser::new(&tokens);
-    parser.body_scope_hierarchy.enter_scope();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(
-        parser.parse_var_decl_or_init(),
-        Ok(
-            Expr {
-                kind: Box::new(ExprKind::LocalEntity(0.into())),
-                span: Span::new(0, 1, 1),
+        parser.parse_var_def(),
+        Ok((
+            VarDef {
+                id: Id { id: "i".to_string(), span: Span::new(1, 1) },
+                r#type: None,
+                init: None,
             },
-        ),
-    );
-    assert_eq!(
-        *parser.body_scope_hierarchy.get_current_symbol_table(),
-        hashmap! {
-            0.into() => (
-                LocalEntity::VarDecl(
-                    VarDecl {
-                        id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
-                        r#type: None,
-                    },
-                )
-            ),
-        }.into(),
+            Span::new(1, 1),
+        )),
     );
     assert!(parser.get_logs().is_empty());
-    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 2, 1)));
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 2, 1)));
 }
 
 #[test]
-fn parses_var_decl_with_type_annot() {
+fn parses_var_def_with_type_annot() {
     let tokens = vec![
-        keyword_token!(Let, 0, 0, 1),
-        id_token!("i", 0, 1, 1),
-        prim_type_token!(Usize, 0, 2, 1),
-        token!(Semicolon, 0, 3, 1),
+        keyword_token!(Let, 0, 1),
+        id_token!("i", 1, 1),
+        prim_type_token!(Bool, 2, 1),
+        token!(Semicolon, 3, 1),
     ];
-    let mut parser = Parser::new(&tokens);
-    parser.body_scope_hierarchy.enter_scope();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(
-        parser.parse_var_decl_or_init(),
-        Ok(
-            Expr {
-                kind: Box::new(ExprKind::LocalEntity(0.into())),
-                span: Span::new(0, 1, 1),
-            },
-        ),
-    );
-    assert_eq!(
-        *parser.body_scope_hierarchy.get_current_symbol_table(),
-        hashmap! {
-            0.into() => (
-                LocalEntity::VarDecl(
-                    VarDecl {
-                        id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
-                        r#type: Some(
-                            Type {
-                                kind: Box::new(TypeKind::Prim(PrimType::Usize)),
-                                span: Span::new(0, 2, 1),
-                            },
-                        ),
+        parser.parse_var_def(),
+        Ok((
+            VarDef {
+                id: Id { id: "i".to_string(), span: Span::new(1, 1) },
+                r#type: Some(
+                    Type {
+                        kind: Box::new(TypeKind::Prim(PrimType::Bool)),
+                        span: Span::new(2, 1),
                     },
-                )
-            ),
-        }.into(),
+                ),
+                init: None,
+            },
+            Span::new(1, 1),
+        )),
     );
     assert!(parser.get_logs().is_empty());
-    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 3, 1)));
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 3, 1)));
 }
 
 #[test]
-fn parses_var_init() {
+fn parses_var_def_with_init() {
     let tokens = vec![
-        keyword_token!(Let, 0, 0, 1),
-        id_token!("i", 0, 1, 1),
-        token!(Equal, 0, 2, 1),
-        id_token!("init", 0, 3, 1),
-        token!(Semicolon, 0, 4, 1),
+        keyword_token!(Let, 0, 1),
+        id_token!("i", 1, 1),
+        token!(Equal, 2, 1),
+        id_token!("init", 3, 1),
+        token!(Semicolon, 4, 1),
     ];
-    let mut parser = Parser::new(&tokens);
-    parser.body_scope_hierarchy.enter_scope();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(
-        parser.parse_var_decl_or_init(),
-        Ok(
-            Expr {
-                kind: Box::new(ExprKind::LocalEntity(0.into())),
-                span: Span::new(0, 1, 1),
-            },
-        ),
-    );
-    assert_eq!(
-        *parser.body_scope_hierarchy.get_current_symbol_table(),
-        hashmap! {
-            0.into() => (
-                LocalEntity::VarInit(
-                    VarInit {
-                        id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
-                        r#type: None,
-                        expr: Expr {
-                            kind: Box::new(
-                                ExprKind::Id(
-                                    Id { id: "init".to_string(), span: Span::new(0, 3, 1) },
-                                    None,
-                                ),
+        parser.parse_var_def(),
+        Ok((
+            VarDef {
+                id: Id { id: "i".to_string(), span: Span::new(1, 1) },
+                r#type: None,
+                init: Some(
+                    Box::new(
+                        Expr {
+                            kind: ExprKind::Id(
+                                Id { id: "init".to_string(), span: Span::new(3, 1) },
                             ),
-                            span: Span::new(0, 3, 1),
+                            span: Span::new(3, 1),
                         },
-                    },
-                )
-            ),
-        }.into(),
+                    ),
+                ),
+            },
+            Span::new(1, 1),
+        )),
     );
     assert!(parser.get_logs().is_empty());
-    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 4, 1)));
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 4, 1)));
 }
 
 #[test]
-fn parses_var_init_with_type_annot() {
+fn parses_var_def_with_type_annot_and_init() {
     let tokens = vec![
-        keyword_token!(Let, 0, 0, 1),
-        id_token!("i", 0, 1, 1),
-        prim_type_token!(Usize, 0, 2, 1),
-        token!(Equal, 0, 3, 1),
-        id_token!("init", 0, 4, 1),
-        token!(Semicolon, 0, 5, 1),
+        keyword_token!(Let, 0, 1),
+        id_token!("i", 1, 1),
+        prim_type_token!(Bool, 2, 1),
+        token!(Equal, 3, 1),
+        id_token!("init", 4, 1),
+        token!(Semicolon, 5, 1),
     ];
-    let mut parser = Parser::new(&tokens);
-    parser.body_scope_hierarchy.enter_scope();
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
 
     assert_eq!(
-        parser.parse_var_decl_or_init(),
-        Ok(
-            Expr {
-                kind: Box::new(ExprKind::LocalEntity(0.into())),
-                span: Span::new(0, 1, 1),
-            },
-        ),
-    );
-    assert_eq!(
-        *parser.body_scope_hierarchy.get_current_symbol_table(),
-        hashmap! {
-            0.into() => (
-                LocalEntity::VarInit(
-                    VarInit {
-                        id: Id { id: "i".to_string(), span: Span::new(0, 1, 1) },
-                        r#type: Some(
-                            Type {
-                                kind: Box::new(TypeKind::Prim(PrimType::Usize)),
-                                span: Span::new(0, 2, 1),
-                            },
-                        ),
-                        expr: Expr {
-                            kind: Box::new(
-                                ExprKind::Id(
-                                    Id { id: "init".to_string(), span: Span::new(0, 4, 1) },
-                                    None,
-                                ),
-                            ),
-                            span: Span::new(0, 4, 1),
-                        },
+        parser.parse_var_def(),
+        Ok((
+            VarDef {
+                id: Id { id: "i".to_string(), span: Span::new(1, 1) },
+                r#type: Some(
+                    Type {
+                        kind: Box::new(TypeKind::Prim(PrimType::Bool)),
+                        span: Span::new(2, 1),
                     },
-                )
-            ),
-        }.into(),
+                ),
+                init: Some(
+                    Box::new(
+                        Expr {
+                            kind: ExprKind::Id(
+                                Id { id: "init".to_string(), span: Span::new(4, 1) },
+                            ),
+                            span: Span::new(4, 1),
+                        },
+                    ),
+                ),
+            },
+            Span::new(1, 1),
+        )),
     );
     assert!(parser.get_logs().is_empty());
-    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 0, 5, 1)));
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 5, 1)));
 }
-*/
+
+/* variable binding */
 
 #[test]
 fn parses_var_bind_expr() {
