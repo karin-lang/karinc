@@ -306,10 +306,28 @@ fn allows_comma_after_actual_arg() {
 //     assert!(parser.peek().is_none());
 // }
 
-/* function declaration */
+/* item */
 
 #[test]
-fn parses_fn_decl() {
+fn expects_item() {
+    let tokens = vec![
+        keyword_token!(Let, 0, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_single_item(),
+        Err(ParserLog::ExpectedItem { span: Span::new(0, 1) }),
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+/* item - function declaration */
+
+#[test]
+fn parses_fn_decl_item() {
     let tokens = vec![
         keyword_token!(Fn, 0, 1),
         id_token!("f", 1, 1),
@@ -342,7 +360,7 @@ fn parses_fn_decl() {
 }
 
 #[test]
-fn parses_fn_decl_with_ret_type() {
+fn parses_fn_decl_item_with_ret_type() {
     let tokens = vec![
         keyword_token!(Fn, 0, 1),
         id_token!("f", 1, 1),
