@@ -167,6 +167,12 @@ pub struct VarBind {
 pub struct If {
     pub cond: Box<Expr>,
     pub body: Body,
-    pub elif: Vec<If>,
+    pub elifs: Vec<Elif>,
     pub r#else: Option<Body>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Elif {
+    pub cond: Box<Expr>,
+    pub body: Body,
 }

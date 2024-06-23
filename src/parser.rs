@@ -447,8 +447,20 @@ impl<'a> Parser<'a> {
         self.expect_keyword(Keyword::If)?;
         let cond = self.parse_expr()?;
         let body = self.parse_body(None, Vec::new())?;
-        // todo: implement elif and else
-        let r#if = If { cond: Box::new(cond), body, elif: Vec::new(), r#else: None };
+        let mut elifs = Vec::new();
+        while self.consume_keyword(Keyword::Elif).is_some() {
+            let elif_cond = self.parse_expr()?;
+            let elif_body = self.parse_body(None, Vec::new())?;
+            let new_elif = Elif { cond: Box::new(elif_cond), body: elif_body };
+            elifs.push(new_elif);
+        }
+        let r#else = if self.consume_keyword(Keyword::Else).is_some() {
+            let else_body = self.parse_body(None, Vec::new())?;
+            Some(else_body)
+        } else {
+            None
+        };
+        let r#if = If { cond: Box::new(cond), body, elifs, r#else };
         Ok(r#if)
     }
 }

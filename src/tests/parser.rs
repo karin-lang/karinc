@@ -1066,6 +1066,7 @@ fn parses_var_bind() {
 #[test]
 fn parses_if_expr() {
     let tokens = vec![
+        // if cond {}
         keyword_token!(If, 0, 1),
         id_token!("cond", 1, 1),
         token!(OpenCurlyBracket, 2, 1),
@@ -1092,11 +1093,98 @@ fn parses_if_expr() {
                         args: Vec::new(),
                         exprs: Vec::new(),
                     },
-                    elif: Vec::new(),
+                    elifs: Vec::new(),
                     r#else: None,
                 },
             ),
             span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_if_with_elifs_and_else() {
+    let tokens = vec![
+        // if cond {} elif cond {} elif cond {} else {}
+        keyword_token!(If, 0, 1),
+        id_token!("cond", 1, 1),
+        token!(OpenCurlyBracket, 2, 1),
+        token!(ClosingCurlyBracket, 3, 1),
+
+        keyword_token!(Elif, 4, 1),
+        id_token!("cond", 5, 1),
+        token!(OpenCurlyBracket, 6, 1),
+        token!(ClosingCurlyBracket, 7, 1),
+
+        keyword_token!(Elif, 8, 1),
+        id_token!("cond", 9, 1),
+        token!(OpenCurlyBracket, 10, 1),
+        token!(ClosingCurlyBracket, 11, 1),
+
+        keyword_token!(Else, 12, 1),
+        token!(OpenCurlyBracket, 13, 1),
+        token!(ClosingCurlyBracket, 14, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_if().unwrap(),
+        If {
+            cond: Box::new(
+                Expr {
+                    kind: ExprKind::Id(
+                        Id { id: "cond".to_string(), span: Span::new(1, 1) }
+                    ),
+                    span: Span::new(1, 1),
+                },
+            ),
+            body: Body {
+                ret_type: None,
+                args: Vec::new(),
+                exprs: Vec::new(),
+            },
+            elifs: vec![
+                Elif {
+                    cond: Box::new(
+                        Expr {
+                            kind: ExprKind::Id(
+                                Id { id: "cond".to_string(), span: Span::new(5, 1) }
+                            ),
+                            span: Span::new(5, 1),
+                        },
+                    ),
+                    body: Body {
+                        ret_type: None,
+                        args: Vec::new(),
+                        exprs: Vec::new(),
+                    },
+                },
+                Elif {
+                    cond: Box::new(
+                        Expr {
+                            kind: ExprKind::Id(
+                                Id { id: "cond".to_string(), span: Span::new(9, 1) }
+                            ),
+                            span: Span::new(9, 1),
+                        },
+                    ),
+                    body: Body {
+                        ret_type: None,
+                        args: Vec::new(),
+                        exprs: Vec::new(),
+                    },
+                },
+            ],
+            r#else: Some(
+                Body {
+                    ret_type: None,
+                    args: Vec::new(),
+                    exprs: Vec::new(),
+                },
+            ),
         },
     );
     assert!(parser.get_logs().is_empty());
