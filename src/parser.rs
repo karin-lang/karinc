@@ -326,6 +326,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_expr(&mut self) -> ParserResult<Expr> {
+        let beginning_span = self.get_next_span();
         // todo: match 式で token_kind を判断して条件分岐を最適化できないか検討する
         if let Some(id) = self.is_next_id() {
             if let Some((bind, span)) = self.parse_var_bind()? {
@@ -351,8 +352,12 @@ impl<'a> Parser<'a> {
             let (def, span) = self.parse_var_def()?;
             let expr = Expr { kind: ExprKind::VarDef(def), span };
             Ok(expr)
+        } else if self.is_next_keyword(Keyword::If).is_some() {
+            let r#if = self.parse_if()?;
+            let expr = Expr { kind: ExprKind::If(r#if), span: beginning_span };
+            Ok(expr)
         } else {
-            Err(ParserLog::ExpectedExpr { span: self.get_next_span() })
+            Err(ParserLog::ExpectedExpr { span: beginning_span })
         }
     }
 
@@ -436,5 +441,14 @@ impl<'a> Parser<'a> {
         let value = self.parse_expr()?;
         let bind = VarBind { id, value: Box::new(value) };
         Ok(Some((bind, span)))
+    }
+
+    pub fn parse_if(&mut self) -> ParserResult<If> {
+        self.expect_keyword(Keyword::If)?;
+        let cond = self.parse_expr()?;
+        let body = self.parse_body(None, Vec::new())?;
+        // todo: implement elif and else
+        let r#if = If { cond: Box::new(cond), body, elif: Vec::new(), r#else: None };
+        Ok(r#if)
     }
 }

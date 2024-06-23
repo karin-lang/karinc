@@ -114,6 +114,7 @@ pub enum ExprKind {
     FnCall(FnCall),
     VarDef(VarDef),
     VarBind(VarBind),
+    If(If),
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -160,4 +161,12 @@ pub struct VarDef {
 pub struct VarBind {
     pub id: Id,
     pub value: Box<Expr>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct If {
+    pub cond: Box<Expr>,
+    pub body: Body,
+    pub elif: Vec<If>,
+    pub r#else: Option<Body>,
 }

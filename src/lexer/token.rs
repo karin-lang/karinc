@@ -172,6 +172,7 @@ pub enum Base {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Keyword {
     Fn,
+    If,
     Let,
     Mut,
     Pub,
@@ -182,6 +183,7 @@ impl Keyword {
     pub fn from(s: &str) -> Option<Keyword> {
         let keyword = match s {
             "fn" => Keyword::Fn,
+            "if" => Keyword::If,
             "let" => Keyword::Let,
             "mut" => Keyword::Mut,
             "pub" => Keyword::Pub,

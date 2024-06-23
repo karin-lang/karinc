@@ -1060,3 +1060,45 @@ fn parses_var_bind() {
     assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
+
+/* if */
+
+#[test]
+fn parses_if_expr() {
+    let tokens = vec![
+        keyword_token!(If, 0, 1),
+        id_token!("cond", 1, 1),
+        token!(OpenCurlyBracket, 2, 1),
+        token!(ClosingCurlyBracket, 3, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::If(
+                If {
+                    cond: Box::new(
+                        Expr {
+                            kind: ExprKind::Id(
+                                Id { id: "cond".to_string(), span: Span::new(1, 1) }
+                            ),
+                            span: Span::new(1, 1),
+                        },
+                    ),
+                    body: Body {
+                        ret_type: None,
+                        args: Vec::new(),
+                        exprs: Vec::new(),
+                    },
+                    elif: Vec::new(),
+                    r#else: None,
+                },
+            ),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
