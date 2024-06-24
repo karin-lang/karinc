@@ -1,12 +1,14 @@
+pub mod expr;
+
 use std::collections::HashMap;
 
 use maplit::hashmap;
 
+use crate::lexer::token::Span;
+use crate::parser::ast;
 use crate::hir::*;
 use crate::hir::id::*;
 use crate::hir::lower::HirLowering;
-use crate::lexer::token::Span;
-use crate::parser::ast;
 
 #[test]
 fn lowers_empty_ast() {

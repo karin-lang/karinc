@@ -25,6 +25,15 @@ impl<'a> HirLowering<'a> {
         lowering
     }
 
+    pub fn debug(&mut self, paths: HashMap<ast::Path, GlobalId>) {
+        self.paths = paths;
+    }
+
+    pub fn debug_in_body(&mut self, paths: HashMap<ast::Path, GlobalId>) {
+        self.debug(paths);
+        self.body_scope_hierarchy.enter_scope();
+    }
+
     pub fn collect(&mut self) {
         // todo: HakoIdとItemMemberIdを収集する
         for each_ast in self.asts {
@@ -34,6 +43,10 @@ impl<'a> HirLowering<'a> {
                 self.paths.insert(new_item_path, GlobalId::Item(each_item.id));
             }
         }
+    }
+
+    pub fn get_logs(&self) -> &HashMap<ModId, Vec<HirLoweringLog>> {
+        &self.logs
     }
 
     pub fn collect_log<T>(&mut self, result: HirLoweringResult<T>) -> Option<T> {
@@ -172,6 +185,14 @@ impl<'a> HirLowering<'a> {
         // todo: 実装
         match &expr.kind {
             ast::ExprKind::Id(id) => self.resolve_id(&expr.span, &id.id).unwrap(), //fix unwrap()
+            ast::ExprKind::Literal(literal) => {
+                Expr { id: self.body_scope_hierarchy.generate_expr_id(), kind: ExprKind::Literal(literal.clone()) }
+            },
+            ast::ExprKind::FnCall(call) => {
+                let new_expr_id = self.body_scope_hierarchy.generate_expr_id();
+                let call = self.lower_fn_call(call);
+                Expr { id: new_expr_id, kind: ExprKind::FnCall(call) }
+            },
             ast::ExprKind::VarDef(def) => {
                 let new_expr_id = self.body_scope_hierarchy.generate_expr_id();
                 let var_def = VarDef {
@@ -203,6 +224,24 @@ impl<'a> HirLowering<'a> {
             },
             _ => unimplemented!(),
         }
+    }
+
+    pub fn lower_fn_call(&mut self, call: &ast::FnCall) -> FnCall {
+        let item_id = match self.resolve_path(&call.path) {
+            Some(global_id) => match global_id {
+                GlobalId::Item(item_id) => item_id,
+                _ => unimplemented!(),
+            },
+            None => unimplemented!(),
+        };
+        let args = call.args
+            .iter()
+            .map(|arg| {
+                let expr = self.lower_expr(&arg.expr);
+                ActualArg { expr }
+            })
+            .collect();
+        FnCall { r#fn: item_id, args }
     }
 
     pub fn lower_type(&mut self, r#type: &ast::Type) -> Type {
