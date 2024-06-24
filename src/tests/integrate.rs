@@ -72,6 +72,7 @@ fn generates_js() {
                 "my_hako::f".into() => (
                     hir::Item {
                         id: ItemId::new(0, 0),
+                        accessibility: ast::Accessibility::Default,
                         kind: hir::ItemKind::FnDecl(
                             hir::FnDecl {
                                 body: hir::Body {

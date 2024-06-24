@@ -167,7 +167,7 @@ impl<'a> HirLowering<'a> {
                 ItemKind::FnDecl(hir_decl)
             },
         };
-        Item { id: item.id, kind }
+        Item { id: item.id, accessibility: item.accessibility.clone(), kind }
     }
 
     pub fn lower_fn_decl(&mut self, decl: &ast::FnDecl) -> FnDecl {

@@ -15,6 +15,7 @@ fn constrains_types() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -91,6 +92,7 @@ fn constrains_literal_types() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -224,6 +226,7 @@ fn constrains_by_top_level_ref() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -297,6 +300,7 @@ fn constrains_by_local_ref() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -385,6 +389,7 @@ fn detects_inconsistent_constraint_of_var_init() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -457,6 +462,7 @@ fn constrains_by_fn_call() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -542,6 +548,7 @@ fn detects_inconsistent_constraint_of_fn_call() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -647,6 +654,7 @@ fn constrains_var_by_bind() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
@@ -724,6 +732,7 @@ fn detects_inconsistent_constraint_of_var_bind() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {

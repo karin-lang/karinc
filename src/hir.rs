@@ -17,6 +17,7 @@ pub struct Hir {
 #[derive(Clone, Debug, PartialEq)]
 pub struct Item {
     pub id: ItemId,
+    pub accessibility: ast::Accessibility,
     pub kind: ItemKind,
 }
 
