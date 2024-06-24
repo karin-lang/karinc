@@ -154,8 +154,17 @@ pub struct ActualArg {
 #[derive(Clone, Debug, PartialEq)]
 pub struct VarDef {
     pub id: Id,
+    pub ref_mut: RefMut,
     pub r#type: Option<Type>,
     pub init: Option<Box<Expr>>,
+}
+
+// referability and mutability of variable
+#[derive(Clone, Debug, PartialEq)]
+pub enum RefMut {
+    None,
+    Ref,
+    Mut,
 }
 
 #[derive(Clone, Debug, PartialEq)]

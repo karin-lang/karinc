@@ -837,6 +837,7 @@ fn parses_var_def_expr() {
                 kind: ExprKind::VarDef(
                     VarDef {
                         id: Id { id: "i".to_string(), span: Span::new(1, 1) },
+                        ref_mut: RefMut::None,
                         r#type: None,
                         init: None,
                     },
@@ -850,11 +851,12 @@ fn parses_var_def_expr() {
 }
 
 #[test]
-fn parses_var_def() {
+fn parses_referable_var_def() {
     let tokens = vec![
         keyword_token!(Let, 0, 1),
-        id_token!("i", 1, 1),
-        token!(Semicolon, 2, 1),
+        keyword_token!(Ref, 1, 1),
+        id_token!("i", 2, 1),
+        token!(Semicolon, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let mut parser = Parser::new(&tokens, &mut crate_context);
@@ -863,15 +865,43 @@ fn parses_var_def() {
         parser.parse_var_def().unwrap(),
         (
             VarDef {
-                id: Id { id: "i".to_string(), span: Span::new(1, 1) },
+                id: Id { id: "i".to_string(), span: Span::new(2, 1) },
+                ref_mut: RefMut::Ref,
                 r#type: None,
                 init: None,
             },
-            Span::new(1, 1),
+            Span::new(2, 1),
         ),
     );
     assert!(parser.get_logs().is_empty());
-    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 2, 1)));
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 3, 1)));
+}
+
+#[test]
+fn parses_mutable_var_def() {
+    let tokens = vec![
+        keyword_token!(Let, 0, 1),
+        keyword_token!(Mut, 1, 1),
+        id_token!("i", 2, 1),
+        token!(Semicolon, 3, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_var_def().unwrap(),
+        (
+            VarDef {
+                id: Id { id: "i".to_string(), span: Span::new(2, 1) },
+                ref_mut: RefMut::Mut,
+                r#type: None,
+                init: None,
+            },
+            Span::new(2, 1),
+        ),
+    );
+    assert!(parser.get_logs().is_empty());
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 3, 1)));
 }
 
 #[test]
@@ -890,6 +920,7 @@ fn parses_var_def_with_type_annot() {
         (
             VarDef {
                 id: Id { id: "i".to_string(), span: Span::new(1, 1) },
+                ref_mut: RefMut::None,
                 r#type: Some(
                     Type {
                         kind: Box::new(TypeKind::Prim(PrimType::Bool)),
@@ -922,6 +953,7 @@ fn parses_var_def_with_init() {
         (
             VarDef {
                 id: Id { id: "i".to_string(), span: Span::new(1, 1) },
+                ref_mut: RefMut::None,
                 r#type: None,
                 init: Some(
                     Box::new(
@@ -959,6 +991,7 @@ fn parses_var_def_with_type_annot_and_init() {
         (
             VarDef {
                 id: Id { id: "i".to_string(), span: Span::new(1, 1) },
+                ref_mut: RefMut::None,
                 r#type: Some(
                     Type {
                         kind: Box::new(TypeKind::Prim(PrimType::Bool)),
@@ -1019,43 +1052,6 @@ fn parses_var_bind_expr() {
             ),
             span: Span::new(0, 1),
         },
-    );
-    assert!(parser.get_logs().is_empty());
-    assert!(parser.peek().is_none());
-}
-
-#[test]
-fn parses_var_bind() {
-    let tokens = vec![
-        id_token!("i", 0, 1),
-        token!(Equal, 1, 1),
-        id_token!("value", 2, 1),
-    ];
-    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
-
-    assert_eq!(
-        parser.parse_var_bind().unwrap().unwrap(),
-        (
-            VarBind {
-                id: Id {
-                    id: "i".to_string(),
-                    span: Span::new(0, 1),
-                },
-                value: Box::new(
-                    Expr {
-                        kind: ExprKind::Id(
-                            Id {
-                                id: "value".to_string(),
-                                span: Span::new(2, 1),
-                            },
-                        ),
-                        span: Span::new(2, 1),
-                    },
-                ),
-            },
-            Span::new(0, 1),
-        ),
     );
     assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());

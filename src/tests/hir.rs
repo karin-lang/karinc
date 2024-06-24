@@ -102,6 +102,7 @@ fn resolves_item_and_local() {
                                     kind: ast::ExprKind::VarDef(
                                         ast::VarDef {
                                             id: ast::Id { id: "local".to_string(), span: Span::new(2, 1) },
+                                            ref_mut: ast::RefMut::None,
                                             r#type: None,
                                             init: None,
                                         },

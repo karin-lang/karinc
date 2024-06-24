@@ -402,25 +402,32 @@ impl<'a> Parser<'a> {
 
     pub fn parse_var_def(&mut self) -> ParserResult<(VarDef, Span)> {
         self.expect_keyword(Keyword::Let)?;
+        let ref_mut = if self.consume_keyword(Keyword::Ref).is_some() {
+            RefMut::Ref
+        } else if self.consume_keyword(Keyword::Mut).is_some() {
+            RefMut::Mut
+        } else {
+            RefMut::None
+        };
         let (_, id) = self.expect_id()?;
         let span = id.span.clone();
         // todo: let 式のセミコロンの扱いを検討する（暫定的にセミコロン必須で実装）
         let def = if self.is_next_eq(TokenKind::Semicolon).is_some() {
             // e.g.) let i;
-            VarDef { id, r#type: None, init: None }
+            VarDef { id, ref_mut, r#type: None, init: None }
         } else if self.consume(TokenKind::Equal).is_some() {
             // e.g.) let i = 0;
             let expr = self.parse_expr()?;
-            VarDef { id, r#type: None, init: Some(Box::new(expr)) }
+            VarDef { id, ref_mut, r#type: None, init: Some(Box::new(expr)) }
         } else {
             let r#type = Some(self.parse_type()?);
             if self.is_next_eq(TokenKind::Semicolon).is_some() {
                 // e.g.) let i usize;
-                VarDef { id, r#type, init: None }
+                VarDef { id, ref_mut, r#type, init: None }
             } else if self.consume(TokenKind::Equal).is_some() {
                 // e.g.) let i usize = 0;
                 let expr = self.parse_expr()?;
-                VarDef { id, r#type, init: Some(Box::new(expr)) }
+                VarDef { id, ref_mut, r#type, init: Some(Box::new(expr)) }
             } else {
                 return Err(ParserLog::ExpectedToken { kind: TokenKind::Semicolon, span: self.get_next_span() });
             }
