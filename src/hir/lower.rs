@@ -25,10 +25,19 @@ impl<'a> HirLowering<'a> {
         lowering
     }
 
+    // debug situation:
+    // 1. Lowering module of ModId(0, 0).
+    // 2. Hako name is "my_hako".
+    // 3. Has specified path map.
     pub fn debug(&mut self, paths: HashMap<ast::Path, GlobalId>) {
+        self.current_mod_id = Some(ModId::new(0, 0));
+        self.current_mod_path = "my_hako".into();
         self.paths = paths;
     }
 
+    // debug situation:
+    // 1. situation in debug()
+    // 2. Lowering in one layer body scope.
     pub fn debug_in_body(&mut self, paths: HashMap<ast::Path, GlobalId>) {
         self.debug(paths);
         self.body_scope_hierarchy.enter_scope();
@@ -190,7 +199,7 @@ impl<'a> HirLowering<'a> {
             },
             ast::ExprKind::FnCall(call) => {
                 let new_expr_id = self.body_scope_hierarchy.generate_expr_id();
-                let call = self.lower_fn_call(call);
+                let call = self.lower_fn_call(call, expr.span.clone());
                 Expr { id: new_expr_id, kind: ExprKind::FnCall(call) }
             },
             ast::ExprKind::VarDef(def) => {
@@ -226,13 +235,19 @@ impl<'a> HirLowering<'a> {
         }
     }
 
-    pub fn lower_fn_call(&mut self, call: &ast::FnCall) -> FnCall {
+    pub fn lower_fn_call(&mut self, call: &ast::FnCall, span: token::Span) -> FnCall {
         let item_id = match self.resolve_path(&call.path) {
             Some(global_id) => match global_id {
-                GlobalId::Item(item_id) => item_id,
-                _ => unimplemented!(),
+                GlobalId::Item(item_id) => Some(item_id),
+                _ => {
+                    self.collect_log::<()>(Err(HirLoweringLog::GlobalIdIsNotFound { global_id, span }));
+                    None
+                },
             },
-            None => unimplemented!(),
+            None => {
+                self.collect_log::<()>(Err(HirLoweringLog::PathIsNotFoundInScope { path: call.path.clone(), span }));
+                None
+            },
         };
         let args = call.args
             .iter()
@@ -241,7 +256,8 @@ impl<'a> HirLowering<'a> {
                 ActualArg { expr }
             })
             .collect();
-        FnCall { r#fn: item_id, args }
+        let call = FnCall { r#fn: item_id, args };
+        call
     }
 
     pub fn lower_type(&mut self, r#type: &ast::Type) -> Type {

@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use log::HirLoweringLog;
 use maplit::hashmap;
 
 use crate::lexer::token::{self, Span};
@@ -36,7 +37,7 @@ fn resolves_literal_expr() {
 
 #[test]
 fn resolves_fn_call_expr() {
-    let src = ast::Expr {
+    let ast = ast::Expr {
         kind: ast::ExprKind::FnCall(
             ast::FnCall {
                 path: "my_hako::f".into(),
@@ -60,7 +61,7 @@ fn resolves_fn_call_expr() {
     };
     let mut lowering = HirLowering::new(&asts);
     lowering.debug_in_body(paths);
-    let hir = lowering.lower_expr(&src);
+    let hir = lowering.lower_expr(&ast);
 
     assert_eq!(
         hir,
@@ -68,7 +69,7 @@ fn resolves_fn_call_expr() {
             id: ExprId::new(0),
             kind: ExprKind::FnCall(
                 FnCall {
-                    r#fn: ItemId::new(0, 0),
+                    r#fn: Some(ItemId::new(0,0)),
                     args: vec![
                         ActualArg {
                             expr: Expr {
@@ -84,4 +85,36 @@ fn resolves_fn_call_expr() {
         },
     );
     assert!(lowering.get_logs().is_empty());
+}
+
+#[test]
+fn makes_fn_call_id_none_when_path_not_found() {
+    let ast = ast::FnCall {
+        path: "my_hako::f".into(),
+        args: Vec::new(),
+    };
+    let asts = Vec::new();
+    let paths = HashMap::new();
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    let hir = lowering.lower_fn_call(&ast, Span::new(0, 1));
+
+    assert_eq!(
+        hir,
+        FnCall {
+            r#fn: None,
+            args: Vec::new(),
+        },
+    );
+    assert_eq!(
+        *lowering.get_logs(),
+        hashmap! {
+            ModId::new(0, 0) => vec![
+                HirLoweringLog::PathIsNotFoundInScope {
+                    path: "my_hako::f".into(),
+                    span: Span::new(0, 1),
+                },
+            ],
+        },
+    );
 }

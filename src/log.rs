@@ -1,4 +1,5 @@
 use crate::lexer::token::Span;
+use crate::parser::ast;
 use crate::hir::id::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -8,6 +9,16 @@ pub struct CompilerLog {
 }
 
 impl CompilerLog {
+    #[inline(always)]
+    pub fn warn(warn: CompilerWarn, span: Span) -> CompilerLog {
+        CompilerLog { kind: CompilerLogKind::Warn(warn), span }
+    }
+
+    #[inline(always)]
+    pub fn err(err: CompilerErr, span: Span) -> CompilerLog {
+        CompilerLog { kind: CompilerLogKind::Err(err), span }
+    }
+
     #[inline(always)]
     pub fn syntax_err(kind: SyntaxErrorKind, span: Span) -> CompilerLog {
         CompilerLog {
@@ -27,6 +38,8 @@ pub enum CompilerLogKind {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum CompilerErr {
+    GlobalIdIsNotFound { global_id: GlobalId },
+    PathIsNotFoundInScope { path: ast::Path },
     SyntaxError { kind: SyntaxErrorKind },
 }
 

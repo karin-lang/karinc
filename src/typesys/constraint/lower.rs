@@ -78,11 +78,11 @@ impl<'a> TypeConstraintLowering<'a> {
                 self.collect_log(result);
             },
             hir::ExprKind::FnCall(call) => {
-                let type_id = TypeId::TopLevel(TopLevelId::FnRet(call.r#fn));
+                let type_id = TypeId::TopLevel(TopLevelId::FnRet(call.r#fn.unwrap())); // fix: unwrap()
                 let result = self.builder.constrain_by_other(TypeId::Expr(expr.id), type_id);
                 self.collect_log(result);
 
-                let fn_type = match self.builder.top_level_type_table.get_fn(&call.r#fn) {
+                let fn_type = match self.builder.top_level_type_table.get_fn(&call.r#fn.unwrap()) { // fix: unwrap()
                     Some(v) => v,
                     None => unreachable!("called unknown function"),
                 };
@@ -93,7 +93,7 @@ impl<'a> TypeConstraintLowering<'a> {
                 for (i, each_arg) in call.args.iter().enumerate() {
                     self.lower_expr(body, &each_arg.expr);
                     if arg_len_match {
-                        let type_id = TypeId::TopLevel(TopLevelId::FnArg(call.r#fn, FormalArgId::new(i)));
+                        let type_id = TypeId::TopLevel(TopLevelId::FnArg(call.r#fn.unwrap() /* fix: unwrap */, FormalArgId::new(i)));
                         let result = self.builder.constrain_by_other(TypeId::Expr(each_arg.expr.id), type_id);
                         self.collect_log(result);
                     }

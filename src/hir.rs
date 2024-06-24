@@ -79,7 +79,7 @@ pub enum TypeKind {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FnCall {
-    pub r#fn: ItemId,
+    pub r#fn: Option<ItemId>,
     pub args: Vec<ActualArg>,
 }
 
