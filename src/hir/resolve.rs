@@ -141,6 +141,14 @@ impl BodyScope {
         self.next_expr_id += 1;
         next
     }
+
+    pub fn get_args(&self) -> &Vec<FormalArgDef> {
+        &self.args
+    }
+
+    pub fn get_vars(&self) -> &Vec<VarDef> {
+        &self.vars
+    }
 }
 
 pub struct LocalScope {

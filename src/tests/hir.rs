@@ -141,7 +141,7 @@ fn resolves_item_and_local() {
                                     vars: vec![
                                         VarDef {
                                             r#type: None,
-                                            mutable: false,
+                                            ref_mut: ast::RefMut::None,
                                             init: None,
                                         },
                                     ],

@@ -97,8 +97,8 @@ pub struct FormalArgDef {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct VarDef {
+    pub ref_mut: ast::RefMut,
     pub r#type: Option<Type>,
-    pub mutable: bool,
     pub init: Option<Expr>,
 }
 

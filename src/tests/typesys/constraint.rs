@@ -31,7 +31,7 @@ fn constrains_types() {
                                 vars: vec![
                                     hir::VarDef {
                                         r#type: None,
-                                        mutable: false,
+                                        ref_mut: ast::RefMut::None,
                                         init: Some(
                                             hir::Expr {
                                                 id: ExprId::new(1),
@@ -317,7 +317,7 @@ fn constrains_by_local_ref() {
                                                 kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U16)),
                                             },
                                         ),
-                                        mutable: false,
+                                        ref_mut: ast::RefMut::None,
                                         init: None,
                                     },
                                 ],
@@ -397,7 +397,7 @@ fn detects_inconsistent_constraint_of_var_init() {
                                                 kind: Box::new(hir::TypeKind::Prim(ast::PrimType::I32)),
                                             },
                                         ),
-                                        mutable: false,
+                                        ref_mut: ast::RefMut::None,
                                         init: Some(
                                             hir::Expr {
                                                 id: ExprId::new(1),
@@ -655,7 +655,7 @@ fn constrains_var_by_bind() {
                                 vars: vec![
                                     hir::VarDef {
                                         r#type: None,
-                                        mutable: false,
+                                        ref_mut: ast::RefMut::None,
                                         init: None,
                                     },
                                 ],
@@ -736,7 +736,7 @@ fn detects_inconsistent_constraint_of_var_bind() {
                                                 hir::TypeKind::Prim(ast::PrimType::Usize),
                                             ),
                                         ),
-                                        mutable: false,
+                                        ref_mut: ast::RefMut::None,
                                         init: None,
                                     },
                                 ],
