@@ -1,4 +1,4 @@
-use crate::lexer::token::Span;
+use crate::lexer::token::{self, Span};
 use crate::parser::ast;
 use crate::hir::id::*;
 
@@ -49,8 +49,28 @@ pub enum CompilerWarn {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum SyntaxErrorKind {
+    /* lexer */
     EmptyCharLiteral,
+    ExpectedTypeSuffix,
+    LineBreakInCharLiteral,
+    LineBreakInStrLiteral,
+    TooLongCharLiteral,
+    UnclosedCharLiteral,
+    UnclosedStrLiteral,
+    UnknownEscseq,
+
+    /* parser */
+    ExpectedActualArg,
     ExpectedExpr,
+    ExpectedFormalArg,
+    ExpectedId,
+    ExpectedItem,
+    ExpectedKeyword { keyword: token::Keyword },
+    ExpectedToken { kind: token::TokenKind },
+    ExpectedType,
+    UnexpectedEof,
+
+    /* HIR lowering */
     ExpectedExprButFoundHako { hako_id: HakoId },
     ExpectedExprButFoundMod { mod_id: ModId },
 }

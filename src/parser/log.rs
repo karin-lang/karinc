@@ -5,11 +5,11 @@ pub type ParserResult<T> = Result<T, ParserLog>;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParserLog {
+    ExpectedActualArg { span: Span },
     ExpectedExpr { span: Span },
+    ExpectedFormalArg { span: Span },
     ExpectedId { span: Span },
     ExpectedItem { span: Span },
-    ExpectedFormalArg { span: Span },
-    ExpectedActualArg { span: Span },
     ExpectedKeyword { keyword: Keyword, span: Span },
     ExpectedToken { kind: TokenKind, span: Span },
     ExpectedType { span: Span },
@@ -19,8 +19,15 @@ pub enum ParserLog {
 impl From<ParserLog> for CompilerLog {
     fn from(value: ParserLog) -> Self {
         match value {
+            ParserLog::ExpectedActualArg { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedActualArg, span),
             ParserLog::ExpectedExpr { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedExpr, span),
-            _ => unimplemented!(),
+            ParserLog::ExpectedFormalArg { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedFormalArg, span),
+            ParserLog::ExpectedId { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedId, span),
+            ParserLog::ExpectedItem { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedItem, span),
+            ParserLog::ExpectedKeyword { keyword, span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedKeyword { keyword }, span),
+            ParserLog::ExpectedToken { kind, span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedToken { kind }, span),
+            ParserLog::ExpectedType { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedType, span),
+            ParserLog::UnexpectedEof { span } => CompilerLog::syntax_err(SyntaxErrorKind::UnexpectedEof, span),
         }
     }
 }

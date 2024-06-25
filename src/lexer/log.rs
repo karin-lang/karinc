@@ -19,7 +19,13 @@ impl From<LexerLog> for CompilerLog {
     fn from(value: LexerLog) -> Self {
         match value {
             LexerLog::EmptyCharLiteral { span } => CompilerLog::syntax_err(SyntaxErrorKind::EmptyCharLiteral, span),
-            _ => unimplemented!(),
+            LexerLog::ExpectedTypeSuffix { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedTypeSuffix, span),
+            LexerLog::LineBreakInCharLiteral { span } => CompilerLog::syntax_err(SyntaxErrorKind::LineBreakInCharLiteral, span),
+            LexerLog::LineBreakInStrLiteral { span } => CompilerLog::syntax_err(SyntaxErrorKind::LineBreakInStrLiteral, span),
+            LexerLog::TooLongCharLiteral { span } => CompilerLog::syntax_err(SyntaxErrorKind::TooLongCharLiteral, span),
+            LexerLog::UnclosedCharLiteral { span } => CompilerLog::syntax_err(SyntaxErrorKind::UnclosedCharLiteral, span),
+            LexerLog::UnclosedStrLiteral { span } => CompilerLog::syntax_err(SyntaxErrorKind::UnclosedStrLiteral, span),
+            LexerLog::UnknownEscseq { span } => CompilerLog::syntax_err(SyntaxErrorKind::UnknownEscseq, span),
         }
     }
 }
