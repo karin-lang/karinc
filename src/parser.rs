@@ -213,8 +213,10 @@ impl<'a> Parser<'a> {
                 break;
             }
             let item_result = self.parse_single_item();
-            if let Some(new_item) = self.record_result_log(item_result) {
-                items.push(new_item);
+            match self.record_result_log(item_result) {
+                Some(new_item) => items.push(new_item),
+                // Exit the current item if there is a problem in it.
+                None => self.consume_until(|token| token.kind == TokenKind::ClosingCurlyBracket),
             }
         }
         items
@@ -240,7 +242,6 @@ impl<'a> Parser<'a> {
             let decl = FnDecl { body };
             Item { id, name, accessibility, kind: ItemKind::FnDecl(decl) }
         } else {
-            self.consume_until(|token| token.kind == TokenKind::ClosingCurlyBracket);
             return Err(ParserLog::ExpectedItem { span: beginning_span });
         };
         Ok(item)
@@ -306,7 +307,14 @@ impl<'a> Parser<'a> {
                 break;
             }
 
-            let new_expr = self.parse_expr()?;
+            let new_expr = match self.parse_expr() {
+                Ok(v) => v,
+                Err(log) => {
+                    // Consumes until before expression/body end if there is a problem.
+                    self.consume_until_before(|token| token.kind == TokenKind::Semicolon || token.kind == TokenKind::ClosingCurlyBracket);
+                    return Err(log);
+                },
+            };
             let semicolon_result = self.expect(TokenKind::Semicolon);
             self.record_result_log(semicolon_result);
             exprs.push(new_expr);

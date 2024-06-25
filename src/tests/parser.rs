@@ -112,6 +112,29 @@ fn parses_continuous_items() {
     assert!(parser.peek().is_none());
 }
 
+#[test]
+fn consumes_until_body_end_when_error_occurred() {
+    let tokens = vec![
+        keyword_token!(Fn, 0, 1),
+        token!(OpenParen, 1, 1),
+        token!(ClosingParen, 2, 1),
+        token!(OpenCurlyBracket, 3, 1),
+        token!(ClosingCurlyBracket, 4, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_items(),
+        Vec::new(),
+    );
+    assert_eq!(
+        *parser.get_logs(),
+        vec![ParserLog::ExpectedId { span: Span::new(1, 1) }],
+    );
+    assert!(parser.peek().is_none());
+}
+
 /* function call */
 
 #[test]
@@ -359,7 +382,10 @@ fn expects_item() {
         Err(ParserLog::ExpectedItem { span: Span::new(0, 1) }),
     );
     assert!(parser.get_logs().is_empty());
-    assert!(parser.peek().is_none());
+    assert_eq!(
+        parser.peek(),
+        Some(&&keyword_token!(Let,0,1)),
+    );
 }
 
 /* item - function declaration */
@@ -849,7 +875,7 @@ fn parses_id_type() {
 
 #[test]
 fn parses_prim_type() {
-    let tokens: Vec<token::Token> = vec![
+    let tokens = vec![
         prim_type_token!(Bool, 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
@@ -868,7 +894,7 @@ fn parses_prim_type() {
 
 #[test]
 fn expects_type_for_unexpected_token() {
-    let tokens: Vec<token::Token> = vec![
+    let tokens = vec![
         token!(Semicolon, 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
@@ -882,11 +908,30 @@ fn expects_type_for_unexpected_token() {
     assert!(parser.peek().is_none());
 }
 
+/* expression */
+
+#[test]
+fn consumes_until_before_semicolon_when_error_occurred() {
+    let tokens = vec![
+        keyword_token!(Let, 0, 1),
+        token!(Semicolon, 1, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_expr(),
+        Err(ParserLog::ExpectedId { span: Span::new(1, 1) }),
+    );
+    assert!(parser.get_logs().is_empty());
+    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 1, 1)));
+}
+
 /* identifier */
 
 #[test]
 fn parses_id_expr() {
-    let tokens: Vec<token::Token> = vec![
+    let tokens = vec![
         id_token!("id", 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
