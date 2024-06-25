@@ -7,6 +7,35 @@ use crate::hir::id::*;
 use crate::hir::lower::HirLowering;
 
 #[test]
+fn lowers_fn_decl() {
+    let ast = ast::FnDecl {
+        body: ast::Body {
+            ret_type: None,
+            args: Vec::new(),
+            exprs: Vec::new(),
+        },
+    };
+    let asts = Vec::new();
+    let paths = HashMap::new();
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    let hir = lowering.lower_fn_decl(&ast);
+
+    assert_eq!(
+        hir,
+        FnDecl {
+            body: Body {
+                ret_type: None,
+                args: Vec::new(),
+                vars: Vec::new(),
+                exprs: Vec::new(),
+            },
+        },
+    );
+    assert!(lowering.get_logs().is_empty());
+}
+
+#[test]
 fn lowers_body() {
     let ast = ast::Body {
         ret_type: Some(
