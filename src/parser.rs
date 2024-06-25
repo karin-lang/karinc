@@ -246,6 +246,16 @@ impl<'a> Parser<'a> {
         Ok(item)
     }
 
+    pub fn consume_ref_mut(&mut self) -> RefMut {
+        if self.consume_keyword(Keyword::Ref).is_some() {
+            RefMut::Ref
+        } else if self.consume_keyword(Keyword::Mut).is_some() {
+            RefMut::Mut
+        } else {
+            RefMut::None
+        }
+    }
+
     pub fn parse_formal_args(&mut self) -> ParserResult<Vec<FormalArg>> {
         self.expect(TokenKind::OpenParen)?;
         let mut args = Vec::new();
@@ -273,10 +283,10 @@ impl<'a> Parser<'a> {
             }
 
             let (_, id) = self.expect_id()?;
-            let mutable = self.consume_keyword(Keyword::Mut).is_some();
+            let ref_mut = self.consume_ref_mut();
             let r#type = self.parse_type()?;
             allow_next_arg = self.consume(TokenKind::Comma).is_some();
-            let new_arg = FormalArg { id, r#type, mutable };
+            let new_arg = FormalArg { id, ref_mut, r#type };
             args.push(new_arg);
         }
 
@@ -391,9 +401,10 @@ impl<'a> Parser<'a> {
                 break;
             }
 
+            let ref_mut = self.consume_ref_mut();
             let expr = self.parse_expr()?;
             allow_next_arg = self.consume(TokenKind::Comma).is_some();
-            let new_arg = ActualArg { expr };
+            let new_arg = ActualArg { ref_mut, expr };
             args.push(new_arg);
         }
 
@@ -402,13 +413,7 @@ impl<'a> Parser<'a> {
 
     pub fn parse_var_def(&mut self) -> ParserResult<(VarDef, Span)> {
         self.expect_keyword(Keyword::Let)?;
-        let ref_mut = if self.consume_keyword(Keyword::Ref).is_some() {
-            RefMut::Ref
-        } else if self.consume_keyword(Keyword::Mut).is_some() {
-            RefMut::Mut
-        } else {
-            RefMut::None
-        };
+        let ref_mut = self.consume_ref_mut();
         let (_, id) = self.expect_id()?;
         let span = id.span.clone();
         // todo: let 式のセミコロンの扱いを検討する（暫定的にセミコロン必須で実装）

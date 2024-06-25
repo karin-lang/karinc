@@ -26,7 +26,7 @@ fn constrains_types() {
                                         r#type: hir::Type::new(
                                             hir::TypeKind::Prim(ast::PrimType::Bool),
                                         ),
-                                        mutable: false,
+                                        ref_mut: ast::RefMut::None,
                                     },
                                 ],
                                 vars: vec![
@@ -241,7 +241,7 @@ fn constrains_by_top_level_ref() {
                                         r#type: hir::Type {
                                             kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U16)),
                                         },
-                                        mutable: false,
+                                        ref_mut: ast::RefMut::None,
                                     },
                                 ],
                                 vars: Vec::new(),
@@ -311,7 +311,7 @@ fn constrains_by_local_ref() {
                                         r#type: hir::Type {
                                             kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U8)),
                                         },
-                                        mutable: false,
+                                        ref_mut: ast::RefMut::None,
                                     },
                                 ],
                                 vars: vec![
@@ -473,7 +473,7 @@ fn constrains_by_fn_call() {
                                         r#type: hir::Type {
                                             kind: Box::new(hir::TypeKind::Prim(ast::PrimType::Bool)),
                                         },
-                                        mutable: false,
+                                        ref_mut: ast::RefMut::None,
                                     },
                                 ],
                                 vars: Vec::new(),
@@ -559,7 +559,7 @@ fn detects_inconsistent_constraint_of_fn_call() {
                                         r#type: hir::Type {
                                             kind: Box::new(hir::TypeKind::Prim(ast::PrimType::Bool)),
                                         },
-                                        mutable: false,
+                                        ref_mut: ast::RefMut::None,
                                     },
                                 ],
                                 vars: Vec::new(),

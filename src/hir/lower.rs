@@ -188,8 +188,8 @@ impl<'a> HirLowering<'a> {
     pub fn lower_formal_arg(&mut self, id: FormalArgId, arg: &ast::FormalArg) {
         let arg_def = FormalArgDef {
             id,
+            ref_mut: arg.ref_mut.clone(),
             r#type: self.lower_type(&arg.r#type),
-            mutable: arg.mutable,
         };
         self.body_scope_hierarchy.declare(&arg.id.id, LocalDef::FormalArg(arg_def));
     }

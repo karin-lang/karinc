@@ -133,11 +133,12 @@ fn parses_fn_call_expr() {
                     path: "f".into(),
                     args: vec![
                         ActualArg {
+                            ref_mut: RefMut::None,
                             expr: Expr {
                                 kind: ExprKind::Id(
                                     Id { id: "a".to_string(), span: Span::new(2, 1) },
                                 ),
-                                span: Span { begin: 2, len: 1 },
+                                span: Span::new(2, 1),
                             },
                         },
                     ],
@@ -180,11 +181,12 @@ fn parses_actual_arg_of_a_len() {
         parser.parse_actual_args().unwrap(),
         vec![
             ActualArg {
+                ref_mut: RefMut::None,
                 expr: Expr {
                     kind: ExprKind::Id(
                         Id { id: "a".to_string(), span: Span::new(1, 1) },
                     ),
-                    span: Span { begin: 1, len: 1 },
+                    span: Span::new(1, 1),
                 },
             },
         ],
@@ -209,19 +211,21 @@ fn parses_actual_args_of_two_len() {
         parser.parse_actual_args().unwrap(),
         vec![
             ActualArg {
+                ref_mut: RefMut::None,
                 expr: Expr {
                     kind: ExprKind::Id(
                         Id { id: "a1".to_string(), span: Span::new(1, 1) },
                     ),
-                    span: Span { begin: 1, len: 1 },
+                    span: Span::new(1, 1),
                 },
             },
             ActualArg {
+                ref_mut: RefMut::None,
                 expr: Expr {
                     kind: ExprKind::Id(
                         Id { id: "a2".to_string(), span: Span::new(3, 1) },
                     ),
-                    span: Span { begin: 3, len: 1 },
+                    span: Span::new(3, 1),
                 },
             },
         ],
@@ -245,11 +249,12 @@ fn disallows_comma_before_actual_arg() {
         parser.parse_actual_args().unwrap(),
         vec![
             ActualArg {
+                ref_mut: RefMut::None,
                 expr: Expr {
                     kind: ExprKind::Id(
                         Id { id: "a".to_string(), span: Span::new(2, 1) },
                     ),
-                    span: Span { begin: 2, len: 1 },
+                    span: Span::new(2, 1),
                 },
             },
         ],
@@ -276,11 +281,41 @@ fn allows_comma_after_actual_arg() {
         parser.parse_actual_args().unwrap(),
         vec![
             ActualArg {
+                ref_mut: RefMut::None,
                 expr: Expr {
                     kind: ExprKind::Id(
                         Id { id: "a".to_string(), span: Span::new(1, 1) },
                     ),
-                    span: Span { begin: 1, len: 1 },
+                    span: Span::new(1, 1),
+                },
+            },
+        ],
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_refmut_actual_arg() {
+    let tokens = vec![
+        token!(OpenParen, 0, 1),
+        keyword_token!(Ref, 1, 1),
+        id_token!("a", 2, 1),
+        token!(ClosingParen, 3, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_actual_args().unwrap(),
+        vec![
+            ActualArg {
+                ref_mut: RefMut::Ref,
+                expr: Expr {
+                    kind: ExprKind::Id(
+                        Id { id: "a".to_string(), span: Span::new(2, 1) },
+                    ),
+                    span: Span::new(2, 1),
                 },
             },
         ],
@@ -438,6 +473,56 @@ fn parses_fn_decl_item_with_ret_type() {
     assert!(parser.peek().is_none());
 }
 
+/* referability and mutability */
+
+#[test]
+fn parses_referable() {
+    let tokens = vec![
+        keyword_token!(Ref, 0, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.consume_ref_mut(),
+        RefMut::Ref,
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_mutability() {
+    let tokens = vec![
+        keyword_token!(Mut, 0, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.consume_ref_mut(),
+        RefMut::Mut,
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_none_refmut() {
+    let tokens = vec![
+        keyword_token!(Let, 0, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.consume_ref_mut(),
+        RefMut::None,
+    );
+    assert!(parser.get_logs().is_empty());
+    assert_eq!(parser.peek(), Some(&&keyword_token!(Let, 0, 1)));
+}
+
 /* formal argument */
 
 #[test]
@@ -477,7 +562,7 @@ fn parses_formal_arg_of_a_len() {
                     kind: Box::new(TypeKind::Prim(PrimType::Usize)),
                     span: Span::new(2, 1),
                 },
-                mutable: false,
+                ref_mut: RefMut::None,
             },
         ],
     );
@@ -508,7 +593,7 @@ fn parses_formal_args_of_two_len() {
                     kind: Box::new(TypeKind::Prim(PrimType::Usize)),
                     span: Span::new(3, 1),
                 },
-                mutable: false,
+                ref_mut: RefMut::None,
             },
             FormalArg {
                 id: Id { id: "a2".to_string(), span: Span::new(5, 1) },
@@ -516,7 +601,7 @@ fn parses_formal_args_of_two_len() {
                     kind: Box::new(TypeKind::Prim(PrimType::Usize)),
                     span: Span::new(6, 1),
                 },
-                mutable: false,
+                ref_mut: RefMut::None,
             },
         ],
     );
@@ -525,7 +610,7 @@ fn parses_formal_args_of_two_len() {
 }
 
 #[test]
-fn parses_mutable_formal_arg() {
+fn parses_refmut_of_formal_arg() {
     let tokens = vec![
         token!(OpenParen, 0, 1),
         id_token!("a", 1, 1),
@@ -545,7 +630,7 @@ fn parses_mutable_formal_arg() {
                     kind: Box::new(TypeKind::Prim(PrimType::Usize)),
                     span: Span::new(3, 1),
                 },
-                mutable: true,
+                ref_mut: RefMut::Mut,
             },
         ],
     );
@@ -574,7 +659,7 @@ fn disallows_comma_before_formal_args() {
                     kind: Box::new(TypeKind::Prim(PrimType::Usize)),
                     span: Span::new(3, 1),
                 },
-                mutable: false,
+                ref_mut: RefMut::None,
             },
         ],
     );
@@ -606,7 +691,7 @@ fn allows_comma_after_formal_args() {
                     kind: Box::new(TypeKind::Prim(PrimType::Usize)),
                     span: Span::new(2, 1),
                 },
-                mutable: false,
+                ref_mut: RefMut::None,
             },
         ],
     );
@@ -851,7 +936,7 @@ fn parses_var_def_expr() {
 }
 
 #[test]
-fn parses_referable_var_def() {
+fn parses_refmut_var_def() {
     let tokens = vec![
         keyword_token!(Let, 0, 1),
         keyword_token!(Ref, 1, 1),
@@ -867,33 +952,6 @@ fn parses_referable_var_def() {
             VarDef {
                 id: Id { id: "i".to_string(), span: Span::new(2, 1) },
                 ref_mut: RefMut::Ref,
-                r#type: None,
-                init: None,
-            },
-            Span::new(2, 1),
-        ),
-    );
-    assert!(parser.get_logs().is_empty());
-    assert_eq!(parser.peek(), Some(&&token!(Semicolon, 3, 1)));
-}
-
-#[test]
-fn parses_mutable_var_def() {
-    let tokens = vec![
-        keyword_token!(Let, 0, 1),
-        keyword_token!(Mut, 1, 1),
-        id_token!("i", 2, 1),
-        token!(Semicolon, 3, 1),
-    ];
-    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
-
-    assert_eq!(
-        parser.parse_var_def().unwrap(),
-        (
-            VarDef {
-                id: Id { id: "i".to_string(), span: Span::new(2, 1) },
-                ref_mut: RefMut::Mut,
                 r#type: None,
                 init: None,
             },

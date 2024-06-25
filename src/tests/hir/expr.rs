@@ -43,6 +43,7 @@ fn lowers_fn_call_expr() {
                 path: "my_hako::f".into(),
                 args: vec![
                     ast::ActualArg {
+                        ref_mut: ast::RefMut::None,
                         expr: ast::Expr {
                             kind: ast::ExprKind::Literal(
                                 token::Literal::Bool { value: true },

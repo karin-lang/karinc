@@ -97,8 +97,8 @@ pub struct Body {
 #[derive(Clone, Debug, PartialEq)]
 pub struct FormalArg {
     pub id: Id,
+    pub ref_mut: RefMut,
     pub r#type: Type,
-    pub mutable: bool,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -148,6 +148,7 @@ pub struct FnCall {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ActualArg {
+    pub ref_mut: RefMut,
     pub expr: Expr,
 }
 
