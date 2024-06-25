@@ -11,7 +11,7 @@ use crate::hir::lower::HirLowering;
 
 #[test]
 fn lowers_literal_expr() {
-    let src = ast::Expr {
+    let ast = ast::Expr {
         kind: ast::ExprKind::Literal(
             token::Literal::Bool { value: true },
         ),
@@ -21,7 +21,7 @@ fn lowers_literal_expr() {
     let paths = HashMap::new();
     let mut lowering = HirLowering::new(&asts);
     lowering.debug_in_body(paths);
-    let hir = lowering.lower_expr(&src);
+    let hir = lowering.lower_expr(&ast);
 
     assert_eq!(
         hir,
