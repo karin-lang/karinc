@@ -183,3 +183,59 @@ fn lowers_var_def_expr() {
     );
     assert!(lowering.get_logs().is_empty());
 }
+
+#[test]
+fn lowers_var_bind_expr() {
+    let ast = ast::Expr {
+        kind: ast::ExprKind::VarBind(
+            ast::VarBind {
+                id: ast::Id { id: "id".to_string(), span: Span::new(0, 1) },
+                value: Box::new(
+                    ast::Expr {
+                        kind: ast::ExprKind::Literal(
+                            token::Literal::Bool { value: true },
+                        ),
+                        span: Span::new(1, 1),
+                    },
+                ),
+            },
+        ),
+        span: Span::new(0, 1),
+    };
+    let asts = Vec::new();
+    let paths = HashMap::new();
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    lowering.get_body_scope_hierarchy_mut().declare(
+        "id",
+        LocalDef::Var(
+            VarDef {
+                ref_mut: ast::RefMut::None,
+                r#type: None,
+                init: None,
+            },
+        ),
+    );
+    let hir = lowering.lower_expr(&ast);
+
+    assert_eq!(
+        hir,
+        Expr {
+            id: ExprId::new(0),
+            kind: ExprKind::VarBind(
+                VarBind {
+                    var_id: VarId::new(0),
+                    value: Box::new(
+                        Expr {
+                            id: ExprId::new(1),
+                            kind: ExprKind::Literal(
+                                token::Literal::Bool { value: true },
+                            ),
+                        },
+                    ),
+                },
+            ),
+        },
+    );
+    assert!(lowering.get_logs().is_empty());
+}

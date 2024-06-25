@@ -78,6 +78,10 @@ impl<'a> HirLowering<'a> {
         &self.body_scope_hierarchy
     }
 
+    pub fn get_body_scope_hierarchy_mut(&mut self) -> &mut BodyScopeHierarchy {
+        &mut self.body_scope_hierarchy
+    }
+
     pub fn lower(mut self) -> (Hir, HashMap<ModId, Vec<HirLoweringLog>>) {
         let mut items = HashMap::new();
         for each_ast in self.asts {
@@ -223,10 +227,11 @@ impl<'a> HirLowering<'a> {
                 }
             },
             ast::ExprKind::VarBind(bind) => {
+                let new_expr_id = self.body_scope_hierarchy.generate_expr_id();
                 let var_id = self.resolve_var(&bind.id.id).unwrap(); // fix unwrap
                 let value_expr = self.lower_expr(&bind.value);
                 Expr {
-                    id: self.body_scope_hierarchy.generate_expr_id(),
+                    id: new_expr_id,
                     kind: ExprKind::VarBind(
                         VarBind {
                             var_id,
