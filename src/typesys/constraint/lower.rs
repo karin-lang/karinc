@@ -47,6 +47,7 @@ impl<'a> TypeConstraintLowering<'a> {
 
     pub fn lower_expr(&mut self, body: &hir::Body, expr: &hir::Expr) {
         match &expr.kind {
+            hir::ExprKind::Block(_) => todo!("すぐに実装する"),
             hir::ExprKind::Literal(literal) => {
                 let r#type = match literal {
                     token::Literal::Bool { value: _ } => Type::Prim(ast::PrimType::Bool),
@@ -128,6 +129,7 @@ impl<'a> TypeConstraintLowering<'a> {
                 let result = self.builder.copy_constraint(TypeId::Var(bind.var_id), TypeId::Expr(bind.value.id));
                 self.collect_log(result);
             },
+            hir::ExprKind::If(_) => todo!("すぐに実装する"),
         }
     }
 }

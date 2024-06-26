@@ -216,6 +216,36 @@ impl<'a> Parser<'a> {
         (ast, self.logs)
     }
 
+    // todo: enclosed_exprs の名前は後で考える
+    pub fn parse_enclosed_exprs(&mut self) -> ParserResult<Vec<Expr>> {
+        self.expect(TokenKind::OpenCurlyBracket)?;
+        let mut exprs = Vec::new();
+
+        loop {
+            if self.is_eof() {
+                break;
+            }
+
+            if self.consume(TokenKind::ClosingCurlyBracket).is_some() {
+                break;
+            }
+
+            let new_expr = match self.parse_expr() {
+                Ok(v) => v,
+                Err(log) => {
+                    // Consumes until before expression/body end if there is a problem.
+                    self.consume_until_before(|token| token.kind == TokenKind::Semicolon || token.kind == TokenKind::ClosingCurlyBracket);
+                    return Err(log);
+                },
+            };
+            let semicolon_result = self.expect(TokenKind::Semicolon);
+            self.record_result_log(semicolon_result);
+            exprs.push(new_expr);
+        }
+
+        Ok(exprs)
+    }
+
     pub fn parse_items(&mut self) -> Vec<Item> {
         let mut items = Vec::new();
         loop {
@@ -305,31 +335,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_body(&mut self, ret_type: Option<Type>, args: Vec<FormalArg>) -> ParserResult<Body> {
-        self.expect(TokenKind::OpenCurlyBracket)?;
-        let mut exprs = Vec::new();
-
-        loop {
-            if self.is_eof() {
-                break;
-            }
-
-            if self.consume(TokenKind::ClosingCurlyBracket).is_some() {
-                break;
-            }
-
-            let new_expr = match self.parse_expr() {
-                Ok(v) => v,
-                Err(log) => {
-                    // Consumes until before expression/body end if there is a problem.
-                    self.consume_until_before(|token| token.kind == TokenKind::Semicolon || token.kind == TokenKind::ClosingCurlyBracket);
-                    return Err(log);
-                },
-            };
-            let semicolon_result = self.expect(TokenKind::Semicolon);
-            self.record_result_log(semicolon_result);
-            exprs.push(new_expr);
-        }
-
+        let exprs = self.parse_enclosed_exprs()?;
         let body = Body { ret_type, args, exprs };
         Ok(body)
     }
@@ -396,6 +402,12 @@ impl<'a> Parser<'a> {
         } else {
             Err(ParserLog::ExpectedExpr { span: beginning_span })
         }
+    }
+
+    pub fn parse_block(&mut self) -> ParserResult<Block> {
+        let exprs = self.parse_enclosed_exprs()?;
+        let block = Block { exprs };
+        Ok(block)
     }
 
     pub fn parse_actual_args(&mut self) -> ParserResult<Vec<ActualArg>> {
@@ -485,21 +497,21 @@ impl<'a> Parser<'a> {
     pub fn parse_if(&mut self) -> ParserResult<If> {
         self.expect_keyword(Keyword::If)?;
         let cond = self.parse_expr()?;
-        let body = self.parse_body(None, Vec::new())?;
+        let block = self.parse_block()?;
         let mut elifs = Vec::new();
         while self.consume_keyword(Keyword::Elif).is_some() {
             let elif_cond = self.parse_expr()?;
-            let elif_body = self.parse_body(None, Vec::new())?;
-            let new_elif = Elif { cond: Box::new(elif_cond), body: elif_body };
+            let elif_block = self.parse_block()?;
+            let new_elif = Elif { cond: Box::new(elif_cond), block: elif_block };
             elifs.push(new_elif);
         }
         let r#else = if self.consume_keyword(Keyword::Else).is_some() {
-            let else_body = self.parse_body(None, Vec::new())?;
-            Some(else_body)
+            let else_block = self.parse_block()?;
+            Some(else_block)
         } else {
             None
         };
-        let r#if = If { cond: Box::new(cond), body, elifs, r#else };
+        let r#if = If { cond: Box::new(cond), block, elifs, r#else };
         Ok(r#if)
     }
 

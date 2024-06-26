@@ -135,6 +135,113 @@ fn consumes_until_body_end_when_error_occurred() {
     assert!(parser.peek().is_none());
 }
 
+/* enclosed expressions */
+
+#[test]
+fn parses_empty_enclosed_expr() {
+    let tokens = vec![
+        token!(OpenCurlyBracket, 0, 1),
+        token!(ClosingCurlyBracket, 1, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_enclosed_exprs().unwrap(),
+        Vec::new(),
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_enclosed_expr_with_single_expr() {
+    let tokens = vec![
+        token!(OpenCurlyBracket, 0, 1),
+        id_token!("id", 1, 1),
+        token!(Semicolon, 2, 1),
+        token!(ClosingCurlyBracket, 3, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_enclosed_exprs().unwrap(),
+        vec![
+            Expr {
+                kind: ExprKind::Id(Id { id: "id".to_string(), span: Span::new(1, 1) }),
+                span: Span::new(1, 1),
+            },
+        ],
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_enclosed_exprs_with_multiple_exprs() {
+    let tokens = vec![
+        token!(OpenCurlyBracket, 0, 1),
+        id_token!("id1", 1, 1),
+        token!(Semicolon, 2, 1),
+        id_token!("id2", 3, 1),
+        token!(Semicolon, 4, 1),
+        token!(ClosingCurlyBracket, 5, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_enclosed_exprs().unwrap(),
+        vec![
+            Expr {
+                kind: ExprKind::Id(Id { id: "id1".to_string(), span: Span::new(1, 1) }),
+                span: Span::new(1, 1),
+            },
+            Expr {
+                kind: ExprKind::Id(Id { id: "id2".to_string(), span: Span::new(3, 1) }),
+                span: Span::new(3, 1),
+            },
+        ],
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn expects_semicolon_after_expr_in_enclosed_exprs() {
+    let tokens = vec![
+        token!(OpenCurlyBracket, 0, 1),
+        id_token!("id1", 1, 1),
+        id_token!("id2",  2, 1),
+        token!(ClosingCurlyBracket, 3, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_enclosed_exprs().unwrap(),
+        vec![
+            Expr {
+                kind: ExprKind::Id(Id { id: "id1".to_string(), span: Span::new(1, 1) }),
+                span: Span::new(1, 1),
+            },
+            Expr {
+                kind: ExprKind::Id(Id { id: "id2".to_string(), span: Span::new(2, 1) }),
+                span: Span::new(2, 1),
+            },
+        ],
+    );
+    assert_eq!(
+        *parser.get_logs(),
+        vec![
+            ParserLog::ExpectedToken { kind: token::TokenKind::Semicolon, span: Span::new(2, 1) },
+            ParserLog::ExpectedToken { kind: token::TokenKind::Semicolon, span: Span::new(3, 1) },
+        ],
+    );
+    assert!(parser.peek().is_none());
+}
+
 /* function call */
 
 #[test]
@@ -728,28 +835,7 @@ fn allows_comma_after_formal_args() {
 /* body */
 
 #[test]
-fn parses_empty_body() {
-    let tokens = vec![
-        token!(OpenCurlyBracket, 0, 1),
-        token!(ClosingCurlyBracket, 1, 1),
-    ];
-    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
-
-    assert_eq!(
-        parser.parse_body(None, Vec::new()).unwrap(),
-        Body {
-            ret_type: None,
-            args: Vec::new(),
-            exprs: Vec::new(),
-        },
-    );
-    assert!(parser.get_logs().is_empty());
-    assert!(parser.peek().is_none());
-}
-
-#[test]
-fn parses_body_with_single_expr() {
+fn parses_body() {
     let tokens = vec![
         token!(OpenCurlyBracket, 0, 1),
         id_token!("id", 1, 1),
@@ -773,78 +859,6 @@ fn parses_body_with_single_expr() {
         },
     );
     assert!(parser.get_logs().is_empty());
-    assert!(parser.peek().is_none());
-}
-
-#[test]
-fn parses_body_with_multiple_exprs() {
-    let tokens = vec![
-        token!(OpenCurlyBracket, 0, 1),
-        id_token!("id1", 1, 1),
-        token!(Semicolon, 2, 1),
-        id_token!("id2", 3, 1),
-        token!(Semicolon, 4, 1),
-        token!(ClosingCurlyBracket, 5, 1),
-    ];
-    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
-
-    assert_eq!(
-        parser.parse_body(None, Vec::new()).unwrap(),
-        Body {
-            ret_type: None,
-            args: Vec::new(),
-            exprs: vec![
-                Expr {
-                    kind: ExprKind::Id(Id { id: "id1".to_string(), span: Span::new(1, 1) }),
-                    span: Span::new(1, 1),
-                },
-                Expr {
-                    kind: ExprKind::Id(Id { id: "id2".to_string(), span: Span::new(3, 1) }),
-                    span: Span::new(3, 1),
-                },
-            ],
-        },
-    );
-    assert!(parser.get_logs().is_empty());
-    assert!(parser.peek().is_none());
-}
-
-#[test]
-fn expects_semicolon_after_expr_in_body() {
-    let tokens = vec![
-        token!(OpenCurlyBracket, 0, 1),
-        id_token!("id1", 1, 1),
-        id_token!("id2",  2, 1),
-        token!(ClosingCurlyBracket, 3, 1),
-    ];
-    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
-
-    assert_eq!(
-        parser.parse_body(None, Vec::new()).unwrap(),
-        Body {
-            ret_type: None,
-            args: Vec::new(),
-            exprs: vec![
-                Expr {
-                    kind: ExprKind::Id(Id { id: "id1".to_string(), span: Span::new(1, 1) }),
-                    span: Span::new(1, 1),
-                },
-                Expr {
-                    kind: ExprKind::Id(Id { id: "id2".to_string(), span: Span::new(2, 1) }),
-                    span: Span::new(2, 1),
-                },
-            ],
-        },
-    );
-    assert_eq!(
-        *parser.get_logs(),
-        vec![
-            ParserLog::ExpectedToken { kind: token::TokenKind::Semicolon, span: Span::new(2, 1) },
-            ParserLog::ExpectedToken { kind: token::TokenKind::Semicolon, span: Span::new(3, 1) },
-        ],
-    );
     assert!(parser.peek().is_none());
 }
 
@@ -1187,9 +1201,7 @@ fn parses_if_expr() {
                             span: Span::new(1, 1),
                         },
                     ),
-                    body: Body {
-                        ret_type: None,
-                        args: Vec::new(),
+                    block: Block {
                         exprs: Vec::new(),
                     },
                     elifs: Vec::new(),
@@ -1240,9 +1252,7 @@ fn parses_if_with_elifs_and_else() {
                     span: Span::new(1, 1),
                 },
             ),
-            body: Body {
-                ret_type: None,
-                args: Vec::new(),
+            block: Block {
                 exprs: Vec::new(),
             },
             elifs: vec![
@@ -1255,9 +1265,7 @@ fn parses_if_with_elifs_and_else() {
                             span: Span::new(5, 1),
                         },
                     ),
-                    body: Body {
-                        ret_type: None,
-                        args: Vec::new(),
+                    block: Block {
                         exprs: Vec::new(),
                     },
                 },
@@ -1270,17 +1278,13 @@ fn parses_if_with_elifs_and_else() {
                             span: Span::new(9, 1),
                         },
                     ),
-                    body: Body {
-                        ret_type: None,
-                        args: Vec::new(),
+                    block: Block {
                         exprs: Vec::new(),
                     },
                 },
             ],
             r#else: Some(
-                Body {
-                    ret_type: None,
-                    args: Vec::new(),
+                Block {
                     exprs: Vec::new(),
                 },
             ),

@@ -47,12 +47,19 @@ pub struct Expr {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
+    Block(Block),
     Literal(token::Literal),
     TopLevelRef(TopLevelId),
     LocalRef(LocalId),
     FnCall(FnCall),
     VarDef(VarId),
     VarBind(VarBind),
+    If(If),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Block {
+    pub exprs: Vec<Expr>,
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -108,4 +115,18 @@ pub struct VarDef {
 pub struct VarBind {
     pub var_id: VarId,
     pub value: Box<Expr>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct If {
+    pub cond: Box<Expr>,
+    pub block: Block,
+    pub elifs: Vec<Elif>,
+    pub r#else: Option<Block>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Elif {
+    pub cond: Box<Expr>,
+    pub block: Block,
 }
