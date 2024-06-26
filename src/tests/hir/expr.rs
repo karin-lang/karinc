@@ -164,6 +164,7 @@ fn lowers_var_def_expr() {
         *lowering.get_body_scope_hierarchy().get_current_scope().get_vars(),
         vec![
             VarDef {
+                id: ast::Id { id: "i".to_string(), span: Span::new(0, 1) },
                 ref_mut: ast::RefMut::None,
                 r#type: Some(
                     Type {
@@ -210,6 +211,7 @@ fn lowers_var_bind_expr() {
         "id",
         LocalDef::Var(
             VarDef {
+                id: ast::Id { id: "id".to_string(), span: Span::new(1, 1) },
                 ref_mut: ast::RefMut::None,
                 r#type: None,
                 init: None,

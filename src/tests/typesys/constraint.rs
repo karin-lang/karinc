@@ -2,7 +2,7 @@ use std::collections::HashMap;
 
 use maplit::hashmap;
 
-use crate::lexer::token;
+use crate::lexer::token::{self, Span};
 use crate::parser::ast::{self, tltype::TopLevelTypeTable};
 use crate::hir::{self, id::*};
 use crate::typesys::*;
@@ -31,6 +31,7 @@ fn constrains_types() {
                                 ],
                                 vars: vec![
                                     hir::VarDef {
+                                        id: ast::Id { id: "id".to_string(), span: Span::new(0, 1) },
                                         r#type: None,
                                         ref_mut: ast::RefMut::None,
                                         init: Some(
@@ -316,6 +317,7 @@ fn constrains_by_local_ref() {
                                 ],
                                 vars: vec![
                                     hir::VarDef {
+                                        id: ast::Id { id: "id".to_string(), span: Span::new(0, 1) },
                                         r#type: Some(
                                             hir::Type {
                                                 kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U16)),
@@ -397,7 +399,8 @@ fn detects_inconsistent_constraint_of_var_init() {
                                 args: Vec::new(),
                                 vars: vec![
                                     hir::VarDef {
-                                        r#type: Some(
+                                            id: ast::Id { id: "id".to_string(), span: Span::new(0, 1) },
+                                            r#type: Some(
                                             hir::Type {
                                                 kind: Box::new(hir::TypeKind::Prim(ast::PrimType::I32)),
                                             },
@@ -662,6 +665,7 @@ fn constrains_var_by_bind() {
                                 args: Vec::new(),
                                 vars: vec![
                                     hir::VarDef {
+                                        id: ast::Id { id: "id".to_string(), span: Span::new(0, 1) },
                                         r#type: None,
                                         ref_mut: ast::RefMut::None,
                                         init: None,
@@ -740,7 +744,8 @@ fn detects_inconsistent_constraint_of_var_bind() {
                                 args: Vec::new(),
                                 vars: vec![
                                     hir::VarDef {
-                                        r#type: Some(
+                                            id: ast::Id { id: "id".to_string(), span: Span::new(0, 1) },
+                                            r#type: Some(
                                             hir::Type::new(
                                                 hir::TypeKind::Prim(ast::PrimType::Usize),
                                             ),

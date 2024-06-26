@@ -143,6 +143,7 @@ fn resolves_item_and_local() {
                                     args: Vec::new(),
                                     vars: vec![
                                         VarDef {
+                                            id: ast::Id { id: "local".to_string(), span: Span::new(2, 1) },
                                             r#type: None,
                                             ref_mut: ast::RefMut::None,
                                             init: None,

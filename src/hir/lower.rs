@@ -213,6 +213,7 @@ impl<'a> HirLowering<'a> {
             ast::ExprKind::VarDef(def) => {
                 let new_expr_id = self.body_scope_hierarchy.generate_expr_id();
                 let var_def = VarDef {
+                    id: def.id.clone(),
                     ref_mut: def.ref_mut.clone(),
                     r#type: def.r#type.as_ref().map(|r#type| self.lower_type(r#type)),
                     init: def.init.as_ref().map(|expr| self.lower_expr(expr)),

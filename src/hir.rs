@@ -6,7 +6,7 @@ pub mod resolve;
 use std::collections::HashMap;
 
 use crate::lexer::token;
-use crate::parser::ast;
+use crate::parser::ast::{self, Id};
 use crate::hir::id::*;
 
 #[derive(Clone, Debug, PartialEq)]
@@ -98,6 +98,7 @@ pub struct FormalArgDef {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct VarDef {
+    pub id: Id,
     pub ref_mut: ast::RefMut,
     pub r#type: Option<Type>,
     pub init: Option<Expr>,
