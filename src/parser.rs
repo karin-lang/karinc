@@ -85,6 +85,16 @@ impl<'a> Parser<'a> {
         self.is_next_eq(TokenKind::Keyword(keyword))
     }
 
+    pub fn get_next_literal(&mut self) -> Option<&Literal> {
+        match self.peek() {
+            Some(next) => match &next.kind {
+                TokenKind::Literal(literal) => Some(literal),
+                _ => None,
+            },
+            None => None,
+        }
+    }
+
     pub fn consume(&mut self, kind: TokenKind) -> Option<&Token> {
         self
             .tokens
@@ -377,6 +387,11 @@ impl<'a> Parser<'a> {
         } else if self.is_next_keyword(Keyword::For).is_some() {
             let r#for = self.parse_for()?;
             let expr = Expr { kind: ExprKind::For(r#for), span: beginning_span };
+            Ok(expr)
+        } else if let Some(literal) = self.get_next_literal().cloned() {
+            // todo: add test
+            self.expect_any()?;
+            let expr = Expr { kind: ExprKind::Literal(literal), span: beginning_span };
             Ok(expr)
         } else {
             Err(ParserLog::ExpectedExpr { span: beginning_span })

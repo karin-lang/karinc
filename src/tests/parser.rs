@@ -1,4 +1,4 @@
-use crate::{id_token, keyword_token, prim_type_token, token};
+use crate::{id_token, keyword_token, literal_token, prim_type_token, token};
 use crate::lexer::token::{self, Span};
 use crate::parser::{Parser, ParserHakoContext};
 use crate::parser::ast::*;
@@ -1399,6 +1399,29 @@ fn parses_for_in() {
                 args: Vec::new(),
                 exprs: Vec::new(),
             },
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+/* literal */
+
+#[test]
+fn parses_literal_expr() {
+    let tokens = vec![
+        literal_token!(token::Literal::Bool { value: true }, 0, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut parser = Parser::new(&tokens, &mut crate_context);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Literal(
+                token::Literal::Bool { value: true },
+            ),
+            span: Span::new(0, 1),
         },
     );
     assert!(parser.get_logs().is_empty());
