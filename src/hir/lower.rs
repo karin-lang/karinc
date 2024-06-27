@@ -214,35 +214,13 @@ impl<'a> HirLowering<'a> {
                 let call = self.lower_fn_call(call, expr.span.clone());
                 Expr { id: new_expr_id, kind: ExprKind::FnCall(call) }
             },
-            ast::ExprKind::VarDef(def) => {
-                let new_expr_id = self.body_scope_hierarchy.generate_expr_id();
-                let var_def = VarDef {
-                    id: def.id.clone(),
-                    ref_mut: def.ref_mut.clone(),
-                    r#type: def.r#type.as_ref().map(|r#type| self.lower_type(r#type)),
-                    init: def.init.as_ref().map(|expr| self.lower_expr(expr)),
-                };
-                let local_id = self.body_scope_hierarchy.declare(&def.id.id, LocalDef::Var(var_def));
-                match local_id {
-                    LocalId::Var(var_id) => Expr {
-                        id: new_expr_id,
-                        kind: ExprKind::VarDef(var_id),
-                    },
-                    _ => unreachable!(),
-                }
-            },
+            ast::ExprKind::VarDef(def) => self.lower_var_def(def),
             ast::ExprKind::VarBind(bind) => {
                 let new_expr_id = self.body_scope_hierarchy.generate_expr_id();
-                let var_id = self.resolve_var(&bind.id.id).unwrap(); // fix unwrap
-                let value_expr = self.lower_expr(&bind.value);
+                let hir_bind = self.lower_var_bind(bind);
                 Expr {
                     id: new_expr_id,
-                    kind: ExprKind::VarBind(
-                        VarBind {
-                            var_id,
-                            value: Box::new(value_expr),
-                        },
-                    ),
+                    kind: ExprKind::VarBind(hir_bind),
                 }
             },
             ast::ExprKind::If(r#if) => Expr {
@@ -253,6 +231,33 @@ impl<'a> HirLowering<'a> {
                 id: self.body_scope_hierarchy.generate_expr_id(),
                 kind: ExprKind::For(self.lower_for(r#for)),
             },
+        }
+    }
+
+    pub fn lower_var_def(&mut self, def: &ast::VarDef) -> Expr {
+        let new_expr_id = self.body_scope_hierarchy.generate_expr_id();
+        let var_def = VarDef {
+            id: def.id.clone(),
+            ref_mut: def.ref_mut.clone(),
+            r#type: def.r#type.as_ref().map(|r#type| self.lower_type(r#type)),
+            init: def.init.as_ref().map(|expr| self.lower_expr(expr)),
+        };
+        let local_id = self.body_scope_hierarchy.declare(&def.id.id, LocalDef::Var(var_def));
+        match local_id {
+            LocalId::Var(var_id) => Expr {
+                id: new_expr_id,
+                kind: ExprKind::VarDef(var_id),
+            },
+            _ => unreachable!(),
+        }
+    }
+
+    pub fn lower_var_bind(&mut self, bind: &ast::VarBind) -> VarBind {
+        let var_id = self.resolve_var(&bind.id.id).unwrap(); // fix unwrap
+        let value_expr = self.lower_expr(&bind.value);
+        VarBind {
+            var_id,
+            value: Box::new(value_expr),
         }
     }
 
