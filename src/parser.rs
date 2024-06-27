@@ -528,8 +528,8 @@ impl<'a> Parser<'a> {
                 ForKind::Cond { cond: Box::new(first_expr) }
             }
         };
-        let body = self.parse_body(None, Vec::new())?;
-        let r#for = For { kind, body };
+        let block = self.parse_block()?;
+        let r#for = For { kind, block };
         Ok(r#for)
     }
 }

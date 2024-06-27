@@ -1313,9 +1313,7 @@ fn parses_for_expr() {
             kind: ExprKind::For(
                 For {
                     kind: ForKind::Endless,
-                    body: Body {
-                        ret_type: None,
-                        args: Vec::new(),
+                    block: Block {
                         exprs: Vec::new(),
                     },
                 },
@@ -1352,9 +1350,7 @@ fn parses_for_with_cond() {
                     },
                 ),
             },
-            body: Body {
-                ret_type: None,
-                args: Vec::new(),
+            block: Block {
                 exprs: Vec::new(),
             },
         },
@@ -1398,9 +1394,7 @@ fn parses_for_in() {
                     },
                 ),
             },
-            body: Body {
-                ret_type: None,
-                args: Vec::new(),
+            block: Block {
                 exprs: Vec::new(),
             },
         },

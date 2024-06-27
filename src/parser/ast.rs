@@ -197,7 +197,7 @@ pub struct Elif {
 #[derive(Clone, Debug, PartialEq)]
 pub struct For {
     pub kind: ForKind,
-    pub body: Body,
+    pub block: Block,
 }
 
 #[derive(Clone, Debug, PartialEq)]
