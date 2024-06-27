@@ -87,6 +87,89 @@ fn constrains_types() {
 }
 
 #[test]
+fn constrains_block_types() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: None,
+                                args: Vec::new(),
+                                vars: Vec::new(),
+                                exprs: vec![
+                                    /* constrain with last expression type */
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::Block(
+                                            hir::Block {
+                                                exprs: vec![
+                                                    hir::Expr {
+                                                        id: ExprId::new(1),
+                                                        kind: hir::ExprKind::Literal(
+                                                            token::Literal::Bool { value: true },
+                                                        ),
+                                                    },
+                                                    hir::Expr {
+                                                        id: ExprId::new(2),
+                                                        kind: hir::ExprKind::Literal(
+                                                            token::Literal::Char { value: None },
+                                                        ),
+                                                    },
+                                                ],
+                                            },
+                                        ),
+                                    },
+                                    /* constrain with void type */
+                                    hir::Expr {
+                                        id: ExprId::new(3),
+                                        kind: hir::ExprKind::Block(
+                                            hir::Block {
+                                                exprs: Vec::new(),
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = HashMap::new().into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Char)),
+                    Vec::new(),
+                    Some(TypeId::Expr(ExprId::new(2))),
+                ),
+                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                ),
+                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Char)),
+                    vec![TypeId::Expr(ExprId::new(0))],
+                    None,
+                ),
+                TypeId::Expr(ExprId::new(3)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert!(logs.is_empty());
+}
+
+#[test]
 fn constrains_literal_types() {
     let hir = hir::Hir {
         items: hashmap! {

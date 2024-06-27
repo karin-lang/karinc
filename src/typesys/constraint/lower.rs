@@ -47,7 +47,24 @@ impl<'a> TypeConstraintLowering<'a> {
 
     pub fn lower_expr(&mut self, body: &hir::Body, expr: &hir::Expr) {
         match &expr.kind {
-            hir::ExprKind::Block(_) => todo!("すぐに実装する"),
+            // ブロックの返り値の型はブロック単位でなく式単位で関連付ける
+            // 例）if-else 式の場合: if ブロック内の最後の式と else ブロック内の最後の式が関連付けられて型を検査する
+            hir::ExprKind::Block(block) => {
+                block.exprs.iter().for_each(|block_expr| self.lower_expr(body, block_expr));
+                match block.exprs.last() {
+                    Some(last_expr) => {
+                        let result = self.builder.constrain_by_other(TypeId::Expr(expr.id), TypeId::Expr(last_expr.id));
+                        self.collect_log(result);
+                    },
+                    None => {
+                        let result = self.builder.constrain_by_type(
+                            TypeId::Expr(expr.id),
+                            Type::Prim(ast::PrimType::Void),
+                        );
+                        self.collect_log(result);
+                    },
+                }
+            },
             hir::ExprKind::Literal(literal) => {
                 let r#type = match literal {
                     token::Literal::Bool { value: _ } => Type::Prim(ast::PrimType::Bool),
