@@ -201,6 +201,10 @@ impl<'a> HirLowering<'a> {
     pub fn lower_expr(&mut self, expr: &ast::Expr) -> Expr {
         // todo: 実装
         match &expr.kind {
+            ast::ExprKind::Block(block) => Expr {
+                id: self.body_scope_hierarchy.generate_expr_id(),
+                kind: ExprKind::Block(self.lower_block(block)),
+            },
             ast::ExprKind::Id(id) => self.resolve_id(&expr.span, &id.id).unwrap(), //fix unwrap()
             ast::ExprKind::Literal(literal) => {
                 Expr { id: self.body_scope_hierarchy.generate_expr_id(), kind: ExprKind::Literal(literal.clone()) }
@@ -241,8 +245,20 @@ impl<'a> HirLowering<'a> {
                     ),
                 }
             },
-            _ => unimplemented!(),
+            ast::ExprKind::If(r#if) => Expr {
+                id: self.body_scope_hierarchy.generate_expr_id(),
+                kind: ExprKind::If(self.lower_if(r#if)),
+            },
+            ast::ExprKind::For(r#for) => Expr {
+                id: self.body_scope_hierarchy.generate_expr_id(),
+                kind: ExprKind::For(self.lower_for(r#for)),
+            },
         }
+    }
+
+    pub fn lower_block(&mut self, block: &ast::Block) -> Block {
+        let exprs = block.exprs.iter().map(|expr| self.lower_expr(expr)).collect();
+        Block { exprs }
     }
 
     pub fn lower_fn_call(&mut self, call: &ast::FnCall, span: token::Span) -> FnCall {
@@ -285,5 +301,38 @@ impl<'a> HirLowering<'a> {
             ast::TypeKind::Prim(prim_type) => TypeKind::Prim(*prim_type),
         };
         Type::new(kind)
+    }
+
+    pub fn lower_if(&mut self, r#if: &ast::If) -> If {
+        let cond = Box::new(self.lower_expr(&*r#if.cond));
+        let block = self.lower_block(&r#if.block);
+        let elifs = r#if.elifs.iter().map(|elif| self.lower_elif(elif)).collect();
+        let r#else = r#if.r#else.as_ref().map(|block| self.lower_block(block));
+        If { cond, block, elifs, r#else }
+    }
+
+    pub fn lower_elif(&mut self, elif: &ast::Elif) -> Elif {
+        let cond = Box::new(self.lower_expr(&*elif.cond));
+        let block = self.lower_block(&elif.block);
+        Elif { cond, block }
+    }
+
+    pub fn lower_for(&mut self, r#for: &ast::For) -> For {
+        let kind = self.lower_for_kind(&r#for.kind);
+        let block = self.lower_block(&r#for.block);
+        For { kind, block }
+    }
+
+    pub fn lower_for_kind(&mut self, kind: &ast::ForKind) -> ForKind {
+        match kind {
+            ast::ForKind::Endless => ForKind::Endless,
+            ast::ForKind::Cond { cond } => ForKind::Cond {
+                cond: Box::new(self.lower_expr(&*cond)),
+            },
+            ast::ForKind::Range { index, range } => ForKind::Range {
+                index: Box::new(self.lower_expr(&*index)),
+                range: Box::new(self.lower_expr(&*range)),
+            },
+        }
     }
 }

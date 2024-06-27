@@ -130,6 +130,7 @@ impl<'a> TypeConstraintLowering<'a> {
                 self.collect_log(result);
             },
             hir::ExprKind::If(_) => todo!("すぐに実装する"),
+            hir::ExprKind::For(_) => todo!("すぐに実装する"),
         }
     }
 }
