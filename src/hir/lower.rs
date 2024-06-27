@@ -309,7 +309,7 @@ impl<'a> HirLowering<'a> {
     }
 
     pub fn lower_if(&mut self, r#if: &ast::If) -> If {
-        let cond = Box::new(self.lower_expr(&*r#if.cond));
+        let cond = Box::new(self.lower_expr(&r#if.cond));
         let block = self.lower_block(&r#if.block);
         let elifs = r#if.elifs.iter().map(|elif| self.lower_elif(elif)).collect();
         let r#else = r#if.r#else.as_ref().map(|block| self.lower_block(block));
@@ -317,7 +317,7 @@ impl<'a> HirLowering<'a> {
     }
 
     pub fn lower_elif(&mut self, elif: &ast::Elif) -> Elif {
-        let cond = Box::new(self.lower_expr(&*elif.cond));
+        let cond = Box::new(self.lower_expr(&elif.cond));
         let block = self.lower_block(&elif.block);
         Elif { cond, block }
     }
@@ -332,11 +332,11 @@ impl<'a> HirLowering<'a> {
         match kind {
             ast::ForKind::Endless => ForKind::Endless,
             ast::ForKind::Cond { cond } => ForKind::Cond {
-                cond: Box::new(self.lower_expr(&*cond)),
+                cond: Box::new(self.lower_expr(&cond)),
             },
             ast::ForKind::Range { index, range } => ForKind::Range {
-                index: Box::new(self.lower_expr(&*index)),
-                range: Box::new(self.lower_expr(&*range)),
+                index: Box::new(self.lower_expr(&index)),
+                range: Box::new(self.lower_expr(&range)),
             },
         }
     }
