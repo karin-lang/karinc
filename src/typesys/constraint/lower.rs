@@ -31,7 +31,7 @@ impl<'a> TypeConstraintLowering<'a> {
         match &item.kind {
             hir::ItemKind::FnDecl(decl) => {
                 for (arg_id, arg) in decl.body.args.iter().enumerate() {
-                    self.lower_formal_arg(FormalArgId::new(arg_id), arg);
+                    self.lower_formal_arg(decl.body.id, FormalArgId::new(arg_id), arg);
                 }
                 for expr in &decl.body.exprs {
                     self.lower_expr(&decl.body, expr);
@@ -40,8 +40,9 @@ impl<'a> TypeConstraintLowering<'a> {
         }
     }
 
-    pub fn lower_formal_arg(&mut self, arg_id: FormalArgId, arg: &hir::FormalArgDef) {
-        let result = self.builder.constrain_by_type(TypeId::FormalArg(arg_id), (&arg.r#type).into());
+    pub fn lower_formal_arg(&mut self, body_id: BodyId, arg_id: FormalArgId, arg: &hir::FormalArgDef) {
+        println!("{:?}", TypeId::FormalArg(body_id, arg_id));
+        let result = self.builder.constrain_by_type(TypeId::FormalArg(body_id, arg_id), (&arg.r#type).into());
         self.collect_log(result);
     }
 
@@ -69,20 +70,20 @@ impl<'a> TypeConstraintLowering<'a> {
                     // token::Literal::ByteStr { value: _ } => Type::Prim(ast::PrimType::Arr),
                     _ => unimplemented!(),
                 };
-                let result = self.builder.constrain_by_type(TypeId::Expr(expr.id), r#type);
+                let result = self.builder.constrain_by_type(TypeId::Expr(body.id, expr.id), r#type);
                 self.collect_log(result);
             },
             hir::ExprKind::LocalRef(local_id) => {
                 let type_id = match local_id {
-                    LocalId::FormalArg(id) => TypeId::FormalArg(*id),
-                    LocalId::Var(id) => TypeId::Var(*id),
+                    LocalId::FormalArg(id) => TypeId::FormalArg(body.id, *id),
+                    LocalId::Var(id) => TypeId::Var(body.id, *id),
                 };
-                let result = self.builder.constrain_by_other(TypeId::Expr(expr.id), type_id);
+                let result = self.builder.constrain_by_other(TypeId::Expr(body.id, expr.id), type_id);
                 self.collect_log(result);
             },
             hir::ExprKind::FnCall(call) => {
                 let type_id = TypeId::TopLevel(TopLevelId::FnRet(call.r#fn.unwrap())); // fix: unwrap()
-                let result = self.builder.constrain_by_other(TypeId::Expr(expr.id), type_id);
+                let result = self.builder.constrain_by_other(TypeId::Expr(body.id, expr.id), type_id);
                 self.collect_log(result);
 
                 let fn_type = match self.builder.top_level_type_table.get_fn(&call.r#fn.unwrap()) { // fix: unwrap()
@@ -97,14 +98,14 @@ impl<'a> TypeConstraintLowering<'a> {
                     self.lower_expr(body, &each_arg.expr);
                     if arg_len_match {
                         let type_id = TypeId::TopLevel(TopLevelId::FnArg(call.r#fn.unwrap() /* fix: unwrap */, FormalArgId::new(i)));
-                        let result = self.builder.constrain_by_other(TypeId::Expr(each_arg.expr.id), type_id);
+                        let result = self.builder.constrain_by_other(TypeId::Expr(body.id, each_arg.expr.id), type_id);
                         self.collect_log(result);
                     }
                 }
             },
             hir::ExprKind::TopLevelRef(top_level_id) => {
                 let type_id = TypeId::TopLevel(*top_level_id);
-                let result = self.builder.constrain_by_other(TypeId::Expr(expr.id), type_id);
+                let result = self.builder.constrain_by_other(TypeId::Expr(body.id, expr.id), type_id);
                 self.collect_log(result);
             },
             hir::ExprKind::VarDef(var_id) => {
@@ -112,27 +113,27 @@ impl<'a> TypeConstraintLowering<'a> {
                     Some(v) => v,
                     None => unreachable!("unknown variable id"),
                 };
-                let result = self.builder.constrain_by_type(TypeId::Expr(expr.id), Type::Prim(ast::PrimType::Void));
+                let result = self.builder.constrain_by_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::Void));
                 self.collect_log(result);
                 if let Some(r#type) = &var_def.r#type {
-                    let result = self.builder.constrain_by_type(TypeId::Var(*var_id), r#type.into());
+                    let result = self.builder.constrain_by_type(TypeId::Var(body.id, *var_id), r#type.into());
                     self.collect_log(result);
                 }
                 if let Some(init_expr) = &var_def.init {
                     self.lower_expr(body, init_expr);
-                    let result = self.builder.constrain_by_other(TypeId::Var(*var_id), TypeId::Expr(init_expr.id));
+                    let result = self.builder.constrain_by_other(TypeId::Var(body.id, *var_id), TypeId::Expr(body.id, init_expr.id));
                     self.collect_log(result);
                 }
             },
             hir::ExprKind::VarBind(bind) => {
-                let result = self.builder.constrain_by_type(TypeId::Expr(expr.id), Type::Prim(ast::PrimType::Void));
+                let result = self.builder.constrain_by_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::Void));
                 self.collect_log(result);
                 self.lower_expr(body, &bind.value);
-                let result = self.builder.copy_constraint(TypeId::Var(bind.var_id), TypeId::Expr(bind.value.id));
+                let result = self.builder.copy_constraint(TypeId::Var(body.id, bind.var_id), TypeId::Expr(body.id, bind.value.id));
                 self.collect_log(result);
             },
             hir::ExprKind::If(r#if) => {
-                let result = self.builder.constrain(TypeId::Expr(expr.id));
+                let result = self.builder.constrain(TypeId::Expr(body.id, expr.id));
                 self.collect_log(result);
                 self.lower_expr(body, &r#if.cond);
                 self.lower_constraining_block(body, &expr.id, &r#if.block);
@@ -164,11 +165,11 @@ impl<'a> TypeConstraintLowering<'a> {
         block.exprs.iter().for_each(|block_expr| self.lower_expr(body, block_expr));
         match block.exprs.last() {
             Some(last_expr) => {
-                let result = self.builder.constrain_by_other(TypeId::Expr(*constrained_expr_id), TypeId::Expr(last_expr.id));
+                let result = self.builder.constrain_by_other(TypeId::Expr(body.id, *constrained_expr_id), TypeId::Expr(body.id, last_expr.id));
                 self.collect_log(result);
             },
             None => {
-                let result = self.builder.constrain_by_type(TypeId::Expr(*constrained_expr_id), Type::Prim(ast::PrimType::Void));
+                let result = self.builder.constrain_by_type(TypeId::Expr(body.id, *constrained_expr_id), Type::Prim(ast::PrimType::Void));
                 self.collect_log(result);
             },
         }
@@ -179,11 +180,11 @@ impl<'a> TypeConstraintLowering<'a> {
         block.exprs.iter().for_each(|block_expr| self.lower_expr(body, block_expr));
         match block.exprs.last() {
             Some(last_expr) => {
-                let result = self.builder.constrain_by_other(TypeId::Expr(last_expr.id), TypeId::Expr(*constraining_expr_id));
+                let result = self.builder.constrain_by_other(TypeId::Expr(body.id, last_expr.id), TypeId::Expr(body.id, *constraining_expr_id));
                 self.collect_log(result);
             },
             None => {
-                let result = self.builder.constrain_by_type(TypeId::Expr(*constraining_expr_id), Type::Prim(ast::PrimType::Void));
+                let result = self.builder.constrain_by_type(TypeId::Expr(body.id, *constraining_expr_id), Type::Prim(ast::PrimType::Void));
                 self.collect_log(result);
             },
         }

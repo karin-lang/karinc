@@ -63,23 +63,98 @@ fn constrains_types() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::FormalArg(FormalArgId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
-                    vec![TypeId::Expr(ExprId::new(1))],
+                    vec![TypeId::Expr(BodyId::new(0), ExprId::new(1))],
                     None,
                 ),
-                TypeId::Var(VarId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::Var(BodyId::new(0), VarId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                     Vec::new(),
-                    Some(TypeId::Expr(ExprId::new(1))),
+                    Some(TypeId::Expr(BodyId::new(0), ExprId::new(1))),
                 ),
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
-                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
-                    vec![TypeId::Var(VarId::new(0))],
-                    Some(TypeId::FormalArg(FormalArgId::new(0))),
+                    vec![TypeId::Var(BodyId::new(0), VarId::new(0))],
+                    Some(TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0))),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert!(logs.is_empty());
+}
+
+#[test]
+fn constrains_different_body_types() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item1".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                id: BodyId::new(0),
+                                ret_type: None,
+                                args: vec![
+                                    hir::FormalArgDef {
+                                        id: FormalArgId::new(0),
+                                        r#type: hir::Type::new(
+                                            hir::TypeKind::Prim(ast::PrimType::Bool),
+                                        ),
+                                        ref_mut: ast::RefMut::None,
+                                    },
+                                ],
+                                vars: Vec::new(),
+                                exprs: Vec::new(),
+                            },
+                        },
+                    ),
+                }
+            ),
+            "my_hako::item2".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 1),
+                    accessibility: ast::Accessibility::Default,
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                id: BodyId::new(1),
+                                ret_type: None,
+                                args: vec![
+                                    hir::FormalArgDef {
+                                        id: FormalArgId::new(0),
+                                        r#type: hir::Type::new(
+                                            hir::TypeKind::Prim(ast::PrimType::Bool),
+                                        ),
+                                        ref_mut: ast::RefMut::None,
+                                    },
+                                ],
+                                vars: Vec::new(),
+                                exprs: Vec::new(),
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = HashMap::new().into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                ),
+                TypeId::FormalArg(BodyId::new(1), FormalArgId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                 ),
             },
         ).to_sorted_vec(),
@@ -149,20 +224,20 @@ fn constrains_block_type() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Char)),
                     Vec::new(),
-                    Some(TypeId::Expr(ExprId::new(2))),
+                    Some(TypeId::Expr(BodyId::new(0), ExprId::new(2))),
                 ),
-                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                 ),
-                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(2)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Char)),
-                    vec![TypeId::Expr(ExprId::new(0))],
+                    vec![TypeId::Expr(BodyId::new(0), ExprId::new(0))],
                     None,
                 ),
-                TypeId::Expr(ExprId::new(3)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(3)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
             },
@@ -276,28 +351,28 @@ fn constrains_literal_types() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                 ),
-                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
                     TypePtr::new(Type::Infer(InferType::Int)),
                 ),
-                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(2)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Usize)),
                 ),
-                TypeId::Expr(ExprId::new(3)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(3)) => TypeConstraint::new(
                     TypePtr::new(Type::Infer(InferType::Float)),
                 ),
-                TypeId::Expr(ExprId::new(4)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(4)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::F32)),
                 ),
-                TypeId::Expr(ExprId::new(5)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(5)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Char)),
                 ),
-                TypeId::Expr(ExprId::new(6)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(6)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Str)),
                 ),
-                TypeId::Expr(ExprId::new(7)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(7)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::U32)),
                 ),
             },
@@ -360,10 +435,10 @@ fn constrains_by_top_level_ref() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::FormalArg(FormalArgId::new(0)) => TypeConstraint::new(
+                TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::U16)),
                 ),
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(
                         Type::Fn(
                             FnType {
@@ -443,28 +518,28 @@ fn constrains_by_local_ref() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::FormalArg(FormalArgId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::U8)),
-                    vec![TypeId::Expr(ExprId::new(1))],
+                    vec![TypeId::Expr(BodyId::new(0), ExprId::new(1))],
                     None,
                 ),
-                TypeId::Var(VarId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::Var(BodyId::new(0), VarId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::U16)),
-                    vec![TypeId::Expr(ExprId::new(2))],
+                    vec![TypeId::Expr(BodyId::new(0), ExprId::new(2))],
                     None,
                 ),
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
-                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::U8)),
                     Vec::new(),
-                    Some(TypeId::FormalArg(FormalArgId::new(0))),
+                    Some(TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0))),
                 ),
-                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(2)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::U16)),
                     Vec::new(),
-                    Some(TypeId::Var(VarId::new(0))),
+                    Some(TypeId::Var(BodyId::new(0), VarId::new(0))),
                 ),
             },
         ).to_sorted_vec(),
@@ -525,15 +600,15 @@ fn detects_inconsistent_constraint_of_var_init() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::Var(VarId::new(0)) => TypeConstraint::new(
+                TypeId::Var(BodyId::new(0), VarId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::I32)),
                 ),
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
-                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
-                    vec![TypeId::Var(VarId::new(0))],
+                    vec![TypeId::Var(BodyId::new(0), VarId::new(0))],
                     None,
                 ),
             },
@@ -613,17 +688,17 @@ fn constrains_by_fn_call() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::FormalArg(FormalArgId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                     Vec::new(),
                     None,
                 ),
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                     Vec::new(),
                     Some(TypeId::TopLevel(TopLevelId::FnRet(ItemId::new(0, 0)))),
                 ),
-                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                     Vec::new(),
                     Some(TypeId::TopLevel(TopLevelId::FnArg(ItemId::new(0, 0), FormalArgId::new(0)))),
@@ -709,22 +784,22 @@ fn detects_inconsistent_constraint_of_fn_call() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::FormalArg(FormalArgId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                     Vec::new(),
                     None,
                 ),
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                     Vec::new(),
                     Some(TypeId::TopLevel(TopLevelId::FnRet(ItemId::new(0, 0)))),
                 ),
-                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                     Vec::new(),
                     Some(TypeId::TopLevel(TopLevelId::FnRet(ItemId::new(0, 0)))),
                 ),
-                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(2)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Char)),
                     Vec::new(),
                     None,
@@ -799,21 +874,21 @@ fn constrains_var_by_bind() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::Var(VarId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::Var(BodyId::new(0), VarId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
-                    vec![TypeId::Expr(ExprId::new(2))],
+                    vec![TypeId::Expr(BodyId::new(0), ExprId::new(2))],
                     None,
                 ),
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
-                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
-                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(2)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                     Vec::new(),
-                    Some(TypeId::Var(VarId::new(0))),
+                    Some(TypeId::Var(BodyId::new(0), VarId::new(0))),
                 ),
             },
         ).to_sorted_vec(),
@@ -882,18 +957,18 @@ fn detects_inconsistent_constraint_of_var_bind() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::Var(VarId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::Var(BodyId::new(0), VarId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Usize)),
                     Vec::new(),
                     None,
                 ),
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
-                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
-                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(2)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                     Vec::new(),
                     None,
@@ -907,10 +982,10 @@ fn detects_inconsistent_constraint_of_var_bind() {
 #[test]
 fn detects_invalid_types_on_finalization() {
     let type_constraint_table = hashmap! {
-        TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+        TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
             TypePtr::new(Type::Undefined),
         ),
-        TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+        TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
             TypePtr::new(Type::Unresolved),
         ),
     }.into();
@@ -921,8 +996,8 @@ fn detects_invalid_types_on_finalization() {
     assert_eq!(
         logs,
         vec![
-            TypeLog::UndefinedType { type_id: TypeId::Expr(ExprId::new(0)) },
-            TypeLog::UnresolvedType { type_id: TypeId::Expr(ExprId::new(1)) },
+            TypeLog::UndefinedType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(0)) },
+            TypeLog::UnresolvedType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(1)) },
         ],
     );
 }
@@ -1007,35 +1082,35 @@ fn constrains_if_type() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Char)),
                     vec![
-                        TypeId::Expr(ExprId::new(2)),
-                        TypeId::Expr(ExprId::new(4)),
-                        TypeId::Expr(ExprId::new(5)),
+                        TypeId::Expr(BodyId::new(0), ExprId::new(2)),
+                        TypeId::Expr(BodyId::new(0), ExprId::new(4)),
+                        TypeId::Expr(BodyId::new(0), ExprId::new(5)),
                     ],
                     None,
                 ),
-                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                 ),
-                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(2)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Char)),
                     Vec::new(),
-                    Some(TypeId::Expr(ExprId::new(0))),
+                    Some(TypeId::Expr(BodyId::new(0), ExprId::new(0))),
                 ),
-                TypeId::Expr(ExprId::new(3)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(3)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                 ),
-                TypeId::Expr(ExprId::new(4)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(4)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Char)),
                     Vec::new(),
-                    Some(TypeId::Expr(ExprId::new(0))),
+                    Some(TypeId::Expr(BodyId::new(0), ExprId::new(0))),
                 ),
-                TypeId::Expr(ExprId::new(5)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(5)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Char)),
                     Vec::new(),
-                    Some(TypeId::Expr(ExprId::new(0))),
+                    Some(TypeId::Expr(BodyId::new(0), ExprId::new(0))),
                 ),
             },
         ).to_sorted_vec(),
@@ -1108,13 +1183,13 @@ fn constrains_if_type_with_void() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
-                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                 ),
-                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(2)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                 ),
             },
@@ -1165,7 +1240,7 @@ fn constrains_endless_for_type() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
             },

@@ -57,18 +57,18 @@ impl std::fmt::Debug for LocalId {
 #[derive(Clone, Copy, Eq, Hash, Ord, PartialEq, PartialOrd)]
 pub enum TypeId {
     TopLevel(TopLevelId),
-    FormalArg(FormalArgId),
-    Var(VarId),
-    Expr(ExprId),
+    FormalArg(BodyId, FormalArgId),
+    Var(BodyId, VarId),
+    Expr(BodyId, ExprId),
 }
 
 impl std::fmt::Debug for TypeId {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let s = match self {
             TypeId::TopLevel(id) => format!("{:?}", id),
-            TypeId::FormalArg(id) => format!("{:?}", id),
-            TypeId::Var(id) => format!("{:?}", id),
-            TypeId::Expr(id) => format!("{:?}", id),
+            TypeId::FormalArg(body_id, formal_arg_id) => format!("{:?} :: {:?}", body_id, formal_arg_id),
+            TypeId::Var(body_id, var_id) => format!("{:?} :: {:?}", body_id, var_id),
+            TypeId::Expr(body_id, expr_id) => format!("{:?} :: {:?}", body_id, expr_id),
         };
         write!(f, "{:?}", s)
     }

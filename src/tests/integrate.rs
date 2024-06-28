@@ -121,7 +121,7 @@ fn generates_js() {
         type_constraint_table.to_sorted_vec(),
         typesys::constraint::TypeConstraintTable::from(
             hashmap! {
-                TypeId::Expr(ExprId::new(0)) => typesys::constraint::TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => typesys::constraint::TypeConstraint::new_constrained(
                     typesys::TypePtr::new(
                         typesys::Type::Fn(
                             typesys::FnType {

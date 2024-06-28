@@ -36,9 +36,9 @@ impl TypeConstraintTable {
     pub fn is_suitable_for_key(type_id: TypeId) -> bool {
         match type_id {
             TypeId::TopLevel(_) => false,
-            TypeId::FormalArg(_) => true,
-            TypeId::Var(_) => true,
-            TypeId::Expr(_) => true,
+            TypeId::FormalArg(_, _) => true,
+            TypeId::Var(_, _) => true,
+            TypeId::Expr(_, _) => true,
         }
     }
 
