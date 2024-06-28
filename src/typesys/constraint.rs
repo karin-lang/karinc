@@ -107,7 +107,7 @@ impl<'a> TypeConstraintBuilder<'a> {
 
     // todo: 部分型に対応
     pub fn is_consistent(type_id: &Type, constrained_by: &Type) -> bool {
-        !type_id.is_resolved() || *type_id == *constrained_by
+        !type_id.is_resolved() || !constrained_by.is_resolved() || *type_id == *constrained_by
     }
 
     pub fn constrain(&mut self, type_id: TypeId) -> TypeResult<()> {
@@ -156,27 +156,42 @@ impl<'a> TypeConstraintBuilder<'a> {
                 let new_ptr = match self.table.get_mut(&constrained_by) {
                     Some(constraint) => {
                         constraint.constrain(type_id);
-                        constraint.get_ptr().clone()
+                        if constraint.get_ptr().borrow().is_resolved() {
+                            // 制約元の型が解決済みであれば制約元の型を制約先に複製する
+                            constraint.get_ptr().clone()
+                        } else {
+                            // 制約元の型が未解決であれば制約先の型を制約元に複製する
+                            match self.table.get_mut(&type_id) {
+                                Some(constraint) => constraint.get_ptr().clone(),
+                                None => panic!("unknown expression id: {:?}", type_id),
+                            }
+                        }
                     },
                     None => panic!("unknown expression id: {:?}", constrained_by),
                 };
+                // 制約先の型を新しいポインタに設定する
                 match self.table.get_mut(&type_id) {
                     Some(constraint) => {
                         if !TypeConstraintBuilder::is_consistent(&constraint.get_ptr().borrow(), &new_ptr.borrow()) {
                             // detects inconsistent types
                             return Err(TypeLog::InconsistentConstraint);
                         }
-                        constraint.set_ptr(new_ptr);
+                        constraint.set_ptr(new_ptr.clone());
                         constraint.set_constrained_by(constrained_by);
                     },
                     None => {
                         let new_constraint = TypeConstraint::new_constrained(
-                            new_ptr,
+                            new_ptr.clone(),
                             Vec::new(),
                             Some(constrained_by),
                         );
                         self.table.insert(type_id, new_constraint);
                     },
+                }
+                // 制約元の型を制約先と一致させる
+                match self.table.get_mut(&constrained_by) {
+                    Some(constraint) => constraint.set_ptr(new_ptr),
+                    None => (),
                 }
             },
         }

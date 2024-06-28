@@ -87,7 +87,7 @@ fn constrains_types() {
 }
 
 #[test]
-fn constrains_block_types() {
+fn constrains_block_type() {
     let hir = hir::Hir {
         items: hashmap! {
             "my_hako::item".into() => (
@@ -915,4 +915,198 @@ fn detects_invalid_types_on_finalization() {
             TypeLog::UnresolvedType { type_id: TypeId::Expr(ExprId::new(1)) },
         ],
     );
+}
+
+#[test]
+fn constrains_if_type() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: None,
+                                args: Vec::new(),
+                                vars: Vec::new(),
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::If(
+                                            hir::If {
+                                                cond: Box::new(
+                                                    hir::Expr {
+                                                        id: ExprId::new(1),
+                                                        kind: hir::ExprKind::Literal(token::Literal::Bool { value: true }),
+                                                    },
+                                                ),
+                                                block: hir::Block {
+                                                    exprs: vec![
+                                                        hir::Expr {
+                                                            id: ExprId::new(2),
+                                                            kind: hir::ExprKind::Literal(token::Literal::Char { value: None }),
+                                                        },
+                                                    ],
+                                                },
+                                                elifs: vec![
+                                                    hir::Elif {
+                                                        cond: Box::new(
+                                                            hir::Expr {
+                                                                id: ExprId::new(3),
+                                                                kind: hir::ExprKind::Literal(token::Literal::Bool { value: true }),
+                                                            },
+                                                        ),
+                                                        block: hir::Block {
+                                                            exprs: vec![
+                                                                hir::Expr {
+                                                                    id: ExprId::new(4),
+                                                                    kind: hir::ExprKind::Literal(token::Literal::Char { value: None }),
+                                                                },
+                                                            ],
+                                                        },
+                                                    },
+                                                ],
+                                                r#else: Some(
+                                                    hir::Block {
+                                                        exprs: vec![
+                                                            hir::Expr {
+                                                                id: ExprId::new(5),
+                                                                kind: hir::ExprKind::Literal(token::Literal::Char { value: None }),
+                                                            },
+                                                        ],
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = HashMap::new().into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Char)),
+                    vec![
+                        TypeId::Expr(ExprId::new(2)),
+                        TypeId::Expr(ExprId::new(4)),
+                        TypeId::Expr(ExprId::new(5)),
+                    ],
+                    None,
+                ),
+                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                ),
+                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Char)),
+                    Vec::new(),
+                    Some(TypeId::Expr(ExprId::new(0))),
+                ),
+                TypeId::Expr(ExprId::new(3)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                ),
+                TypeId::Expr(ExprId::new(4)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Char)),
+                    Vec::new(),
+                    Some(TypeId::Expr(ExprId::new(0))),
+                ),
+                TypeId::Expr(ExprId::new(5)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Char)),
+                    Vec::new(),
+                    Some(TypeId::Expr(ExprId::new(0))),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert!(logs.is_empty());
+}
+
+#[test]
+fn constrains_if_type_with_void() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: None,
+                                args: Vec::new(),
+                                vars: Vec::new(),
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::If(
+                                            hir::If {
+                                                cond: Box::new(
+                                                    hir::Expr {
+                                                        id: ExprId::new(1),
+                                                        kind: hir::ExprKind::Literal(token::Literal::Bool { value: true }),
+                                                    },
+                                                ),
+                                                block: hir::Block {
+                                                    exprs: Vec::new(),
+                                                },
+                                                elifs: vec![
+                                                    hir::Elif {
+                                                        cond: Box::new(
+                                                            hir::Expr {
+                                                                id: ExprId::new(2),
+                                                                kind: hir::ExprKind::Literal(token::Literal::Bool { value: true }),
+                                                            },
+                                                        ),
+                                                        block: hir::Block {
+                                                            exprs: Vec::new(),
+                                                        },
+                                                    },
+                                                ],
+                                                r#else: Some(
+                                                    hir::Block {
+                                                        exprs: Vec::new(),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = HashMap::new().into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
+                ),
+                TypeId::Expr(ExprId::new(1)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                ),
+                TypeId::Expr(ExprId::new(2)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert!(logs.is_empty());
 }

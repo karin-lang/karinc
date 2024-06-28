@@ -49,22 +49,7 @@ impl<'a> TypeConstraintLowering<'a> {
         match &expr.kind {
             // ブロックの返り値の型はブロック単位でなく式単位で関連付ける
             // 例）if-else 式の場合: if ブロック内の最後の式と else ブロック内の最後の式が関連付けられて型を検査する
-            hir::ExprKind::Block(block) => {
-                block.exprs.iter().for_each(|block_expr| self.lower_expr(body, block_expr));
-                match block.exprs.last() {
-                    Some(last_expr) => {
-                        let result = self.builder.constrain_by_other(TypeId::Expr(expr.id), TypeId::Expr(last_expr.id));
-                        self.collect_log(result);
-                    },
-                    None => {
-                        let result = self.builder.constrain_by_type(
-                            TypeId::Expr(expr.id),
-                            Type::Prim(ast::PrimType::Void),
-                        );
-                        self.collect_log(result);
-                    },
-                }
-            },
+            hir::ExprKind::Block(block) => self.lower_constrained_block(body, &expr.id, block),
             hir::ExprKind::Literal(literal) => {
                 let r#type = match literal {
                     token::Literal::Bool { value: _ } => Type::Prim(ast::PrimType::Bool),
@@ -146,8 +131,48 @@ impl<'a> TypeConstraintLowering<'a> {
                 let result = self.builder.copy_constraint(TypeId::Var(bind.var_id), TypeId::Expr(bind.value.id));
                 self.collect_log(result);
             },
-            hir::ExprKind::If(_) => todo!("すぐに実装する"),
+            hir::ExprKind::If(r#if) => {
+                let result = self.builder.constrain(TypeId::Expr(expr.id));
+                self.collect_log(result);
+                self.lower_expr(body, &r#if.cond);
+                self.lower_constraining_block(body, &expr.id, &r#if.block);
+                r#if.elifs.iter().for_each(|elif| {
+                    self.lower_expr(body, &elif.cond);
+                    self.lower_constraining_block(body, &expr.id, &elif.block);
+                });
+                if let Some(block) = &r#if.r#else {
+                    self.lower_constraining_block(body, &expr.id, block);
+                }
+            },
             hir::ExprKind::For(_) => todo!("すぐに実装する"),
+        }
+    }
+
+    pub fn lower_constrained_block(&mut self, body: &hir::Body, constrained_expr_id: &ExprId, block: &hir::Block) {
+        block.exprs.iter().for_each(|block_expr| self.lower_expr(body, block_expr));
+        match block.exprs.last() {
+            Some(last_expr) => {
+                let result = self.builder.constrain_by_other(TypeId::Expr(*constrained_expr_id), TypeId::Expr(last_expr.id));
+                self.collect_log(result);
+            },
+            None => {
+                let result = self.builder.constrain_by_type(TypeId::Expr(*constrained_expr_id), Type::Prim(ast::PrimType::Void));
+                self.collect_log(result);
+            },
+        }
+    }
+
+    pub fn lower_constraining_block(&mut self, body: &hir::Body, constraining_expr_id: &ExprId, block: &hir::Block) {
+        block.exprs.iter().for_each(|block_expr| self.lower_expr(body, block_expr));
+        match block.exprs.last() {
+            Some(last_expr) => {
+                let result = self.builder.constrain_by_other(TypeId::Expr(last_expr.id), TypeId::Expr(*constraining_expr_id));
+                self.collect_log(result);
+            },
+            None => {
+                let result = self.builder.constrain_by_type(TypeId::Expr(*constraining_expr_id), Type::Prim(ast::PrimType::Void));
+                self.collect_log(result);
+            },
         }
     }
 }
