@@ -157,6 +157,21 @@ impl TripleNumId for ItemMemberId {
 }
 
 #[derive(Clone, Copy, std::fmt::Debug, Eq, std::hash::Hash, Ord, PartialEq, PartialOrd)]
+pub struct BodyId {
+    id: usize,
+}
+
+impl NumId for BodyId {
+    fn new(id: usize) -> Self {
+        Self { id }
+    }
+
+    fn into_usize(self) -> usize {
+        self.id
+    }
+}
+
+#[derive(Clone, Copy, std::fmt::Debug, Eq, std::hash::Hash, Ord, PartialEq, PartialOrd)]
 pub struct VarId {
     id: usize,
 }

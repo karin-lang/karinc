@@ -18,7 +18,8 @@ fn outputs_parser_result() {
         token!(ClosingCurlyBracket, 5, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
     let (ast, logs) = parser.parse(ModId::new(0, 0), "myhako".into());
 
     assert_eq!(
@@ -37,6 +38,7 @@ fn outputs_parser_result() {
                     kind: ItemKind::FnDecl(
                         FnDecl {
                             body: Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: Vec::new(),
                                 exprs: Vec::new(),
@@ -67,7 +69,8 @@ fn parses_continuous_items() {
         token!(ClosingCurlyBracket, 11, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_items(),
@@ -82,6 +85,7 @@ fn parses_continuous_items() {
                 kind: ItemKind::FnDecl(
                     FnDecl {
                         body: Body {
+                            id: BodyId::new(0),
                             ret_type: None,
                             args: Vec::new(),
                             exprs: Vec::new(),
@@ -99,6 +103,7 @@ fn parses_continuous_items() {
                 kind: ItemKind::FnDecl(
                     FnDecl {
                         body: Body {
+                            id: BodyId::new(1),
                             ret_type: None,
                             args: Vec::new(),
                             exprs: Vec::new(),
@@ -122,7 +127,8 @@ fn consumes_until_body_end_when_error_occurred() {
         token!(ClosingCurlyBracket, 4, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_items(),
@@ -144,7 +150,8 @@ fn parses_empty_enclosed_expr() {
         token!(ClosingCurlyBracket, 1, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_enclosed_exprs().unwrap(),
@@ -163,7 +170,8 @@ fn parses_enclosed_expr_with_single_expr() {
         token!(ClosingCurlyBracket, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_enclosed_exprs().unwrap(),
@@ -189,7 +197,8 @@ fn parses_enclosed_exprs_with_multiple_exprs() {
         token!(ClosingCurlyBracket, 5, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_enclosed_exprs().unwrap(),
@@ -217,7 +226,8 @@ fn expects_semicolon_after_expr_in_enclosed_exprs() {
         token!(ClosingCurlyBracket, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_enclosed_exprs().unwrap(),
@@ -253,7 +263,8 @@ fn parses_fn_call_expr() {
         token!(ClosingParen, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_expr().unwrap(),
@@ -290,7 +301,8 @@ fn parses_actual_args_of_zero_len() {
         token!(ClosingParen, 1, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert!(parser.parse_actual_args().unwrap().is_empty());
     assert!(parser.get_logs().is_empty());
@@ -305,7 +317,8 @@ fn parses_actual_arg_of_a_len() {
         token!(ClosingParen, 2, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_actual_args().unwrap(),
@@ -335,7 +348,8 @@ fn parses_actual_args_of_two_len() {
         token!(ClosingParen, 4, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_actual_args().unwrap(),
@@ -373,7 +387,8 @@ fn disallows_comma_before_actual_arg() {
         token!(ClosingParen, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_actual_args().unwrap(),
@@ -405,7 +420,8 @@ fn allows_comma_after_actual_arg() {
         token!(ClosingParen, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_actual_args().unwrap(),
@@ -434,7 +450,8 @@ fn parses_refmut_actual_arg() {
         token!(ClosingParen, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_actual_args().unwrap(),
@@ -482,7 +499,8 @@ fn expects_item() {
         keyword_token!(Let, 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_single_item(),
@@ -508,7 +526,8 @@ fn parses_fn_decl_item() {
         token!(ClosingCurlyBracket, 5, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_single_item().unwrap(),
@@ -519,6 +538,7 @@ fn parses_fn_decl_item() {
             kind: ItemKind::FnDecl(
                 FnDecl {
                     body: Body {
+                        id: BodyId::new(0),
                         ret_type: None,
                         args: Vec::new(),
                         exprs: Vec::new(),
@@ -543,7 +563,8 @@ fn parses_pub_fn_decl_item() {
         token!(ClosingCurlyBracket, 6, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_single_item().unwrap(),
@@ -554,6 +575,7 @@ fn parses_pub_fn_decl_item() {
             kind: ItemKind::FnDecl(
                 FnDecl {
                     body: Body {
+                        id: BodyId::new(0),
                         ret_type: None,
                         args: Vec::new(),
                         exprs: Vec::new(),
@@ -578,7 +600,8 @@ fn parses_fn_decl_item_with_ret_type() {
         token!(ClosingCurlyBracket, 7, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_single_item().unwrap(),
@@ -589,6 +612,7 @@ fn parses_fn_decl_item_with_ret_type() {
             kind: ItemKind::FnDecl(
                 FnDecl {
                     body: Body {
+                        id: BodyId::new(0),
                         ret_type: Some(
                             Type {
                                 kind: Box::new(TypeKind::Prim(PrimType::Usize)),
@@ -614,7 +638,8 @@ fn parses_referable() {
         keyword_token!(Ref, 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.consume_ref_mut(),
@@ -630,7 +655,8 @@ fn parses_mutability() {
         keyword_token!(Mut, 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.consume_ref_mut(),
@@ -646,7 +672,8 @@ fn parses_none_refmut() {
         keyword_token!(Let, 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.consume_ref_mut(),
@@ -665,7 +692,8 @@ fn parses_formal_args_of_zero_len() {
         token!(ClosingParen, 1, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_formal_args().unwrap(),
@@ -684,7 +712,8 @@ fn parses_formal_arg_of_a_len() {
         token!(ClosingParen, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_formal_args().unwrap(),
@@ -715,7 +744,8 @@ fn parses_formal_args_of_two_len() {
         token!(ClosingParen, 7, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_formal_args().unwrap(),
@@ -752,7 +782,8 @@ fn parses_refmut_of_formal_arg() {
         token!(ClosingParen, 4, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_formal_args().unwrap(),
@@ -781,7 +812,8 @@ fn disallows_comma_before_formal_args() {
         token!(ClosingParen, 4, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_formal_args().unwrap(),
@@ -813,7 +845,8 @@ fn allows_comma_after_formal_args() {
         token!(ClosingParen, 4, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_formal_args().unwrap(),
@@ -843,11 +876,13 @@ fn parses_body() {
         token!(ClosingCurlyBracket, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_body(None, Vec::new()).unwrap(),
         Body {
+            id: BodyId::new(0),
             ret_type: None,
             args: Vec::new(),
             exprs: vec![
@@ -870,7 +905,8 @@ fn parses_id_type() {
         id_token!("t", 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_type().unwrap(),
@@ -893,7 +929,8 @@ fn parses_prim_type() {
         prim_type_token!(Bool, 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_type().unwrap(),
@@ -912,7 +949,8 @@ fn expects_type_for_unexpected_token() {
         token!(Semicolon, 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_type(),
@@ -931,7 +969,8 @@ fn consumes_until_before_semicolon_when_error_occurred() {
         token!(Semicolon, 1, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_expr(),
@@ -949,7 +988,8 @@ fn parses_id_expr() {
         id_token!("id", 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_expr().unwrap(),
@@ -972,7 +1012,8 @@ fn parses_var_def_expr() {
         token!(Semicolon, 2, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_expr(),
@@ -1003,7 +1044,8 @@ fn parses_refmut_var_def() {
         token!(Semicolon, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_var_def().unwrap(),
@@ -1030,7 +1072,8 @@ fn parses_var_def_with_type_annot() {
         token!(Semicolon, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_var_def().unwrap(),
@@ -1063,7 +1106,8 @@ fn parses_var_def_with_init() {
         token!(Semicolon, 4, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_var_def().unwrap(),
@@ -1101,7 +1145,8 @@ fn parses_var_def_with_type_annot_and_init() {
         token!(Semicolon, 5, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_var_def().unwrap(),
@@ -1143,7 +1188,8 @@ fn parses_var_bind_expr() {
         id_token!("value", 2, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_expr().unwrap(),
@@ -1186,7 +1232,8 @@ fn parses_if_expr() {
         token!(ClosingCurlyBracket, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_expr().unwrap(),
@@ -1239,7 +1286,8 @@ fn parses_if_with_elifs_and_else() {
         token!(ClosingCurlyBracket, 14, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_if().unwrap(),
@@ -1305,7 +1353,8 @@ fn parses_for_expr() {
         token!(ClosingCurlyBracket, 2, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_expr().unwrap(),
@@ -1335,7 +1384,8 @@ fn parses_for_with_cond() {
         token!(ClosingCurlyBracket, 3, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_for().unwrap(),
@@ -1371,7 +1421,8 @@ fn parses_for_in() {
         token!(ClosingCurlyBracket, 5, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_for().unwrap(),
@@ -1411,7 +1462,8 @@ fn parses_literal_expr() {
         literal_token!(token::Literal::Bool { value: true }, 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut parser = Parser::new(&tokens, &mut crate_context);
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
         parser.parse_expr().unwrap(),

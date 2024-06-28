@@ -33,6 +33,7 @@ pub struct FnDecl {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Body {
+    pub id: BodyId,
     pub ret_type: Option<Type>,
     pub args: Vec<FormalArgDef>,
     pub vars: Vec<VarDef>,

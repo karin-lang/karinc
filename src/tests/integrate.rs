@@ -28,7 +28,8 @@ fn generates_js() {
     assert!(lexer_logs.is_empty());
 
     let mut hako_context = ParserHakoContext::new(HakoId::new(0));
-    let parser = parser::Parser::new(&tokens, &mut hako_context);
+    let mut last_body_id = 0;
+    let parser = parser::Parser::new(&tokens, &mut hako_context, &mut last_body_id);
     let (ast, parser_logs) = parser.parse(ModId::new(0, 0), "my_hako".into());
     assert_eq!(
         ast,
@@ -43,6 +44,7 @@ fn generates_js() {
                     kind: ast::ItemKind::FnDecl(
                         ast::FnDecl {
                             body: ast::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: Vec::new(),
                                 exprs: vec![
@@ -76,6 +78,7 @@ fn generates_js() {
                         kind: hir::ItemKind::FnDecl(
                             hir::FnDecl {
                                 body: hir::Body {
+                                    id: BodyId::new(0),
                                     ret_type: None,
                                     args: Vec::new(),
                                     vars: Vec::new(),

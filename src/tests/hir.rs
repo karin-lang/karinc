@@ -39,6 +39,7 @@ fn lowers_subitem_in_mod() {
                 kind: ast::ItemKind::FnDecl(
                     ast::FnDecl {
                         body: ast::Body {
+                            id: BodyId::new(0),
                             ret_type: None,
                             args: Vec::new(),
                             exprs: Vec::new(),
@@ -63,6 +64,7 @@ fn lowers_subitem_in_mod() {
                         kind: ItemKind::FnDecl(
                             FnDecl {
                                 body: Body {
+                                    id: BodyId::new(0),
                                     ret_type: None,
                                     args: Vec::new(),
                                     vars: Vec::new(),
@@ -91,6 +93,7 @@ fn resolves_item_and_local() {
                 kind: ast::ItemKind::FnDecl(
                     ast::FnDecl {
                         body: ast::Body {
+                            id: BodyId::new(0),
                             ret_type: None,
                             args: Vec::new(),
                             exprs: vec![
@@ -139,6 +142,7 @@ fn resolves_item_and_local() {
                         kind: ItemKind::FnDecl(
                             FnDecl {
                                 body: Body {
+                                    id: BodyId::new(0),
                                     ret_type: None,
                                     args: Vec::new(),
                                     vars: vec![

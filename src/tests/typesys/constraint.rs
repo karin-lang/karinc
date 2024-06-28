@@ -19,6 +19,7 @@ fn constrains_types() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: vec![
                                     hir::FormalArgDef {
@@ -97,6 +98,7 @@ fn constrains_block_type() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: Vec::new(),
                                 vars: Vec::new(),
@@ -180,6 +182,7 @@ fn constrains_literal_types() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: Vec::new(),
                                 vars: Vec::new(),
@@ -314,6 +317,7 @@ fn constrains_by_top_level_ref() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: Some(
                                     hir::Type {
                                         kind: Box::new(hir::TypeKind::Prim(ast::PrimType::U8)),
@@ -388,6 +392,7 @@ fn constrains_by_local_ref() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: vec![
                                     hir::FormalArgDef {
@@ -478,6 +483,7 @@ fn detects_inconsistent_constraint_of_var_init() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: Vec::new(),
                                 vars: vec![
@@ -552,6 +558,7 @@ fn constrains_by_fn_call() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: vec![
                                     hir::FormalArgDef {
@@ -638,6 +645,7 @@ fn detects_inconsistent_constraint_of_fn_call() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: vec![
                                     hir::FormalArgDef {
@@ -744,6 +752,7 @@ fn constrains_var_by_bind() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: Vec::new(),
                                 vars: vec![
@@ -823,6 +832,7 @@ fn detects_inconsistent_constraint_of_var_bind() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: Vec::new(),
                                 vars: vec![
@@ -928,6 +938,7 @@ fn constrains_if_type() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: Vec::new(),
                                 vars: Vec::new(),
@@ -1043,6 +1054,7 @@ fn constrains_if_type_with_void() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: Vec::new(),
                                 vars: Vec::new(),
@@ -1122,6 +1134,7 @@ fn constrains_endless_for_type() {
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
                             body: hir::Body {
+                                id: BodyId::new(0),
                                 ret_type: None,
                                 args: Vec::new(),
                                 vars: Vec::new(),

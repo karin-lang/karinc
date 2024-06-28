@@ -10,6 +10,7 @@ use crate::hir::lower::HirLowering;
 fn lowers_fn_decl() {
     let ast = ast::FnDecl {
         body: ast::Body {
+            id: BodyId::new(0),
             ret_type: None,
             args: Vec::new(),
             exprs: Vec::new(),
@@ -25,6 +26,7 @@ fn lowers_fn_decl() {
         hir,
         FnDecl {
             body: Body {
+                id: BodyId::new(0),
                 ret_type: None,
                 args: Vec::new(),
                 vars: Vec::new(),
@@ -38,6 +40,7 @@ fn lowers_fn_decl() {
 #[test]
 fn lowers_body() {
     let ast = ast::Body {
+        id: BodyId::new(0),
         ret_type: Some(
             ast::Type {
                 kind: Box::new(ast::TypeKind::Prim(ast::PrimType::Bool)),
@@ -72,6 +75,7 @@ fn lowers_body() {
     assert_eq!(
         hir,
         Body {
+            id: BodyId::new(0),
             ret_type: Some(
                 Type {
                     kind: Box::new(TypeKind::Prim(ast::PrimType::Bool)),

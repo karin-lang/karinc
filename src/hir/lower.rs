@@ -183,10 +183,11 @@ impl<'a> HirLowering<'a> {
     pub fn lower_body(&mut self, body: &ast::Body) -> Body {
         self.body_scope_hierarchy.enter_scope();
         body.args.iter().enumerate().for_each(|(i, arg)| self.lower_formal_arg(FormalArgId::new(i), arg));
+        let id = body.id;
         let ret_type = body.ret_type.as_ref().map(|r#type| self.lower_type(r#type));
         let exprs = body.exprs.iter().map(|v| self.lower_expr(v)).collect();
         let (args, vars) = self.body_scope_hierarchy.leave_scope();
-        Body { ret_type, args, vars, exprs }
+        Body { id, ret_type, args, vars, exprs }
     }
 
     pub fn lower_formal_arg(&mut self, id: FormalArgId, arg: &ast::FormalArg) {

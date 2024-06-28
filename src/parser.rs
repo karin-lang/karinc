@@ -31,15 +31,17 @@ pub struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>,
     hako_context: &'a mut ParserHakoContext,
     last_token_span: Span,
+    last_body_id: &'a mut usize,
     logs: Vec<ParserLog>,
 }
 
 impl<'a> Parser<'a> {
-    pub fn new(tokens: &'a Vec<Token>, hako_context: &'a mut ParserHakoContext) -> Parser<'a> {
+    pub fn new(tokens: &'a Vec<Token>, hako_context: &'a mut ParserHakoContext, last_body_id: &'a mut usize) -> Parser<'a> {
         Parser {
             tokens: tokens.iter().peekable(),
             hako_context,
             last_token_span: tokens.last().map(|token| token.span.clone()).unwrap_or_default(),
+            last_body_id,
             logs: Vec::new(),
         }
     }
@@ -192,6 +194,12 @@ impl<'a> Parser<'a> {
         }
     }
 
+    pub fn generate_body_id(&mut self) -> BodyId {
+        let new_id = BodyId::new(*self.last_body_id);
+        *self.last_body_id += 1;
+        new_id
+    }
+
     pub fn get_logs(&self) -> &Vec<ParserLog> {
         &self.logs
     }
@@ -336,7 +344,8 @@ impl<'a> Parser<'a> {
 
     pub fn parse_body(&mut self, ret_type: Option<Type>, args: Vec<FormalArg>) -> ParserResult<Body> {
         let exprs = self.parse_enclosed_exprs()?;
-        let body = Body { ret_type, args, exprs };
+        let id = self.generate_body_id();
+        let body = Body { id, ret_type, args, exprs };
         Ok(body)
     }
 
