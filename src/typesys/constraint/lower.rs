@@ -144,10 +144,22 @@ impl<'a> TypeConstraintLowering<'a> {
                     self.lower_constraining_block(body, &expr.id, block);
                 }
             },
-            hir::ExprKind::For(_) => todo!("すぐに実装する"),
+            hir::ExprKind::For(r#for) => {
+                // todo: cond, index, range に型制約をつけてテストする (例) cond を bool 型に制約する
+                match &r#for.kind {
+                    hir::ForKind::Endless => (),
+                    hir::ForKind::Cond { cond } => self.lower_expr(body, cond),
+                    hir::ForKind::Range { index, range } => {
+                        self.lower_expr(body, index);
+                        self.lower_expr(body, range);
+                    },
+                }
+                self.lower_constraining_block(body, &expr.id, &r#for.block);
+            },
         }
     }
 
+    // 他の要素の型に制約を与えるブロック（ブロック式に用いる）
     pub fn lower_constrained_block(&mut self, body: &hir::Body, constrained_expr_id: &ExprId, block: &hir::Block) {
         block.exprs.iter().for_each(|block_expr| self.lower_expr(body, block_expr));
         match block.exprs.last() {
@@ -162,6 +174,7 @@ impl<'a> TypeConstraintLowering<'a> {
         }
     }
 
+    // ブロック内要素の型に制約を受けるブロック
     pub fn lower_constraining_block(&mut self, body: &hir::Body, constraining_expr_id: &ExprId, block: &hir::Block) {
         block.exprs.iter().for_each(|block_expr| self.lower_expr(body, block_expr));
         match block.exprs.last() {

@@ -1110,3 +1110,53 @@ fn constrains_if_type_with_void() {
     );
     assert!(logs.is_empty());
 }
+
+#[test]
+fn constrains_endless_for_type() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                ret_type: None,
+                                args: Vec::new(),
+                                vars: Vec::new(),
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::For(
+                                            hir::For {
+                                                kind: hir::ForKind::Endless,
+                                                block: hir::Block {
+                                                    exprs: Vec::new(),
+                                                },
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = HashMap::new().into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::Expr(ExprId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert!(logs.is_empty());
+}
