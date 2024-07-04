@@ -133,6 +133,7 @@ impl<'a> TypeConstraintLowering<'a> {
                 self.collect_log(result);
             },
             hir::ExprKind::If(r#if) => {
+                // todo: 条件網羅のため、body の型が void でないかつ else 節がついていない場合はエラーを吐く（理想は CFG 解析をして条件網羅を判断する）
                 let result = self.builder.constrain(TypeId::Expr(body.id, expr.id));
                 self.collect_log(result);
                 self.lower_expr(body, &r#if.cond);
@@ -155,6 +156,8 @@ impl<'a> TypeConstraintLowering<'a> {
                         self.lower_expr(body, range);
                     },
                 }
+                let result = self.builder.constrain(TypeId::Expr(body.id, expr.id));
+                self.collect_log(result);
                 self.lower_constraining_block(body, &expr.id, &r#for.block);
             },
         }

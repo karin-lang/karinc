@@ -1220,7 +1220,14 @@ fn constrains_endless_for_type() {
                                             hir::For {
                                                 kind: hir::ForKind::Endless,
                                                 block: hir::Block {
-                                                    exprs: Vec::new(),
+                                                    exprs: vec![
+                                                        hir::Expr {
+                                                            id: ExprId::new(1),
+                                                            kind: hir::ExprKind::Literal(
+                                                                token::Literal::Bool { value: true },
+                                                            ),
+                                                        },
+                                                    ],
                                                 },
                                             },
                                         ),
@@ -1240,8 +1247,15 @@ fn constrains_endless_for_type() {
         table.to_sorted_vec(),
         TypeConstraintTable::from(
             hashmap! {
-                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
-                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    vec![TypeId::Expr(BodyId::new(0), ExprId::new(1))],
+                    None,
+                ),
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    Vec::new(),
+                    Some(TypeId::Expr(BodyId::new(0), ExprId::new(0))),
                 ),
             },
         ).to_sorted_vec(),
