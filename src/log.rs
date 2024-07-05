@@ -51,6 +51,7 @@ pub enum CompilerWarn {
 pub enum SyntaxErrorKind {
     /* lexer */
     EmptyCharLiteral,
+    ExpectedDecimalFloat,
     ExpectedTypeSuffix,
     LineBreakInCharLiteral,
     LineBreakInStrLiteral,

@@ -59,7 +59,7 @@ impl<'a> TypeConstraintLowering<'a> {
                         Some(r#type) => Type::Prim(*r#type),
                         None => Type::Infer(InferType::Int), // todo: uint を追加
                     },
-                    token::Literal::Float { base: _, int_digits: _, fraction_digits: _, r#type } => match r#type {
+                    token::Literal::Float { digits: _, r#type } => match r#type {
                         Some(r#type) => Type::Prim(*r#type),
                         None => Type::Infer(InferType::Float),
                     },

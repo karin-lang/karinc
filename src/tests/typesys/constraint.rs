@@ -296,9 +296,12 @@ fn constrains_literal_types() {
                                         id: ExprId::new(3),
                                         kind: hir::ExprKind::Literal(
                                             token::Literal::Float {
-                                                base: token::Base::Dec,
-                                                int_digits: "0".to_string(),
-                                                fraction_digits: "0".to_string(),
+                                                digits: Some(
+                                                    token::FloatDigits {
+                                                        int: "0".to_string(),
+                                                        fraction: "0".to_string(),
+                                                    },
+                                                ),
                                                 r#type: None,
                                             },
                                         ),
@@ -308,9 +311,12 @@ fn constrains_literal_types() {
                                         id: ExprId::new(4),
                                         kind: hir::ExprKind::Literal(
                                             token::Literal::Float {
-                                                base: token::Base::Dec,
-                                                int_digits: "0".to_string(),
-                                                fraction_digits: "0".to_string(),
+                                                digits: Some(
+                                                    token::FloatDigits {
+                                                        int: "0".to_string(),
+                                                        fraction: "0".to_string(),
+                                                    },
+                                                ),
                                                 r#type: Some(ast::PrimType::F32),
                                             },
                                         ),

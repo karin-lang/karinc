@@ -168,7 +168,13 @@ impl Lexer {
                     }
 
                     let literal = if is_float {
-                        Literal::Float { base, int_digits, fraction_digits, r#type }
+                        let digits = if base == Base::Dec {
+                            Some(FloatDigits { int: int_digits, fraction: fraction_digits })
+                        } else {
+                            self.record_log(LexerLog::ExpectedDecimalFloat { span: Span::from_usize(index, len) });
+                            None
+                        };
+                        Literal::Float { digits, r#type }
                     } else {
                         Literal::Int { base, int_digits, r#type }
                     };

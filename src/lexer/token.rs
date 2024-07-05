@@ -144,7 +144,7 @@ impl ast::PrimType {
 pub enum Literal {
     Bool { value: bool },
     Int { base: Base, int_digits: String, r#type: Option<ast::PrimType> },
-    Float { base: Base, int_digits: String, fraction_digits: String, r#type: Option<ast::PrimType> },
+    Float { digits: Option<FloatDigits>, r#type: Option<ast::PrimType> },
     Char { value: Option<char> },
     Str { value: String },
     ByteChar { value: Option<char> },
@@ -159,6 +159,12 @@ impl Literal {
             _ => None,
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct FloatDigits {
+    pub int: String,
+    pub fraction: String,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]

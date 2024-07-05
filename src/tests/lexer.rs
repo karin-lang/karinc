@@ -295,9 +295,12 @@ fn tokenizes_float_literal() {
     assert_eq!(tokens, vec![
         literal_token!(
             Literal::Float {
-                base: Base::Dec,
-                int_digits: "0".to_string(),
-                fraction_digits: "0".to_string(),
+                digits: Some(
+                    FloatDigits {
+                        int: "0".to_string(),
+                        fraction: "0".to_string(),
+                    },
+                ),
                 r#type: None,
             },
             0, 3,
@@ -315,9 +318,12 @@ fn allows_fraction_digits_of_zero_len() {
     assert_eq!(tokens, vec![
         literal_token!(
             Literal::Float {
-                base: Base::Dec,
-                int_digits: "0".to_string(),
-                fraction_digits: "".to_string(),
+                digits: Some(
+                    FloatDigits {
+                        int: "0".to_string(),
+                        fraction: "".to_string(),
+                    },
+                ),
                 r#type: None,
             },
             0, 2,
@@ -335,9 +341,12 @@ fn tokenizes_comma_after_fraction_digits_as_symbol() {
     assert_eq!(tokens, vec![
         literal_token!(
             Literal::Float {
-                base: Base::Dec,
-                int_digits: "0".to_string(),
-                fraction_digits: "0".to_string(),
+                digits: Some(
+                    FloatDigits {
+                        int: "0".to_string(),
+                        fraction: "0".to_string(),
+                    },
+                ),
                 r#type: None,
             },
             0, 3,
@@ -349,41 +358,42 @@ fn tokenizes_comma_after_fraction_digits_as_symbol() {
 }
 
 #[test]
-fn tokenizes_base_of_float_literal() {
+fn disallows_non_dec_digits_of_float_literal() {
     let input = &mut "0b0.0 0o0.0 0x0.0".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert_eq!(tokens, vec![
         literal_token!(
             Literal::Float {
-                base: Base::Bin,
-                int_digits: "0".to_string(),
-                fraction_digits: "0".to_string(),
+                digits: None,
                 r#type: None,
             },
             0, 5,
         ),
         literal_token!(
             Literal::Float {
-                base: Base::Oct,
-                int_digits: "0".to_string(),
-                fraction_digits: "0".to_string(),
+                digits: None,
                 r#type: None,
             },
             6, 5,
         ),
         literal_token!(
             Literal::Float {
-                base: Base::Hex,
-                int_digits: "0".to_string(),
-                fraction_digits: "0".to_string(),
+                digits: None,
                 r#type: None,
             },
             12, 5,
         ),
     ]);
     assert!(input.peek().is_none());
-    assert!(logs.is_empty());
+    assert_eq!(
+        logs,
+        vec![
+            LexerLog::ExpectedDecimalFloat { span: Span::new(0, 5) },
+            LexerLog::ExpectedDecimalFloat { span: Span::new(6, 5) },
+            LexerLog::ExpectedDecimalFloat { span: Span::new(12, 5) },
+        ],
+    );
 }
 
 #[test]
