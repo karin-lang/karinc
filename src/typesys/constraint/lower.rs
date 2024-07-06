@@ -5,29 +5,27 @@ use crate::hir::id::*;
 pub struct TypeConstraintLowering<'a> {
     hir: &'a hir::Hir,
     builder: TypeConstraintBuilder<'a>,
+    current_mod_id: Option<ModId>,
 }
 
 impl<'a> TypeConstraintLowering<'a> {
     fn collect_log<T>(&mut self, result: TypeResult<T>) -> Option<T> {
-        match result {
-            Ok(v) => Some(v),
-            Err(log) => {
-                self.builder.logs.push(log);
-                None
-            },
-        }
+        let mod_id = self.current_mod_id.expect("current module id is not set.");
+        self.builder.collect_log(mod_id, result)
     }
 
-    pub fn lower(hir: &hir::Hir, top_level_type_table: &'a TopLevelTypeTable) -> (TypeConstraintTable, Vec<TypeLog>) {
+    pub fn lower(hir: &hir::Hir, top_level_type_table: &'a TopLevelTypeTable) -> (TypeConstraintTable, HashMap<ModId, Vec<TypeLog>>) {
         let mut lowering = TypeConstraintLowering {
             hir,
             builder: TypeConstraintBuilder::new(top_level_type_table),
+            current_mod_id: None,
         };
         lowering.hir.items.iter().for_each(|(_, item)| lowering.lower_item(item));
         lowering.builder.finalize()
     }
 
     pub fn lower_item(&mut self, item: &hir::Item) {
+        self.current_mod_id = Some(item.mod_id);
         match &item.kind {
             hir::ItemKind::FnDecl(decl) => {
                 for (arg_id, arg) in decl.body.args.iter().enumerate() {

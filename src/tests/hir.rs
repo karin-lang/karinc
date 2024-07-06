@@ -60,6 +60,7 @@ fn lowers_subitem_in_mod() {
                 "my_hako::f".into() => (
                     Item {
                         id: ItemId::new(0, 0),
+                        mod_id: ModId::new(0, 0),
                         accessibility: ast::Accessibility::Default,
                         kind: ItemKind::FnDecl(
                             FnDecl {
@@ -138,6 +139,7 @@ fn resolves_item_and_local() {
                 "my_hako::item".into() => (
                     Item {
                         id: ItemId::new(0, 0),
+                        mod_id: ModId::new(0, 0),
                         accessibility: ast::Accessibility::Default,
                         kind: ItemKind::FnDecl(
                             FnDecl {

@@ -28,6 +28,16 @@ impl CompilerLog {
             span,
         }
     }
+
+    #[inline(always)]
+    pub fn type_err(kind: TypeErrorKind, span: Span) -> CompilerLog {
+        CompilerLog {
+            kind: CompilerLogKind::Err(
+                CompilerErr::TypeError { kind },
+            ),
+            span,
+        }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -41,6 +51,7 @@ pub enum CompilerErr {
     GlobalIdIsNotFound { global_id: GlobalId },
     PathIsNotFoundInScope { path: ast::Path },
     SyntaxError { kind: SyntaxErrorKind },
+    TypeError { kind: TypeErrorKind },
 }
 
 #[derive(Clone, Debug, PartialEq)]
@@ -74,4 +85,12 @@ pub enum SyntaxErrorKind {
     /* HIR lowering */
     ExpectedExprButFoundHako { hako_id: HakoId },
     ExpectedExprButFoundMod { mod_id: ModId },
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum TypeErrorKind {
+    FnCallWithInvalidArgLen { expected: usize, provided: usize },
+    InconsistentConstraint,
+    UndefinedType { type_id: TypeId },
+    UnresolvedType { type_id: TypeId },
 }

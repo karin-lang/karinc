@@ -171,7 +171,8 @@ impl<'a> HirLowering<'a> {
                 ItemKind::FnDecl(hir_decl)
             },
         };
-        Item { id: item.id, accessibility: item.accessibility.clone(), kind }
+        let mod_id = self.current_mod_id.expect("current module id is not set.");
+        Item { id: item.id, mod_id, accessibility: item.accessibility.clone(), kind }
     }
 
     pub fn lower_fn_decl(&mut self, decl: &ast::FnDecl) -> FnDecl {

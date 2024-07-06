@@ -7,6 +7,7 @@ use crate::parser::ast::{self, tltype::TopLevelTypeTable};
 use crate::hir::{self, id::*};
 use crate::typesys::*;
 use crate::typesys::constraint::{*, lower::*};
+use crate::typesys::log::TypeLog;
 
 #[test]
 fn constrains_types() {
@@ -15,6 +16,7 @@ fn constrains_types() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -94,6 +96,7 @@ fn constrains_different_body_types() {
             "my_hako::item1".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -119,6 +122,7 @@ fn constrains_different_body_types() {
             "my_hako::item2".into() => (
                 hir::Item {
                     id: ItemId::new(0, 1),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -169,6 +173,7 @@ fn constrains_block_type() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -253,6 +258,7 @@ fn constrains_literal_types() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -394,6 +400,7 @@ fn constrains_by_top_level_ref() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -469,6 +476,7 @@ fn constrains_by_local_ref() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -560,6 +568,7 @@ fn detects_inconsistent_constraint_of_var_init() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -622,9 +631,9 @@ fn detects_inconsistent_constraint_of_var_init() {
     );
     assert_eq!(
         logs,
-        vec![
-            TypeLog::InconsistentConstraint,
-        ],
+        hashmap! {
+            ModId::new(0, 0) => vec![TypeLog::InconsistentConstraint],
+        },
     );
 }
 
@@ -635,6 +644,7 @@ fn constrains_by_fn_call() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -722,6 +732,7 @@ fn detects_inconsistent_constraint_of_fn_call() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -815,10 +826,12 @@ fn detects_inconsistent_constraint_of_fn_call() {
     );
     assert_eq!(
         logs,
-        vec![
-            TypeLog::FnCallWithInvalidArgLen { expected: 1, provided: 0 },
-            TypeLog::InconsistentConstraint,
-        ],
+        hashmap! {
+            ModId::new(0, 0) => vec![
+                TypeLog::FnCallWithInvalidArgLen { expected: 1, provided: 0 },
+                TypeLog::InconsistentConstraint,
+            ],
+        },
     );
 }
 
@@ -829,6 +842,7 @@ fn constrains_var_by_bind() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -909,6 +923,7 @@ fn detects_inconsistent_constraint_of_var_bind() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -982,7 +997,12 @@ fn detects_inconsistent_constraint_of_var_bind() {
             },
         ).to_sorted_vec(),
     );
-    assert_eq!(logs, vec![TypeLog::InconsistentConstraint]);
+    assert_eq!(
+        logs,
+        hashmap! {
+            ModId::new(0, 0) => vec![TypeLog::InconsistentConstraint],
+        },
+    );
 }
 
 #[test]
@@ -1001,10 +1021,12 @@ fn detects_invalid_types_on_finalization() {
 
     assert_eq!(
         logs,
-        vec![
-            TypeLog::UndefinedType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(0)) },
-            TypeLog::UnresolvedType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(1)) },
-        ],
+        hashmap! {
+            ModId::new(0, 0) => vec![
+                TypeLog::UndefinedType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(0)) },
+                TypeLog::UnresolvedType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(1)) },
+            ],
+        },
     );
 }
 
@@ -1015,6 +1037,7 @@ fn constrains_if_type() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -1131,6 +1154,7 @@ fn constrains_if_type_with_void() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -1211,6 +1235,7 @@ fn constrains_endless_for_type() {
             "my_hako::item".into() => (
                 hir::Item {
                     id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {

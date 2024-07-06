@@ -5,17 +5,7 @@ use std::collections::HashMap;
 use crate::parser::{ast, ast::tltype::TopLevelTypeTable};
 use crate::{hir, hir::id::*};
 use crate::typesys::*;
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum TypeLog {
-    FnCallWithInvalidArgLen { expected: usize, provided: usize },
-    // todo: 引数を追加
-    InconsistentConstraint,
-    UndefinedType { type_id: TypeId },
-    UnresolvedType { type_id: TypeId },
-}
-
-pub type TypeResult<T> = Result<T, TypeLog>;
+use crate::typesys::log::{TypeLog, TypeResult};
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct TypeConstraintTable {
@@ -78,7 +68,7 @@ impl Into<HashMap<TypeId, TypeConstraint>> for TypeConstraintTable {
 pub struct TypeConstraintBuilder<'a> {
     top_level_type_table: &'a TopLevelTypeTable,
     table: TypeConstraintTable,
-    logs: Vec<TypeLog>,
+    logs: HashMap<ModId, Vec<TypeLog>>,
 }
 
 impl<'a> TypeConstraintBuilder<'a> {
@@ -86,7 +76,7 @@ impl<'a> TypeConstraintBuilder<'a> {
         TypeConstraintBuilder {
             top_level_type_table,
             table: TypeConstraintTable::new(),
-            logs: Vec::new(),
+            logs: HashMap::new(),
         }
     }
 
@@ -97,12 +87,27 @@ impl<'a> TypeConstraintBuilder<'a> {
         TypeConstraintBuilder {
             top_level_type_table,
             table: type_constraint_table,
-            logs: Vec::new(),
+            logs: HashMap::new(),
         }
     }
 
     pub fn into_table(self) -> TypeConstraintTable {
         self.table
+    }
+
+    fn collect_log<T>(&mut self, mod_id: ModId, result: TypeResult<T>) -> Option<T> {
+        match result {
+            Ok(v) => Some(v),
+            Err(new_log) => {
+                match self.logs.get_mut(&mod_id) {
+                    Some(v) => v.push(new_log),
+                    None => {
+                        let _ = self.logs.insert(mod_id, vec![new_log]);
+                    },
+                }
+                None
+            },
+        }
     }
 
     // todo: 部分型に対応
@@ -209,19 +214,21 @@ impl<'a> TypeConstraintBuilder<'a> {
         Ok(())
     }
 
-    pub fn finalize(mut self) -> (TypeConstraintTable, Vec<TypeLog>) {
+    pub fn finalize(mut self) -> (TypeConstraintTable, HashMap<ModId, Vec<TypeLog>>) {
+        let mut finalization_logs = Vec::new();
         for (type_id, constraint) in self.table.to_sorted_vec() {
-            match &*constraint.get_ptr().borrow() {
-                Type::Undefined => {
-                    let new_log = TypeLog::UndefinedType { type_id: *type_id };
-                    self.logs.push(new_log);
-                },
-                Type::Unresolved => {
-                    let new_log = TypeLog::UnresolvedType { type_id: *type_id };
-                    self.logs.push(new_log);
-                },
-                _ => (),
+            let new_log = match &*constraint.get_ptr().borrow() {
+                Type::Undefined => Some(TypeLog::UndefinedType { type_id: *type_id }),
+                Type::Unresolved => Some(TypeLog::UnresolvedType { type_id: *type_id }),
+                _ => None,
+            };
+            if let Some(new_log) = new_log {
+                finalization_logs.push(new_log);
             }
+        }
+        for new_log in finalization_logs {
+            // fix: mod_id
+            self.collect_log::<()>(ModId::new(0, 0), Err(new_log));
         }
         (self.table, self.logs)
     }
