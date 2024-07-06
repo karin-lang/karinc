@@ -80,6 +80,52 @@ fn lowers_literal_expr() {
 }
 
 #[test]
+fn lowers_ret_expr() {
+    let ast = ast::Expr {
+        kind: ast::ExprKind::Ret(
+            ast::Ret {
+                value: Box::new(
+                    ast::Expr {
+                        kind: ast::ExprKind::Literal(
+                            token::Literal::Bool { value: true },
+                        ),
+                        span: Span::new(1, 1),
+                    },
+                ),
+            },
+        ),
+        span: Span::new(0, 1),
+    };
+    let asts = Vec::new();
+    let paths = hashmap! {
+        "my_hako::f".into() => GlobalId::Item(ItemId::new(0, 0)),
+    };
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    let hir = lowering.lower_expr(&ast);
+
+    assert_eq!(
+        hir,
+        Expr {
+            id: ExprId::new(0),
+            kind: ExprKind::Ret(
+                Ret {
+                    value: Box::new(
+                        Expr {
+                            id: ExprId::new(1),
+                            kind: ExprKind::Literal(
+                                token::Literal::Bool { value: true },
+                            ),
+                        },
+                    ),
+                },
+            ),
+        },
+    );
+    assert!(lowering.get_logs().is_empty());
+}
+
+#[test]
 fn lowers_fn_call_expr() {
     let ast = ast::Expr {
         kind: ast::ExprKind::FnCall(
@@ -114,7 +160,7 @@ fn lowers_fn_call_expr() {
             id: ExprId::new(0),
             kind: ExprKind::FnCall(
                 FnCall {
-                    r#fn: Some(ItemId::new(0,0)),
+                    r#fn: Some(ItemId::new(0, 0)),
                     args: vec![
                         ActualArg {
                             expr: Expr {

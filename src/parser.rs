@@ -391,6 +391,10 @@ impl<'a> Parser<'a> {
                 let expr = Expr { kind, span };
                 Ok(expr)
             }
+        } else if self.is_next_keyword(Keyword::Ret).is_some() {
+            let ret = self.parse_ret()?;
+            let expr = Expr { kind: ExprKind::Ret(ret), span: beginning_span };
+            Ok(expr)
         } else if self.is_next_keyword(Keyword::Let).is_some() {
             let (def, span) = self.parse_var_def()?;
             let expr = Expr { kind: ExprKind::VarDef(def), span };
@@ -453,6 +457,13 @@ impl<'a> Parser<'a> {
         }
 
         Ok(args)
+    }
+
+    pub fn parse_ret(&mut self) -> ParserResult<Ret> {
+        self.expect_keyword(Keyword::Ret)?;
+        let value = self.parse_expr()?;
+        let ret = Ret { value: Box::new(value) };
+        Ok(ret)
     }
 
     pub fn parse_var_def(&mut self) -> ParserResult<(VarDef, Span)> {

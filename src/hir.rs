@@ -53,6 +53,7 @@ pub enum ExprKind {
     Literal(token::Literal),
     TopLevelRef(TopLevelId),
     LocalRef(LocalId),
+    Ret(Ret),
     FnCall(FnCall),
     VarDef(VarId),
     VarBind(VarBind),
@@ -86,6 +87,11 @@ impl Type {
 pub enum TypeKind {
     Item(ItemId),
     Prim(ast::PrimType),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Ret {
+    pub value: Box<Expr>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

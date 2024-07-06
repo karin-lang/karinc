@@ -6,6 +6,7 @@ pub struct TypeConstraintLowering<'a> {
     hir: &'a hir::Hir,
     builder: TypeConstraintBuilder<'a>,
     current_mod_id: Option<ModId>,
+    current_item_id: Option<ItemId>,
 }
 
 impl<'a> TypeConstraintLowering<'a> {
@@ -19,6 +20,7 @@ impl<'a> TypeConstraintLowering<'a> {
             hir,
             builder: TypeConstraintBuilder::new(top_level_type_table),
             current_mod_id: None,
+            current_item_id: None,
         };
         lowering.hir.items.iter().for_each(|(_, item)| lowering.lower_item(item));
         lowering.builder.finalize()
@@ -26,6 +28,7 @@ impl<'a> TypeConstraintLowering<'a> {
 
     pub fn lower_item(&mut self, item: &hir::Item) {
         self.current_mod_id = Some(item.mod_id);
+        self.current_item_id = Some(item.id);
         match &item.kind {
             hir::ItemKind::FnDecl(decl) => {
                 for (arg_id, arg) in decl.body.args.iter().enumerate() {
@@ -79,6 +82,16 @@ impl<'a> TypeConstraintLowering<'a> {
                 let result = self.builder.constrain_by_other(TypeId::Expr(body.id, expr.id), type_id);
                 self.collect_log(result);
             },
+            hir::ExprKind::Ret(ret) => {
+                let result = self.builder.constrain_by_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::Void));
+                self.collect_log(result);
+                self.lower_expr(body, &ret.value);
+                let result = self.builder.constrain_by_other(
+                    TypeId::Expr(body.id, ret.value.id),
+                    TypeId::TopLevel(TopLevelId::FnRet(self.current_item_id.expect("current item id is not set"))),
+                );
+                self.collect_log(result);
+            }
             hir::ExprKind::FnCall(call) => {
                 let type_id = TypeId::TopLevel(TopLevelId::FnRet(call.r#fn.unwrap())); // fix: unwrap()
                 let result = self.builder.constrain_by_other(TypeId::Expr(body.id, expr.id), type_id);

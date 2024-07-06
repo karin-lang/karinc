@@ -187,6 +187,7 @@ pub enum Keyword {
     Mut,
     Pub,
     Ref,
+    Ret,
     Struct,
 }
 
@@ -203,6 +204,7 @@ impl Keyword {
             "mut" => Keyword::Mut,
             "pub" => Keyword::Pub,
             "ref" => Keyword::Ref,
+            "ret" => Keyword::Ret,
             "struct" => Keyword::Struct,
             _ => return None,
         };

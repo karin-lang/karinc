@@ -252,6 +252,38 @@ fn expects_semicolon_after_expr_in_enclosed_exprs() {
     assert!(parser.peek().is_none());
 }
 
+/* return */
+
+#[test]
+fn parses_ret_expr() {
+    let tokens = vec![
+        keyword_token!(Ret, 0, 1),
+        id_token!("id", 1, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Ret(
+                Ret {
+                    value: Box::new(
+                        Expr {
+                            kind: ExprKind::Id(Id { id: "id".to_string(), span: Span::new(1, 1) }),
+                            span: Span::new(1, 1),
+                        },
+                    ),
+                },
+            ),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
 /* function call */
 
 #[test]

@@ -113,6 +113,7 @@ pub enum ExprKind {
     Block(Block),
     Id(Id),
     Literal(token::Literal),
+    Ret(Ret),
     FnCall(FnCall),
     VarDef(VarDef),
     VarBind(VarBind),
@@ -145,6 +146,11 @@ pub enum PrimType {
     U8, U16, U32, U64, Usize,
     F32, F64,
     Char, Str,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Ret {
+    pub value: Box<Expr>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

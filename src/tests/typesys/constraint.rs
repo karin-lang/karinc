@@ -638,6 +638,151 @@ fn detects_inconsistent_constraint_of_var_init() {
 }
 
 #[test]
+fn constrains_by_ret() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                id: BodyId::new(0),
+                                ret_type: Some(
+                                    hir::Type {
+                                        kind: Box::new(hir::TypeKind::Prim(ast::PrimType::Bool)),
+                                    },
+                                ),
+                                args: Vec::new(),
+                                vars: Vec::new(),
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::Ret(
+                                            hir::Ret {
+                                                value: Box::new(
+                                                    hir::Expr {
+                                                        id: ExprId::new(1),
+                                                        kind: hir::ExprKind::Literal(
+                                                            token::Literal::Bool { value: true },
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = hashmap! {
+        TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn(
+            FnType {
+                ret_type: Box::new(Type::Prim(ast::PrimType::Bool)),
+                arg_types: Vec::new(),
+            },
+        ),
+        TopLevelId::FnRet(ItemId::new(0, 0)) => Type::Prim(ast::PrimType::Bool),
+    }.into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
+                ),
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new_constrained(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                    Vec::new(),
+                    Some(TypeId::TopLevel(TopLevelId::FnRet(ItemId::new(0, 0)))),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert!(logs.is_empty());
+}
+
+#[test]
+fn constrains_by_unmatch_type_ret() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                id: BodyId::new(0),
+                                ret_type: None,
+                                args: Vec::new(),
+                                vars: Vec::new(),
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::Ret(
+                                            hir::Ret {
+                                                value: Box::new(
+                                                    hir::Expr {
+                                                        id: ExprId::new(1),
+                                                        kind: hir::ExprKind::Literal(
+                                                            token::Literal::Bool { value: true },
+                                                        ),
+                                                    },
+                                                ),
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = hashmap! {
+        TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn(
+            FnType {
+                ret_type: Box::new(Type::Prim(ast::PrimType::Void)),
+                arg_types: Vec::new(),
+            },
+        ),
+        TopLevelId::FnRet(ItemId::new(0, 0)) => Type::Prim(ast::PrimType::Void),
+    }.into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Void)),
+                ),
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
+                    TypePtr::new(Type::Prim(ast::PrimType::Bool)),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert_eq!(
+        logs,
+        hashmap! {
+            ModId::new(0, 0) => vec![TypeLog::InconsistentConstraint],
+        },
+    );
+}
+
+#[test]
 fn constrains_by_fn_call() {
     let hir = hir::Hir {
         items: hashmap! {

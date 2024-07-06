@@ -211,6 +211,11 @@ impl<'a> HirLowering<'a> {
             ast::ExprKind::Literal(literal) => {
                 Expr { id: self.body_scope_hierarchy.generate_expr_id(), kind: ExprKind::Literal(literal.clone()) }
             },
+            ast::ExprKind::Ret(ret) => {
+                let new_expr_id = self.body_scope_hierarchy.generate_expr_id();
+                let ret = self.lower_ret(ret);
+                Expr { id: new_expr_id, kind: ExprKind::Ret(ret) }
+            },
             ast::ExprKind::FnCall(call) => {
                 let new_expr_id = self.body_scope_hierarchy.generate_expr_id();
                 let call = self.lower_fn_call(call, expr.span.clone());
@@ -234,6 +239,11 @@ impl<'a> HirLowering<'a> {
                 kind: ExprKind::For(self.lower_for(r#for)),
             },
         }
+    }
+
+    pub fn lower_ret(&mut self, ret: &ast::Ret) -> Ret {
+        let value = self.lower_expr(&ret.value);
+        Ret { value: Box::new(value) }
     }
 
     pub fn lower_var_def(&mut self, def: &ast::VarDef) -> Expr {
