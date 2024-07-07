@@ -207,7 +207,15 @@ impl<'a> HirLowering<'a> {
                 id: self.body_scope_hierarchy.generate_expr_id(),
                 kind: ExprKind::Block(self.lower_block(block)),
             },
-            ast::ExprKind::Id(id) => self.resolve_id(&expr.span, &id.id).unwrap(), //fix unwrap()
+            ast::ExprKind::Id(id) => {
+                match self.resolve_id(&expr.span, &id.id) {
+                    Some(v) => v,
+                    None => {
+                        self.collect_log::<()>(Err(HirLoweringLog::IdIsNotFoundInScope { id: id.clone(), span: expr.span.clone() }));
+                        Expr { id: self.body_scope_hierarchy.generate_expr_id(), kind: ExprKind::Unknown }
+                    },
+                }
+            },
             ast::ExprKind::Literal(literal) => {
                 Expr { id: self.body_scope_hierarchy.generate_expr_id(), kind: ExprKind::Literal(literal.clone()) }
             },

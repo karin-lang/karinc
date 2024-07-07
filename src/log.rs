@@ -50,6 +50,7 @@ pub enum CompilerLogKind {
 pub enum CompilerErr {
     GlobalIdIsNotFound { global_id: GlobalId },
     PathIsNotFoundInScope { path: ast::Path },
+    IdIsNotFoundInScope { id: ast::Id },
     SyntaxError { kind: SyntaxErrorKind },
     TypeError { kind: TypeErrorKind },
 }

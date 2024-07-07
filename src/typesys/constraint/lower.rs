@@ -171,6 +171,7 @@ impl<'a> TypeConstraintLowering<'a> {
                 self.collect_log(result);
                 self.lower_constraining_block(body, &expr.id, &r#for.block);
             },
+            hir::ExprKind::Unknown => (),
         }
     }
 
