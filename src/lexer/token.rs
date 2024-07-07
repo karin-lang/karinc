@@ -142,6 +142,7 @@ impl ast::PrimType {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
+    Void,
     Bool { value: bool },
     Int { base: Base, int_digits: String, r#type: Option<ast::PrimType> },
     Float { digits: Option<FloatDigits>, r#type: Option<ast::PrimType> },

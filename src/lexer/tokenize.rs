@@ -239,6 +239,10 @@ impl Lexer {
         let alphabetics = Lexer::consume_alphabetics(input, initial);
         let len = alphabetics.len();
 
+        if alphabetics == "void" {
+            return (len, TokenKind::Literal(Literal::Void));
+        }
+
         if let Some(value) = Literal::to_bool_literal(&alphabetics) {
             return (len, TokenKind::Literal(Literal::Bool { value }));
         }

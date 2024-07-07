@@ -54,6 +54,7 @@ impl<'a> TypeConstraintLowering<'a> {
             hir::ExprKind::Block(block) => self.lower_constrained_block(body, &expr.id, block),
             hir::ExprKind::Literal(literal) => {
                 let r#type = match literal {
+                    token::Literal::Void => Type::Prim(ast::PrimType::Void),
                     token::Literal::Bool { value: _ } => Type::Prim(ast::PrimType::Bool),
                     // todo: 桁などの型検査を実施する & テスト追加
                     token::Literal::Int { base: _, int_digits: _, r#type } => match r#type {
