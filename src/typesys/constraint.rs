@@ -154,7 +154,7 @@ impl<'a> TypeConstraintBuilder<'a> {
                         );
                         self.table.insert(type_id, new_constraint);
                     },
-                    None => panic!("unknown top level id"),
+                    None => panic!("unknown top level id"), // todo: fix panic?
                 }
             },
             _ => {
@@ -168,11 +168,11 @@ impl<'a> TypeConstraintBuilder<'a> {
                             // 制約元の型が未解決であれば制約先の型を制約元に複製する
                             match self.table.get_mut(&type_id) {
                                 Some(constraint) => constraint.get_ptr().clone(),
-                                None => panic!("unknown expression id: {:?}", type_id),
+                                None => TypePtr::new(Type::Unknown),
                             }
                         }
                     },
-                    None => panic!("unknown expression id: {:?}", constrained_by),
+                    None => TypePtr::new(Type::Unknown),
                 };
                 // 制約先の型を新しいポインタに設定する
                 match self.table.get_mut(&type_id) {
@@ -218,7 +218,7 @@ impl<'a> TypeConstraintBuilder<'a> {
         let mut finalization_logs = Vec::new();
         for (type_id, constraint) in self.table.to_sorted_vec() {
             let new_log = match &*constraint.get_ptr().borrow() {
-                Type::Undefined => Some(TypeLog::UndefinedType { type_id: *type_id }),
+                Type::Unknown => Some(TypeLog::UnknownType { type_id: *type_id }),
                 Type::Unresolved => Some(TypeLog::UnresolvedType { type_id: *type_id }),
                 _ => None,
             };

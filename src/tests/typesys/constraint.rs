@@ -1154,7 +1154,7 @@ fn detects_inconsistent_constraint_of_var_bind() {
 fn detects_invalid_types_on_finalization() {
     let type_constraint_table = hashmap! {
         TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
-            TypePtr::new(Type::Undefined),
+            TypePtr::new(Type::Unknown),
         ),
         TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
             TypePtr::new(Type::Unresolved),
@@ -1168,7 +1168,7 @@ fn detects_invalid_types_on_finalization() {
         logs,
         hashmap! {
             ModId::new(0, 0) => vec![
-                TypeLog::UndefinedType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(0)) },
+                TypeLog::UnknownType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(0)) },
                 TypeLog::UnresolvedType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(1)) },
             ],
         },

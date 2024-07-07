@@ -92,6 +92,6 @@ pub enum SyntaxErrorKind {
 pub enum TypeErrorKind {
     FnCallWithInvalidArgLen { expected: usize, provided: usize },
     InconsistentConstraint,
-    UndefinedType { type_id: TypeId },
+    UnknownType { type_id: TypeId },
     UnresolvedType { type_id: TypeId },
 }

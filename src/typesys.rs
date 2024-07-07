@@ -13,8 +13,8 @@ pub enum Type {
     Item(ast::Path),
     Prim(ast::PrimType),
     Fn(FnType),
-    Undefined,
     Unresolved,
+    Unknown,
 }
 
 impl Type {

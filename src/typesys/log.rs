@@ -10,7 +10,7 @@ pub enum TypeLog {
     FnCallWithInvalidArgLen { expected: usize, provided: usize },
     // todo: 引数を追加
     InconsistentConstraint,
-    UndefinedType { type_id: TypeId },
+    UnknownType { type_id: TypeId },
     UnresolvedType { type_id: TypeId },
 }
 
@@ -25,8 +25,8 @@ impl From<TypeLog> for CompilerLog {
                 TypeErrorKind::InconsistentConstraint,
                 Span::new(0, 0),
             ),
-            TypeLog::UndefinedType { type_id } => CompilerLog::type_err(
-                TypeErrorKind::UndefinedType { type_id },
+            TypeLog::UnknownType { type_id } => CompilerLog::type_err(
+                TypeErrorKind::UnknownType { type_id },
                 Span::new(0, 0),
             ),
             TypeLog::UnresolvedType { type_id } => CompilerLog::type_err(
