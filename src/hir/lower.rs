@@ -216,6 +216,7 @@ impl<'a> HirLowering<'a> {
                     },
                 }
             },
+            ast::ExprKind::Path(path) => unimplemented!(),
             ast::ExprKind::Literal(literal) => {
                 Expr { id: self.body_scope_hierarchy.generate_expr_id(), kind: ExprKind::Literal(literal.clone()) }
             },

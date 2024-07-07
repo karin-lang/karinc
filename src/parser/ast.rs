@@ -112,6 +112,7 @@ pub struct Expr {
 pub enum ExprKind {
     Block(Block),
     Id(Id),
+    Path(Path),
     Literal(token::Literal),
     Ret(Ret),
     FnCall(FnCall),

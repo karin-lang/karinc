@@ -252,6 +252,52 @@ fn expects_semicolon_after_expr_in_enclosed_exprs() {
     assert!(parser.peek().is_none());
 }
 
+/* identifier and path */
+
+#[test]
+fn parses_id_expr() {
+    let tokens = vec![
+        id_token!("id", 0, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Id(
+                Id { id: "id".to_string(), span: Span::new(0, 1) },
+            ),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_path_expr() {
+    let tokens = vec![
+        id_token!("seg1", 0, 1),
+        token!(DoubleColon, 1, 1),
+        id_token!("seg2", 2, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Path("seg1::seg2".into()),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
 /* return */
 
 #[test]
@@ -315,6 +361,35 @@ fn parses_fn_call_expr() {
                             },
                         },
                     ],
+                },
+            ),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_fn_call_expr_with_path() {
+    let tokens = vec![
+        id_token!("seg", 0, 1),
+        token!(DoubleColon, 1, 1),
+        id_token!("f", 2, 1),
+        token!(OpenParen, 3, 1),
+        token!(ClosingParen, 4, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::FnCall(
+                FnCall {
+                    path: "seg::f".into(),
+                    args: Vec::new(),
                 },
             ),
             span: Span::new(0, 1),
@@ -1010,28 +1085,6 @@ fn consumes_until_before_semicolon_when_error_occurred() {
     );
     assert!(parser.get_logs().is_empty());
     assert_eq!(parser.peek(), Some(&&token!(Semicolon, 1, 1)));
-}
-
-/* identifier */
-
-#[test]
-fn parses_id_expr() {
-    let tokens = vec![
-        id_token!("id", 0, 1),
-    ];
-    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
-    let mut last_body_id = 0;
-    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
-
-    assert_eq!(
-        parser.parse_expr().unwrap(),
-        Expr {
-            kind: ExprKind::Id(Id { id: "id".to_string(), span: Span::new(0, 1) }),
-            span: Span::new(0, 1),
-        },
-    );
-    assert!(parser.get_logs().is_empty());
-    assert!(parser.peek().is_none());
 }
 
 /* variable definition */

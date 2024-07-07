@@ -77,9 +77,9 @@ impl<'a> Parser<'a> {
         match next {
             Some(token) => match &token.kind {
                 TokenKind::Id(id) => Some(Id { id: id.clone(), span: token.span.clone() }),
-                _ => None
+                _ => None,
             },
-            None => None
+            None => None,
         }
     }
 
@@ -371,24 +371,32 @@ impl<'a> Parser<'a> {
     pub fn parse_expr(&mut self) -> ParserResult<Expr> {
         let beginning_span = self.get_next_span();
         // todo: match 式で token_kind を判断して条件分岐を最適化できないか検討する
-        if let Some(id) = self.is_next_id() {
+        if let Some(_) = self.is_next_id() {
             if let Some((bind, span)) = self.parse_var_bind()? {
+                // 束縛式 (id = value) を処理する
                 let expr = Expr { kind: ExprKind::VarBind(bind), span };
                 Ok(expr)
             } else {
-                self.expect_any()?;
-                let span = id.span.clone();
+                let segments =  self.parse_id_segments()?;
                 let kind = if self.is_next_eq(TokenKind::OpenParen).is_some() {
+                    // 丸括弧がパスに続く場合は関数として処理する
                     ExprKind::FnCall(
                         FnCall {
-                            path: Path::from(vec![id.id.to_string()]),
+                            path: Path::from(segments),
                             args: self.parse_actual_args()?,
                         },
                     )
                 } else {
-                    ExprKind::Id(id)
+                    // セグメントが1つの場合 ID として、2つ以上の場合はパスとして扱う
+                    match segments.get(0) {
+                        Some(id) if segments.len() == 1 => {
+                            let id = Id { id: id.clone(), span: beginning_span.clone() };
+                            ExprKind::Id(id)
+                        },
+                        _ => ExprKind::Path(Path::from(segments)),
+                    }
                 };
-                let expr = Expr { kind, span };
+                let expr = Expr { kind, span: beginning_span };
                 Ok(expr)
             }
         } else if self.is_next_keyword(Keyword::Ret).is_some() {
@@ -415,6 +423,17 @@ impl<'a> Parser<'a> {
         } else {
             Err(ParserLog::ExpectedExpr { span: beginning_span })
         }
+    }
+
+    // 1つのセグメントを持つ ID または、2つ以上のセグメントを持つパスをパースする
+    pub fn parse_id_segments(&mut self) -> ParserResult<Vec<String>> {
+        let (_, first_id) = self.expect_id()?;
+        let mut segments = vec![first_id.id];
+        while let Some(_) = self.consume(TokenKind::DoubleColon) {
+            let (_, new_id) = self.expect_id()?;
+            segments.push(new_id.id);
+        }
+        Ok(segments)
     }
 
     pub fn parse_block(&mut self) -> ParserResult<Block> {
