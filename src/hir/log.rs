@@ -12,6 +12,7 @@ pub enum HirLoweringLog {
     GlobalIdIsNotFound { global_id: GlobalId, span: Span },
     IdIsNotFoundInScope { id: Id, span: Span },
     PathIsNotFoundInScope { path: Path, span: Span },
+    UnnecessaryPath { path: Path, span: Span },
 }
 
 impl From<HirLoweringLog> for CompilerLog {
@@ -35,6 +36,10 @@ impl From<HirLoweringLog> for CompilerLog {
             ),
             HirLoweringLog::PathIsNotFoundInScope { path, span } => CompilerLog::err(
                 CompilerErr::PathIsNotFoundInScope { path },
+                span,
+            ),
+            HirLoweringLog::UnnecessaryPath { path, span } => CompilerLog::err(
+                CompilerErr::UnnecessaryPath { path },
                 span,
             ),
         }

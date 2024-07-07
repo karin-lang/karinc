@@ -53,6 +53,7 @@ pub enum CompilerErr {
     IdIsNotFoundInScope { id: ast::Id },
     SyntaxError { kind: SyntaxErrorKind },
     TypeError { kind: TypeErrorKind },
+    UnnecessaryPath { path: ast::Path },
 }
 
 #[derive(Clone, Debug, PartialEq)]

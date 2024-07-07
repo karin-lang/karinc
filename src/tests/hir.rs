@@ -160,6 +160,7 @@ fn resolves_item_and_local() {
                                             id: ExprId::new(0),
                                             kind: ExprKind::TopLevelRef(
                                                 TopLevelId::Item(ItemId::new(0, 0)),
+                                                "my_hako::item".into(),
                                             ),
                                         },
                                         Expr {

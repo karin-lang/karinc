@@ -54,6 +54,61 @@ fn lowers_block_expr() {
 }
 
 #[test]
+fn lowers_top_level_expr() {
+    let ast = ast::Expr {
+        kind: ast::ExprKind::Path("seg1::seg2".into()),
+        span: Span::new(0, 1),
+    };
+    let asts = Vec::new();
+    let paths = hashmap! {
+        "seg1::seg2".into() => GlobalId::Item(ItemId::new(0, 0)),
+    };
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    let hir = lowering.lower_expr(&ast);
+
+    assert_eq!(
+        hir,
+        Expr {
+            id: ExprId::new(0),
+            kind: ExprKind::TopLevelRef(TopLevelId::Item(ItemId::new(0, 0)), "seg1::seg2".into()),
+        },
+    );
+    assert!(lowering.get_logs().is_empty());
+}
+
+#[test]
+fn lowers_unnecessary_top_level_expr() {
+    let ast = ast::Expr {
+        kind: ast::ExprKind::Path("seg1::seg2".into()),
+        span: Span::new(0, 1),
+    };
+    let asts = Vec::new();
+    let paths = hashmap! {
+        "seg1::seg2".into() => GlobalId::Hako(HakoId::new(0)),
+    };
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    let hir = lowering.lower_expr(&ast);
+
+    assert_eq!(
+        hir,
+        Expr {
+            id: ExprId::new(0),
+            kind: ExprKind::Unknown,
+        },
+    );
+    assert_eq!(
+        *lowering.get_logs(),
+        hashmap! {
+            ModId::new(0, 0) => vec![
+                HirLoweringLog::UnnecessaryPath { path: "seg1::seg2".into(), span: Span::new(0, 1) }
+            ],
+        },
+    );
+}
+
+#[test]
 fn lowers_literal_expr() {
     let ast = ast::Expr {
         kind: ast::ExprKind::Literal(

@@ -86,7 +86,7 @@ fn generates_js() {
                                     exprs: vec![
                                         hir::Expr {
                                             id: ExprId::new(0),
-                                            kind: hir::ExprKind::TopLevelRef(TopLevelId::Item(ItemId::new(0, 0))),
+                                            kind: hir::ExprKind::TopLevelRef(TopLevelId::Item(ItemId::new(0, 0)), "my_hako::f".into()),
                                         },
                                     ],
                                 },

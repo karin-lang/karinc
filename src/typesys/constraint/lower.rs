@@ -115,7 +115,7 @@ impl<'a> TypeConstraintLowering<'a> {
                     }
                 }
             },
-            hir::ExprKind::TopLevelRef(top_level_id) => {
+            hir::ExprKind::TopLevelRef(top_level_id, _) => {
                 let type_id = TypeId::TopLevel(*top_level_id);
                 let result = self.builder.constrain_by_other(TypeId::Expr(body.id, expr.id), type_id);
                 self.collect_log(result);

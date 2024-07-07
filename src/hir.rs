@@ -51,7 +51,7 @@ pub struct Expr {
 pub enum ExprKind {
     Block(Block),
     Literal(token::Literal),
-    TopLevelRef(TopLevelId),
+    TopLevelRef(TopLevelId, ast::Path),
     LocalRef(LocalId),
     Ret(Ret),
     FnCall(FnCall),

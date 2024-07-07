@@ -120,7 +120,7 @@ impl<'a> HirLowering<'a> {
             return Some(
                 Expr {
                     id: self.body_scope_hierarchy.generate_expr_id(),
-                    kind: ExprKind::TopLevelRef(top_level_id),
+                    kind: ExprKind::TopLevelRef(top_level_id, path),
                 },
             );
         }
@@ -216,7 +216,27 @@ impl<'a> HirLowering<'a> {
                     },
                 }
             },
-            ast::ExprKind::Path(path) => unimplemented!(),
+            ast::ExprKind::Path(path) => {
+                let top_level_id = match self.resolve_path(path) {
+                    Some(global_id) => match global_id {
+                        GlobalId::Hako(_) | GlobalId::Mod(_) => {
+                            self.collect_log::<()>(Err(HirLoweringLog::UnnecessaryPath { path: path.clone(), span: expr.span.clone() }));
+                            None
+                        },
+                        GlobalId::Item(item_id) => Some(TopLevelId::Item(item_id)),
+                        GlobalId::ItemMember(item_member_id) => Some(TopLevelId::ItemMember(item_member_id)),
+                    },
+                    None => {
+                        self.collect_log::<()>(Err(HirLoweringLog::PathIsNotFoundInScope { path: path.clone(), span: expr.span.clone() }));
+                        None
+                    },
+                };
+                let kind = match top_level_id {
+                    Some(id) => ExprKind::TopLevelRef(id, path.clone()),
+                    None => ExprKind::Unknown,
+                };
+                Expr { id: self.body_scope_hierarchy.generate_expr_id(), kind }
+            },
             ast::ExprKind::Literal(literal) => {
                 Expr { id: self.body_scope_hierarchy.generate_expr_id(), kind: ExprKind::Literal(literal.clone()) }
             },
