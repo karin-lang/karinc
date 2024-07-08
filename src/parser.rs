@@ -224,8 +224,7 @@ impl<'a> Parser<'a> {
         (ast, self.logs)
     }
 
-    // todo: enclosed_exprs の名前は後で考える
-    pub fn parse_enclosed_exprs(&mut self) -> ParserResult<Vec<Expr>> {
+    pub fn parse_body_or_block(&mut self) -> ParserResult<Vec<Expr>> {
         self.expect(TokenKind::OpenCurlyBracket)?;
         let mut exprs = Vec::new();
 
@@ -343,7 +342,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_body(&mut self, ret_type: Option<Type>, args: Vec<FormalArg>) -> ParserResult<Body> {
-        let exprs = self.parse_enclosed_exprs()?;
+        let exprs = self.parse_body_or_block()?;
         let id = self.generate_body_id();
         let body = Body { id, ret_type, args, exprs };
         Ok(body)
@@ -437,7 +436,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_block(&mut self) -> ParserResult<Block> {
-        let exprs = self.parse_enclosed_exprs()?;
+        let exprs = self.parse_body_or_block()?;
         let block = Block { exprs };
         Ok(block)
     }

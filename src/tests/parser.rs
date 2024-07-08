@@ -154,7 +154,7 @@ fn parses_empty_enclosed_expr() {
     let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
-        parser.parse_enclosed_exprs().unwrap(),
+        parser.parse_body_or_block().unwrap(),
         Vec::new(),
     );
     assert!(parser.get_logs().is_empty());
@@ -174,7 +174,7 @@ fn parses_enclosed_expr_with_single_expr() {
     let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
-        parser.parse_enclosed_exprs().unwrap(),
+        parser.parse_body_or_block().unwrap(),
         vec![
             Expr {
                 kind: ExprKind::Id(Id { id: "id".to_string(), span: Span::new(1, 1) }),
@@ -201,7 +201,7 @@ fn parses_enclosed_exprs_with_multiple_exprs() {
     let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
-        parser.parse_enclosed_exprs().unwrap(),
+        parser.parse_body_or_block().unwrap(),
         vec![
             Expr {
                 kind: ExprKind::Id(Id { id: "id1".to_string(), span: Span::new(1, 1) }),
@@ -230,7 +230,7 @@ fn expects_semicolon_after_expr_in_enclosed_exprs() {
     let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
 
     assert_eq!(
-        parser.parse_enclosed_exprs().unwrap(),
+        parser.parse_body_or_block().unwrap(),
         vec![
             Expr {
                 kind: ExprKind::Id(Id { id: "id1".to_string(), span: Span::new(1, 1) }),
