@@ -97,7 +97,7 @@ pub struct Ret {
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct FnCall {
-    pub r#fn: Option<ItemId>,
+    pub r#fn: Option<(ItemId, ast::Path)>,
     pub args: Vec<ActualArg>,
 }
 

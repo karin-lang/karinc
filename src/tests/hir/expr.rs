@@ -215,7 +215,7 @@ fn lowers_fn_call_expr() {
             id: ExprId::new(0),
             kind: ExprKind::FnCall(
                 FnCall {
-                    r#fn: Some(ItemId::new(0, 0)),
+                    r#fn: Some((ItemId::new(0, 0), "my_hako::f".into())),
                     args: vec![
                         ActualArg {
                             expr: Expr {

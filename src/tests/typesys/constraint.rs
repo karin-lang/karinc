@@ -811,7 +811,7 @@ fn constrains_by_fn_call() {
                                         id: ExprId::new(0),
                                         kind: hir::ExprKind::FnCall(
                                             hir::FnCall {
-                                                r#fn: Some(ItemId::new(0,0)),
+                                                r#fn: Some((ItemId::new(0, 0), "my_hako::item".into())),
                                                 args: vec![
                                                     hir::ActualArg {
                                                         expr: hir::Expr {
@@ -899,7 +899,7 @@ fn detects_inconsistent_constraint_of_fn_call() {
                                         id: ExprId::new(0),
                                         kind: hir::ExprKind::FnCall(
                                             hir::FnCall {
-                                                r#fn: Some(ItemId::new(0,0)),
+                                                r#fn: Some((ItemId::new(0, 0), "my_hako::item".into())),
                                                 args: Vec::new(),
                                             },
                                         ),
@@ -908,7 +908,7 @@ fn detects_inconsistent_constraint_of_fn_call() {
                                         id: ExprId::new(1),
                                         kind: hir::ExprKind::FnCall(
                                             hir::FnCall {
-                                                r#fn: Some(ItemId::new(0,0)),
+                                                r#fn: Some((ItemId::new(0, 0), "my_hako::item".into())),
                                                 args: vec![
                                                     hir::ActualArg {
                                                         expr: hir::Expr {

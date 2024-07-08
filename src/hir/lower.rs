@@ -308,9 +308,9 @@ impl<'a> HirLowering<'a> {
     }
 
     pub fn lower_fn_call(&mut self, call: &ast::FnCall, span: token::Span) -> FnCall {
-        let item_id = match self.resolve_path(&call.path) {
+        let r#fn = match self.resolve_path(&call.path) {
             Some(global_id) => match global_id {
-                GlobalId::Item(item_id) => Some(item_id),
+                GlobalId::Item(item_id) => Some((item_id, call.path.clone())),
                 _ => {
                     self.collect_log::<()>(Err(HirLoweringLog::GlobalIdIsNotFound { global_id, span }));
                     None
@@ -328,7 +328,7 @@ impl<'a> HirLowering<'a> {
                 ActualArg { expr }
             })
             .collect();
-        let call = FnCall { r#fn: item_id, args };
+        let call = FnCall { r#fn, args };
         call
     }
 
