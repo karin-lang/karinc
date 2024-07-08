@@ -141,10 +141,10 @@ fn consumes_until_body_end_when_error_occurred() {
     assert!(parser.peek().is_none());
 }
 
-/* enclosed expressions */
+/* body or block */
 
 #[test]
-fn parses_empty_enclosed_expr() {
+fn parses_empty_body_or_block() {
     let tokens = vec![
         token!(OpenCurlyBracket, 0, 1),
         token!(ClosingCurlyBracket, 1, 1),
@@ -162,7 +162,7 @@ fn parses_empty_enclosed_expr() {
 }
 
 #[test]
-fn parses_enclosed_expr_with_single_expr() {
+fn parses_body_or_block_with_single_expr() {
     let tokens = vec![
         token!(OpenCurlyBracket, 0, 1),
         id_token!("id", 1, 1),
@@ -187,7 +187,7 @@ fn parses_enclosed_expr_with_single_expr() {
 }
 
 #[test]
-fn parses_enclosed_exprs_with_multiple_exprs() {
+fn parses_body_or_block_with_multiple_exprs() {
     let tokens = vec![
         token!(OpenCurlyBracket, 0, 1),
         id_token!("id1", 1, 1),
@@ -218,7 +218,7 @@ fn parses_enclosed_exprs_with_multiple_exprs() {
 }
 
 #[test]
-fn expects_semicolon_after_expr_in_enclosed_exprs() {
+fn expects_semicolon_after_expr_in_body_or_block() {
     let tokens = vec![
         token!(OpenCurlyBracket, 0, 1),
         id_token!("id1", 1, 1),
