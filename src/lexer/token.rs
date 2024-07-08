@@ -190,6 +190,8 @@ pub enum Keyword {
     Ref,
     Ret,
     Struct,
+    // 字句解析時点ではキーワードとして扱い、構文解析時に型もしくはリテラルに変換する
+    Void,
 }
 
 impl Keyword {
@@ -207,6 +209,7 @@ impl Keyword {
             "ref" => Keyword::Ref,
             "ret" => Keyword::Ret,
             "struct" => Keyword::Struct,
+            "void" => Keyword::Void,
             _ => return None,
         };
         Some(keyword)

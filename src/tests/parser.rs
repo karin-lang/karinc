@@ -1078,6 +1078,26 @@ fn parses_prim_type() {
 }
 
 #[test]
+fn parses_void_type_from_keyword() {
+    let tokens = vec![
+        keyword_token!(Void, 0, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_type().unwrap(),
+        Type {
+            kind: Box::new(TypeKind::Prim(PrimType::Void)),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
 fn expects_type_for_unexpected_token() {
     let tokens = vec![
         token!(Semicolon, 0, 1),
@@ -1582,6 +1602,28 @@ fn parses_literal_expr() {
         Expr {
             kind: ExprKind::Literal(
                 token::Literal::Bool { value: true },
+            ),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_void_literal_from_keyword() {
+    let tokens = vec![
+        keyword_token!(Void, 0, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Literal(
+                token::Literal::Void,
             ),
             span: Span::new(0, 1),
         },

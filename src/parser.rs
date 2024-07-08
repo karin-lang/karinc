@@ -90,6 +90,7 @@ impl<'a> Parser<'a> {
     pub fn get_next_literal(&mut self) -> Option<&Literal> {
         match self.peek() {
             Some(next) => match &next.kind {
+                TokenKind::Keyword(keyword) if *keyword == Keyword::Void => Some(&Literal::Void),
                 TokenKind::Literal(literal) => Some(literal),
                 _ => None,
             },
@@ -355,6 +356,11 @@ impl<'a> Parser<'a> {
             TokenKind::Id(id) => {
                 let id = Id { id: id.clone(), span: first_token.span.clone() };
                 let kind = TypeKind::Id(id);
+                let r#type = Type { kind: Box::new(kind), span: first_token.span.clone() };
+                Ok(r#type)
+            },
+            TokenKind::Keyword(keyword) if *keyword == Keyword::Void => {
+                let kind = TypeKind::Prim(PrimType::Void);
                 let r#type = Type { kind: Box::new(kind), span: first_token.span.clone() };
                 Ok(r#type)
             },
