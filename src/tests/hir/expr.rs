@@ -509,34 +509,118 @@ fn lowers_if_expr() {
 }
 
 #[test]
-fn lowers_for_expr() {
+fn lowers_endless_for_expr() {
     let ast = ast::Expr {
         kind: ast::ExprKind::For(
             ast::For {
-                kind: ast::ForKind::Range {
-                    index: Box::new(
-                        ast::Expr {
-                            kind: ast::ExprKind::Id(
-                                ast::Id { id: "index".to_string(), span: Span::new(1, 1) }
-                            ),
-                            span: Span::new(1, 1),
-                        },
-                    ),
-                    range: Box::new(
-                        ast::Expr {
-                            kind: ast::ExprKind::Id(
-                                ast::Id { id: "range".to_string(), span: Span::new(3, 1) }
-                            ),
-                            span: Span::new(3, 1),
-                        },
-                    ),
-                },
+                kind: ast::ForKind::Endless,
                 block: ast::Block {
                     exprs: Vec::new(),
                 },
             },
         ),
         span: Span::new(0, 1),
+    };
+    let asts = Vec::new();
+    let paths = HashMap::new();
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    let hir = lowering.lower_expr(&ast);
+
+    assert_eq!(
+        hir,
+        Expr {
+            id: ExprId::new(0),
+            kind: ExprKind::For(
+                For {
+                    kind: ForKind::Endless,
+                    block: Block {
+                        exprs: Vec::new(),
+                    },
+                },
+            ),
+        },
+    );
+    assert!(lowering.get_logs().is_empty());
+}
+
+#[test]
+fn lowers_cond_for() {
+    let ast = ast::For {
+        kind: ast::ForKind::Cond {
+            cond: Box::new(
+                ast::Expr {
+                    kind: ast::ExprKind::Id(
+                        ast::Id { id: "cond".to_string(), span: Span::new(0, 1) }
+                    ),
+                    span: Span::new(0, 1),
+                },
+            ),
+        },
+        block: ast::Block {
+            exprs: Vec::new(),
+        },
+    };
+    let asts = Vec::new();
+    let paths = HashMap::new();
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    lowering.get_body_scope_hierarchy_mut().declare(
+        "cond",
+        LocalDef::Var(
+            VarDef {
+                id: ast::Id { id: "cond".to_string(), span: Span::new(0, 1) },
+                ref_mut: ast::RefMut::None,
+                r#type: None,
+                init: None,
+            },
+        ),
+    );
+    let hir = lowering.lower_for(&ast);
+
+    assert_eq!(
+        hir,
+        For {
+            kind: ForKind::Cond {
+                cond: Box::new(
+                    Expr {
+                        id: ExprId::new(0),
+                        kind: ExprKind::LocalRef(LocalId::Var(VarId::new(0))),
+                    },
+                ),
+            },
+            block: Block {
+                exprs: Vec::new(),
+            },
+        },
+    );
+    assert!(lowering.get_logs().is_empty());
+}
+
+#[test]
+fn lowers_range_for() {
+    let ast = ast::For {
+        kind: ast::ForKind::Range {
+            index: Box::new(
+                ast::Expr {
+                    kind: ast::ExprKind::Id(
+                        ast::Id { id: "index".to_string(), span: Span::new(0, 1) }
+                    ),
+                    span: Span::new(0, 1),
+                },
+            ),
+            range: Box::new(
+                ast::Expr {
+                    kind: ast::ExprKind::Id(
+                        ast::Id { id: "range".to_string(), span: Span::new(1, 1) }
+                    ),
+                    span: Span::new(1, 1),
+                },
+            ),
+        },
+        block: ast::Block {
+            exprs: Vec::new(),
+        },
     };
     let asts = Vec::new();
     let paths = HashMap::new();
@@ -564,33 +648,28 @@ fn lowers_for_expr() {
             },
         ),
     );
-    let hir = lowering.lower_expr(&ast);
+    let hir = lowering.lower_for(&ast);
 
     assert_eq!(
         hir,
-        Expr {
-            id: ExprId::new(0),
-            kind: ExprKind::For(
-                For {
-                    kind: ForKind::Range {
-                        index: Box::new(
-                            Expr {
-                                id: ExprId::new(1),
-                                kind: ExprKind::LocalRef(LocalId::Var(VarId::new(0))),
-                            },
-                        ),
-                        range: Box::new(
-                            Expr {
-                                id: ExprId::new(2),
-                                kind: ExprKind::LocalRef(LocalId::Var(VarId::new(1))),
-                            },
-                        ),
+        For {
+            kind: ForKind::Range {
+                index: Box::new(
+                    Expr {
+                        id: ExprId::new(0),
+                        kind: ExprKind::LocalRef(LocalId::Var(VarId::new(0))),
                     },
-                    block: Block {
-                        exprs: Vec::new(),
+                ),
+                range: Box::new(
+                    Expr {
+                        id: ExprId::new(1),
+                        kind: ExprKind::LocalRef(LocalId::Var(VarId::new(1))),
                     },
-                },
-            ),
+                ),
+            },
+            block: Block {
+                exprs: Vec::new(),
+            },
         },
     );
     assert!(lowering.get_logs().is_empty());
