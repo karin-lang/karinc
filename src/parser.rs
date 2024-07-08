@@ -419,6 +419,11 @@ impl<'a> Parser<'a> {
             self.expect_any()?;
             let expr = Expr { kind: ExprKind::Literal(literal), span: beginning_span };
             Ok(expr)
+        } else if let Some(_) = self.is_next_eq(TokenKind::OpenCurlyBracket) {
+            let exprs = self.parse_body_or_block()?;
+            let block = Block { exprs };
+            let expr = Expr { kind: ExprKind::Block(block), span: beginning_span };
+            Ok(expr)
         } else {
             Err(ParserLog::ExpectedExpr { span: beginning_span })
         }
