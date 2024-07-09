@@ -48,6 +48,7 @@ pub enum CompilerLogKind {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum CompilerErr {
+    DuplicateItemName { id: ast::Id },
     GlobalIdIsNotFound { global_id: GlobalId },
     PathIsNotFoundInScope { path: ast::Path },
     IdIsNotFoundInScope { id: ast::Id },

@@ -1,10 +1,11 @@
-use crate::log::{CompilerLog, SyntaxErrorKind};
+use crate::log::{CompilerErr, CompilerLog, SyntaxErrorKind};
 use crate::parser::*;
 
 pub type ParserResult<T> = Result<T, ParserLog>;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ParserLog {
+    DuplicateItemName { id: Id, span: Span },
     ExpectedActualArg { span: Span },
     ExpectedExpr { span: Span },
     ExpectedFormalArg { span: Span },
@@ -19,6 +20,7 @@ pub enum ParserLog {
 impl From<ParserLog> for CompilerLog {
     fn from(value: ParserLog) -> Self {
         match value {
+            ParserLog::DuplicateItemName { id, span } => CompilerLog::err(CompilerErr::DuplicateItemName { id }, span),
             ParserLog::ExpectedActualArg { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedActualArg, span),
             ParserLog::ExpectedExpr { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedExpr, span),
             ParserLog::ExpectedFormalArg { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedFormalArg, span),

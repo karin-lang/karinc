@@ -11,16 +11,28 @@ use crate::hir::id::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct ParserHakoContext {
+    declared_names: Vec<String>,
     hako_id: HakoId,
     next_item_id: usize,
 }
 
 impl ParserHakoContext {
     pub fn new(hako_id: HakoId) -> ParserHakoContext {
-        ParserHakoContext { hako_id, next_item_id: 0 }
+        ParserHakoContext { declared_names: Vec::new(), hako_id, next_item_id: 0 }
     }
 
-    pub fn generate_item_id(&mut self) -> ItemId {
+    pub fn declare(&mut self, id: Id) -> ParserResult<ItemId> {
+        if self.declared_names.contains(&id.id) {
+            let span = id.span.clone();
+            Err(ParserLog::DuplicateItemName { id, span })
+        } else {
+            self.declared_names.push(id.id);
+            let new_id = self.generate_item_id();
+            Ok(new_id)
+        }
+    }
+
+    fn generate_item_id(&mut self) -> ItemId {
         let next = self.next_item_id;
         self.next_item_id += 1;
         ItemId::new(self.hako_id.into_usize(), next)
@@ -278,8 +290,8 @@ impl<'a> Parser<'a> {
             Accessibility::Default
         };
         let item = if self.consume_keyword(Keyword::Fn).is_some() {
-            let id = self.hako_context.generate_item_id();
             let (_, name) = self.expect_id()?;
+            let id = self.hako_context.declare(name.clone())?;
             let args = self.parse_formal_args()?;
             let ret_type = if self.is_next_eq(TokenKind::OpenCurlyBracket).is_some() {
                 None
