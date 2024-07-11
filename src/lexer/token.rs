@@ -101,6 +101,7 @@ pub enum TokenKind {
     Literal(Literal),
 
     // symbol tokens
+    Asterisk,
     ClosingCurlyBracket,
     ClosingParen,
     Colon,
@@ -108,9 +109,12 @@ pub enum TokenKind {
     Dot,
     DoubleColon,
     Equal,
+    Minus,
     OpenCurlyBracket,
     OpenParen,
+    Plus,
     Semicolon,
+    Slash,
 
     // special tokens
     Unknown,

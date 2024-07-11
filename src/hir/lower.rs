@@ -201,8 +201,8 @@ impl<'a> HirLowering<'a> {
     }
 
     pub fn lower_expr(&mut self, expr: &ast::Expr) -> Expr {
-        // todo: 実装
         match &expr.kind {
+            ast::ExprKind::Operation(_) => todo!(),
             ast::ExprKind::Block(block) => Expr {
                 id: self.body_scope_hierarchy.generate_expr_id(),
                 kind: ExprKind::Block(self.lower_block(block)),

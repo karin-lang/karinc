@@ -252,6 +252,334 @@ fn expects_semicolon_after_expr_in_body_or_block() {
     assert!(parser.peek().is_none());
 }
 
+/* infix operator */
+
+#[test]
+fn parses_infix_operation_expr() {
+    let tokens = vec![
+        id_token!("left", 0, 1),
+        token!(Plus, 1, 1),
+        id_token!("right", 2, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Operation(
+                Box::new(
+                    Operation {
+                        elems: vec![
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "left".to_string(), span: Span::new(0, 1) },
+                                    ),
+                                    span: Span::new(0, 1),
+                                },
+                            ),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "right".to_string(), span: Span::new(2, 1) },
+                                    ),
+                                    span: Span::new(2, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Add),
+                        ],
+                    },
+                ),
+            ),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_multiple_order_infix_operation_expr_1() {
+    // input: a + b * c
+    // output: a b c * +
+    let tokens = vec![
+        id_token!("a", 0, 1),
+        token!(Plus, 1, 1),
+        id_token!("b", 2, 1),
+        token!(Asterisk, 3, 1),
+        id_token!("c", 4, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Operation(
+                Box::new(
+                    Operation {
+                        elems: vec![
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "a".to_string(), span: Span::new(0, 1) },
+                                    ),
+                                    span: Span::new(0, 1),
+                                },
+                            ),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "b".to_string(), span: Span::new(2, 1) },
+                                    ),
+                                    span: Span::new(2, 1),
+                                },
+                            ),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "c".to_string(), span: Span::new(4, 1) },
+                                    ),
+                                    span: Span::new(4, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Mul),
+                            OperationElem::Operator(Operator::Add),
+                        ],
+                    },
+                ),
+            ),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_multiple_precedence_infix_operation_expr_2() {
+    // input: a * b + c
+    // output: a b * c +
+    let tokens = vec![
+        id_token!("a", 0, 1),
+        token!(Asterisk, 1, 1),
+        id_token!("b", 2, 1),
+        token!(Plus, 3, 1),
+        id_token!("c", 4, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Operation(
+                Box::new(
+                    Operation {
+                        elems: vec![
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "a".to_string(), span: Span::new(0, 1) },
+                                    ),
+                                    span: Span::new(0, 1),
+                                },
+                            ),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "b".to_string(), span: Span::new(2, 1) },
+                                    ),
+                                    span: Span::new(2, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Mul),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "c".to_string(), span: Span::new(4, 1) },
+                                    ),
+                                    span: Span::new(4, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Add),
+                        ],
+                    },
+                ),
+            ),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_multiple_precedence_infix_operation_expr_3() {
+    let tokens = vec![
+        // input: a + b * c / d - e
+        // output: a b c * d / + e -
+        id_token!("a", 0, 1),
+        token!(Plus, 1, 1),
+        id_token!("b", 2, 1),
+        token!(Asterisk, 3, 1),
+        id_token!("c", 4, 1),
+        token!(Slash, 5, 1),
+        id_token!("d", 6, 1),
+        token!(Minus, 7, 1),
+        id_token!("e", 8, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Operation(
+                Box::new(
+                    Operation {
+                        elems: vec![
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "a".to_string(), span: Span::new(0, 1) },
+                                    ),
+                                    span: Span::new(0, 1),
+                                },
+                            ),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "b".to_string(), span: Span::new(2, 1) },
+                                    ),
+                                    span: Span::new(2, 1),
+                                },
+                            ),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "c".to_string(), span: Span::new(4, 1) },
+                                    ),
+                                    span: Span::new(4, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Mul),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "d".to_string(), span: Span::new(6, 1) },
+                                    ),
+                                    span: Span::new(6, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Div),
+                            OperationElem::Operator(Operator::Add),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "e".to_string(), span: Span::new(8, 1) },
+                                    ),
+                                    span: Span::new(8, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Sub),
+                        ],
+                    },
+                ),
+            ),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_multiple_order_infix_operation_expr_4() {
+    // input: a * b / c + d + e
+    // output: a b * c / d + e +
+    let tokens = vec![
+        id_token!("a", 0, 1),
+        token!(Asterisk, 1, 1),
+        id_token!("b", 2, 1),
+        token!(Slash, 3, 1),
+        id_token!("c", 4, 1),
+        token!(Plus, 5, 1),
+        id_token!("d", 6, 1),
+        token!(Plus, 7, 1),
+        id_token!("e", 8, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Operation(
+                Box::new(
+                    Operation {
+                        elems: vec![
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "a".to_string(), span: Span::new(0, 1) },
+                                    ),
+                                    span: Span::new(0, 1),
+                                },
+                            ),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "b".to_string(), span: Span::new(2, 1) },
+                                    ),
+                                    span: Span::new(2, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Mul),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "c".to_string(), span: Span::new(4, 1) },
+                                    ),
+                                    span: Span::new(4, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Div),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "d".to_string(), span: Span::new(6, 1) },
+                                    ),
+                                    span: Span::new(6, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Add),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "e".to_string(), span: Span::new(8, 1) },
+                                    ),
+                                    span: Span::new(8, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Add),
+                        ],
+                    },
+                ),
+            ),
+            span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
 /* block */
 
 #[test]

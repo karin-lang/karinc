@@ -386,6 +386,78 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_expr(&mut self) -> ParserResult<Expr> {
+        self._parse_operation_expr()
+    }
+
+    fn _parse_operation_expr(&mut self) -> ParserResult<Expr> {
+        let term = self._parse_expr()?;
+
+        // 演算式でなければ通常の式として返す
+        if let None = self.is_next_infix_operator() {
+            return Ok(term);
+        }
+
+        let span = term.span.clone();
+        let mut elems = vec![OperationElem::Term(term)];
+        let mut op_stack: Vec<Operator> = Vec::new();
+
+        loop {
+            match self.consume_infix_operator()? {
+                Some(op) => {
+                    if let Some(last_op) = op_stack.last() {
+                        // 新しい演算子がスタック内の最新の演算子よりも優先度が高い場合は何もしない
+                        // そうでない場合はスタックに演算子をプッシュする
+                        if op.get_precedence() <= last_op.get_precedence() {
+                            elems.push(OperationElem::Operator(*last_op));
+                            op_stack.pop().unwrap();
+                            // 先ほどと同じようにもう一度プッシュできる演算子がないか優先度を確かめる
+                            if let Some(last_op) = op_stack.last() {
+                                if op.get_precedence() <= last_op.get_precedence() {
+                                    elems.push(OperationElem::Operator(*last_op));
+                                    op_stack.pop().unwrap();
+                                }
+                            }
+                        }
+                    }
+                    op_stack.push(op);
+                    let right_term = self._parse_expr()?;
+                    elems.push(OperationElem::Term(right_term));
+                },
+                _ => break,
+            };
+        }
+
+        while let Some(op) = op_stack.pop() {
+            elems.push(OperationElem::Operator(op));
+        }
+
+        let expr = Expr {
+            kind: ExprKind::Operation(Box::new(Operation { elems })),
+            span,
+        };
+        Ok(expr)
+    }
+
+    fn is_next_infix_operator(&mut self) -> Option<Operator> {
+        if let Some(next) = self.peek() {
+            match Operator::to_infix_operator(next) {
+                Some(v) => Some(v),
+                None => None,
+            }
+        } else {
+            None
+        }
+    }
+
+    fn consume_infix_operator(&mut self) -> ParserResult<Option<Operator>> {
+        let op = self.is_next_infix_operator();
+        if let Some(_) = &op {
+            self.expect_any()?;
+        }
+        Ok(op)
+    }
+
+    fn _parse_expr(&mut self) -> ParserResult<Expr> {
         let beginning_span = self.get_next_span();
         // todo: match 式で token_kind を判断して条件分岐を最適化できないか検討する
         if let Some(_) = self.is_next_id() {

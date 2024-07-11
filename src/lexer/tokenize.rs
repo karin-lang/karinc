@@ -180,6 +180,7 @@ impl Lexer {
                     };
                     Some((len, TokenKind::Literal(literal)))
                 },
+                '*' => Some((1, TokenKind::Asterisk)),
                 '}' => Some((1, TokenKind::ClosingCurlyBracket)),
                 ')' => Some((1, TokenKind::ClosingParen)),
                 ':' => if let Some((_, ':')) = input.peek() {
@@ -191,9 +192,12 @@ impl Lexer {
                 ',' => Some((1, TokenKind::Comma)),
                 '.' => Some((1, TokenKind::Dot)),
                 '=' => Some((1, TokenKind::Equal)),
+                '-' => Some((1, TokenKind::Minus)),
                 '{' => Some((1, TokenKind::OpenCurlyBracket)),
                 '(' => Some((1, TokenKind::OpenParen)),
+                '+' => Some((1, TokenKind::Plus)),
                 ';' => Some((1, TokenKind::Semicolon)),
+                '/' => Some((1, TokenKind::Slash)),
                 _ => {
                     match &mut last_unknown_token_span {
                         Some(span) => span.len += 1,

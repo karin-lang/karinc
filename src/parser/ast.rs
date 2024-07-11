@@ -2,7 +2,7 @@ pub mod tltype;
 
 use std::fmt;
 
-use crate::lexer::token;
+use crate::lexer::token::{self, Token, TokenKind};
 use crate::hir::id::*;
 use crate::parser::Span;
 
@@ -110,6 +110,7 @@ pub struct Expr {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
+    Operation(Box<Operation>),
     Block(Block),
     Id(Id),
     Path(Path),
@@ -120,6 +121,47 @@ pub enum ExprKind {
     VarBind(VarBind),
     If(If),
     For(For),
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct Operation {
+    pub elems: Vec<OperationElem>,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum OperationElem {
+    Term(Expr),
+    Operator(Operator),
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum Operator {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
+impl Operator {
+    pub fn get_precedence(&self) -> usize {
+        match self {
+            Operator::Add => 0,
+            Operator::Sub => 0,
+            Operator::Mul => 1,
+            Operator::Div => 1,
+        }
+    }
+
+    pub fn to_infix_operator(token: &Token) -> Option<Operator> {
+        let op = match &token.kind {
+            TokenKind::Plus => Operator::Add,
+            TokenKind::Minus => Operator::Sub,
+            TokenKind::Asterisk => Operator::Mul,
+            TokenKind::Slash => Operator::Div,
+            _ => return None,
+        };
+        return Some(op);
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]
