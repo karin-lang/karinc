@@ -49,6 +49,7 @@ pub struct Expr {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum ExprKind {
+    Operation(Box<Operation>),
     Block(Block),
     Literal(token::Literal),
     TopLevelRef(TopLevelId, ast::Path),
@@ -60,6 +61,12 @@ pub enum ExprKind {
     If(If),
     For(For),
     Unknown,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum Operation {
+    Unary { operator: ast::UnaryOperator, term: Expr },
+    Binary { operator: ast::BinaryOperator, left_term: Expr, right_term: Expr },
 }
 
 #[derive(Clone, Debug, PartialEq)]

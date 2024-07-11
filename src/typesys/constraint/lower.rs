@@ -49,6 +49,7 @@ impl<'a> TypeConstraintLowering<'a> {
 
     pub fn lower_expr(&mut self, body: &hir::Body, expr: &hir::Expr) {
         match &expr.kind {
+            hir::ExprKind::Operation(_) => todo!(),
             // ブロックの返り値の型はブロック単位でなく式単位で関連付ける
             // 例）if-else 式の場合: if ブロック内の最後の式と else ブロック内の最後の式が関連付けられて型を検査する
             hir::ExprKind::Block(block) => self.lower_constrained_block(body, &expr.id, block),

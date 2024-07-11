@@ -10,6 +10,278 @@ use crate::hir::id::*;
 use crate::hir::lower::HirLowering;
 
 #[test]
+fn lowers_operation_expr() {
+    // input: true !<not>
+    // output: (!<not>true)
+    let ast = ast::Expr {
+        kind: ast::ExprKind::Operation(
+            Box::new(
+                ast::Operation {
+                    elems: vec![
+                        ast::OperationElem::Term(
+                            ast::Expr {
+                                kind: ast::ExprKind::Literal(
+                                    token::Literal::Bool { value: true },
+                                ),
+                                span: Span::new(0, 1),
+                            },
+                        ),
+                        ast::OperationElem::Operator(ast::Operator::Unary(ast::UnaryOperator::Not)),
+                    ],
+                },
+            ),
+        ),
+        span: Span::new(0, 1),
+    };
+    let asts = Vec::new();
+    let paths = HashMap::new();
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    let hir = lowering.lower_expr(&ast);
+
+    assert_eq!(
+        hir,
+        Expr {
+            id: ExprId::new(0),
+            kind: ExprKind::Operation(
+                Box::new(
+                    Operation::Unary {
+                        operator: ast::UnaryOperator::Not,
+                        term: Expr {
+                            id: ExprId::new(1),
+                            kind: ExprKind::Literal(
+                                token::Literal::Bool { value: true },
+                            ),
+                        },
+                    },
+                ),
+            ),
+        },
+    );
+    assert!(lowering.get_logs().is_empty());
+}
+
+#[test]
+fn lowers_operation_1() {
+    // input: true !<not> !<void>
+    // output: ((!<void>)!<not>true)
+    let ast = ast::Expr {
+        kind: ast::ExprKind::Operation(
+            Box::new(
+                ast::Operation {
+                    elems: vec![
+                        ast::OperationElem::Term(
+                            ast::Expr {
+                                kind: ast::ExprKind::Literal(
+                                    token::Literal::Bool { value: true },
+                                ),
+                                span: Span::new(0, 1),
+                            },
+                        ),
+                        ast::OperationElem::Operator(ast::Operator::Unary(ast::UnaryOperator::Not)),
+                        ast::OperationElem::Operator(ast::Operator::Unary(ast::UnaryOperator::Void)),
+                    ],
+                },
+            ),
+        ),
+        span: Span::new(0, 1),
+    };
+    let asts = Vec::new();
+    let paths = HashMap::new();
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    let hir = lowering.lower_expr(&ast);
+
+    assert_eq!(
+        hir,
+        Expr {
+            id: ExprId::new(0),
+            kind: ExprKind::Operation(
+                Box::new(
+                    Operation::Unary {
+                        operator: ast::UnaryOperator::Void,
+                        term: Expr {
+                            id: ExprId::new(2),
+                            kind: ExprKind::Operation(
+                                Box::new(
+                                    Operation::Unary {
+                                        operator: ast::UnaryOperator::Not,
+                                        term: Expr {
+                                            id: ExprId::new(1),
+                                            kind: ExprKind::Literal(
+                                                token::Literal::Bool { value: true },
+                                            ),
+                                        },
+                                    },
+                                ),
+                            ),
+                        },
+                    },
+                ),
+            ),
+        },
+    );
+    assert!(lowering.get_logs().is_empty());
+}
+
+#[test]
+fn lowers_operation_2() {
+    // input: 1 2 +
+    // output: (1 + 2)
+    let ast = ast::Expr {
+        kind: ast::ExprKind::Operation(
+            Box::new(
+                ast::Operation {
+                    elems: vec![
+                        ast::OperationElem::Term(
+                            ast::Expr {
+                                kind: ast::ExprKind::Literal(
+                                    token::Literal::Str { value: "1".to_string() }
+                                ),
+                                span: Span::new(0, 1),
+                            },
+                        ),
+                        ast::OperationElem::Term(
+                            ast::Expr {
+                                kind: ast::ExprKind::Literal(
+                                    token::Literal::Str { value: "2".to_string() }
+                                ),
+                                span: Span::new(1, 1),
+                            },
+                        ),
+                        ast::OperationElem::Operator(ast::Operator::Binary(ast::BinaryOperator::Add)),
+                    ],
+                },
+            ),
+        ),
+        span: Span::new(0, 1),
+    };
+    let asts = Vec::new();
+    let paths = HashMap::new();
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    let hir = lowering.lower_expr(&ast);
+
+    assert_eq!(
+        hir,
+        Expr {
+            id: ExprId::new(0),
+            kind: ExprKind::Operation(
+                Box::new(
+                    Operation::Binary {
+                        operator: ast::BinaryOperator::Add,
+                        left_term: Expr {
+                            id: ExprId::new(1),
+                            kind: ExprKind::Literal(
+                                token::Literal::Str { value: "1".to_string() }
+                            ),
+                        },
+                        right_term: Expr {
+                            id: ExprId::new(2),
+                            kind: ExprKind::Literal(
+                                token::Literal::Str { value: "2".to_string() }
+                            ),
+                        },
+                    },
+                ),
+            ),
+        },
+    );
+    assert!(lowering.get_logs().is_empty());
+}
+
+#[test]
+fn lowers_operation_3() {
+    // input: 1 2 3 + *
+    // output: (1 * (2 + 3))
+    let ast = ast::Expr {
+        kind: ast::ExprKind::Operation(
+            Box::new(
+                ast::Operation {
+                    elems: vec![
+                        ast::OperationElem::Term(
+                            ast::Expr {
+                                kind: ast::ExprKind::Literal(
+                                    token::Literal::Str { value: "1".to_string() }
+                                ),
+                                span: Span::new(0, 1),
+                            },
+                        ),
+                        ast::OperationElem::Term(
+                            ast::Expr {
+                                kind: ast::ExprKind::Literal(
+                                    token::Literal::Str { value: "2".to_string() }
+                                ),
+                                span: Span::new(1, 1),
+                            },
+                        ),
+                        ast::OperationElem::Term(
+                            ast::Expr {
+                                kind: ast::ExprKind::Literal(
+                                    token::Literal::Str { value: "3".to_string() }
+                                ),
+                                span: Span::new(2, 1),
+                            },
+                        ),
+                        ast::OperationElem::Operator(ast::Operator::Binary(ast::BinaryOperator::Add)),
+                        ast::OperationElem::Operator(ast::Operator::Binary(ast::BinaryOperator::Mul)),
+                    ],
+                },
+            ),
+        ),
+        span: Span::new(0, 1),
+    };
+    let asts = Vec::new();
+    let paths = HashMap::new();
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    let hir = lowering.lower_expr(&ast);
+
+    assert_eq!(
+        hir,
+        Expr {
+            id: ExprId::new(0),
+            kind: ExprKind::Operation(
+                Box::new(
+                    Operation::Binary {
+                        operator: ast::BinaryOperator::Mul,
+                        left_term: Expr {
+                            id: ExprId::new(1),
+                            kind: ExprKind::Literal(
+                                token::Literal::Str { value: "1".to_string() },
+                            ),
+                        },
+                        right_term: Expr {
+                            id: ExprId::new(4),
+                            kind: ExprKind::Operation(
+                                Box::new(
+                                    Operation::Binary {
+                                        operator: ast::BinaryOperator::Add,
+                                        left_term: Expr {
+                                            id: ExprId::new(2),
+                                            kind: ExprKind::Literal(
+                                                token::Literal::Str { value: "2".to_string() },
+                                            ),
+                                        },
+                                        right_term: Expr {
+                                            id: ExprId::new(3),
+                                            kind: ExprKind::Literal(
+                                                token::Literal::Str { value: "3".to_string() },
+                                            ),
+                                        },
+                                    },
+                                ),
+                            ),
+                        },
+                    },
+                ),
+            ),
+        },
+    );
+    assert!(lowering.get_logs().is_empty());
+}
+
+#[test]
 fn lowers_block_expr() {
     let ast = ast::Expr {
         kind: ast::ExprKind::Block(
