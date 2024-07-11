@@ -136,51 +136,61 @@ pub enum OperationElem {
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Operator {
-    Add,
-    Sub,
-    Mul,
-    Div,
+    Unary(UnaryOperator),
+    Binary(BinaryOperator),
+}
+
+impl Operator {
+    pub fn to_prefix_operator(token: &Token) -> Option<UnaryOperator> {
+        let op = match &token.kind {
+            TokenKind::Exclamation => UnaryOperator::Not,
+            _ => return None,
+        };
+        Some(op)
+    }
+
+    pub fn to_infix_operator(token: &Token) -> Option<BinaryOperator> {
+        let op = match &token.kind {
+            TokenKind::Plus => BinaryOperator::Add,
+            TokenKind::Minus => BinaryOperator::Sub,
+            TokenKind::Asterisk => BinaryOperator::Mul,
+            TokenKind::Slash => BinaryOperator::Div,
+            _ => return None,
+        };
+        Some(op)
+    }
+
+    pub fn to_postfix_operator(token: &Token) -> Option<UnaryOperator> {
+        let op = match &token.kind {
+            TokenKind::Exclamation => UnaryOperator::Void,
+            _ => return None,
+        };
+        Some(op)
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum UnaryOperator {
     Not,
     Void,
 }
 
-impl Operator {
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum BinaryOperator {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
+impl BinaryOperator {
     pub fn get_precedence(&self) -> usize {
         match self {
-            Operator::Add => 0,
-            Operator::Sub => 0,
-            Operator::Mul => 1,
-            Operator::Div => 1,
-            Operator::Not => 2,
-            Operator::Void => 3,
+            BinaryOperator::Add => 0,
+            BinaryOperator::Sub => 0,
+            BinaryOperator::Mul => 1,
+            BinaryOperator::Div => 1,
         }
-    }
-
-    pub fn to_prefix_operator(token: &Token) -> Option<Operator> {
-        let op = match &token.kind {
-            TokenKind::Exclamation => Operator::Not,
-            _ => return None,
-        };
-        Some(op)
-    }
-
-    pub fn to_infix_operator(token: &Token) -> Option<Operator> {
-        let op = match &token.kind {
-            TokenKind::Plus => Operator::Add,
-            TokenKind::Minus => Operator::Sub,
-            TokenKind::Asterisk => Operator::Mul,
-            TokenKind::Slash => Operator::Div,
-            _ => return None,
-        };
-        Some(op)
-    }
-
-    pub fn to_postfix_operator(token: &Token) -> Option<Operator> {
-        let op = match &token.kind {
-            TokenKind::Exclamation => Operator::Void,
-            _ => return None,
-        };
-        Some(op)
     }
 }
 

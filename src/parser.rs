@@ -397,7 +397,7 @@ impl<'a> Parser<'a> {
     // 通常の式もしくは中置演算子つきの演算式をパースする
     fn _parse_operation_expr(&mut self) -> ParserResult<Expr> {
         let first_expr = self.__parse_operation_expr()?;
-        let mut op_stack: Vec<Operator> = Vec::new();
+        let mut op_stack: Vec<BinaryOperator> = Vec::new();
 
         let (mut elems, span) = match first_expr {
             // 演算式でなければ通常の式として返す
@@ -414,12 +414,12 @@ impl<'a> Parser<'a> {
                         // 新しい演算子がスタック内の最新の演算子よりも優先度が高い場合は何もしない
                         // そうでない場合はスタックに演算子をプッシュする
                         if op.get_precedence() <= last_op.get_precedence() {
-                            elems.push(OperationElem::Operator(*last_op));
+                            elems.push(OperationElem::Operator(Operator::Binary(*last_op)));
                             op_stack.pop().unwrap();
                             // 先ほどと同じようにもう一度プッシュできる演算子がないか優先度を確かめる
                             if let Some(last_op) = op_stack.last() {
                                 if op.get_precedence() <= last_op.get_precedence() {
-                                    elems.push(OperationElem::Operator(*last_op));
+                                    elems.push(OperationElem::Operator(Operator::Binary(*last_op)));
                                     op_stack.pop().unwrap();
                                 }
                             }
@@ -436,7 +436,7 @@ impl<'a> Parser<'a> {
         }
 
         while let Some(op) = op_stack.pop() {
-            elems.push(OperationElem::Operator(op));
+            elems.push(OperationElem::Operator(Operator::Binary(op)));
         }
 
         let expr = Expr {
@@ -461,10 +461,10 @@ impl<'a> Parser<'a> {
         let result = if prefix_op.is_some() || postfix_op.is_some() || has_infix_operator {
             let mut elems = vec![OperationElem::Term(expr)];
             if let Some(op) = postfix_op {
-                elems.push(OperationElem::Operator(op));
+                elems.push(OperationElem::Operator(Operator::Unary(op)));
             }
             if let Some(op) = prefix_op {
-                elems.push(OperationElem::Operator(op));
+                elems.push(OperationElem::Operator(Operator::Unary(op)));
             }
             // 前置/中置/後置のいずれかの演算子が見つかることで演算式と判断されれば ExprWithOperators を返す
             OperationExprResult::ExprWithOperators(elems, span)
@@ -475,7 +475,7 @@ impl<'a> Parser<'a> {
         Ok(result)
     }
 
-    fn consume_prefix_operator(&mut self) -> ParserResult<Option<Operator>> {
+    fn consume_prefix_operator(&mut self) -> ParserResult<Option<UnaryOperator>> {
         if let Some(next) = self.peek() {
             match Operator::to_prefix_operator(next) {
                 Some(v) => {
@@ -496,7 +496,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn consume_infix_operator(&mut self) -> ParserResult<Option<Operator>> {
+    fn consume_infix_operator(&mut self) -> ParserResult<Option<BinaryOperator>> {
         if let Some(next) = self.peek() {
             match Operator::to_infix_operator(next) {
                 Some(v) => {
@@ -510,7 +510,7 @@ impl<'a> Parser<'a> {
         }
     }
 
-    fn consume_postfix_operator(&mut self) -> ParserResult<Option<Operator>> {
+    fn consume_postfix_operator(&mut self) -> ParserResult<Option<UnaryOperator>> {
         if let Some(next) = self.peek() {
             match Operator::to_postfix_operator(next) {
                 Some(v) => {

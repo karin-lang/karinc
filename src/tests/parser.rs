@@ -281,7 +281,7 @@ fn parses_prefix_operation_expr_1() {
                                     span: Span::new(1, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Not),
+                            OperationElem::Operator(Operator::Unary(UnaryOperator::Not)),
                         ],
                     },
                 ),
@@ -331,7 +331,7 @@ fn parses_infix_operation_expr_1() {
                                     span: Span::new(2, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Add),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Add)),
                         ],
                     },
                 ),
@@ -389,8 +389,8 @@ fn parses_infix_operation_expr_2() {
                                     span: Span::new(4, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Mul),
-                            OperationElem::Operator(Operator::Add),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Mul)),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Add)),
                         ],
                     },
                 ),
@@ -440,7 +440,7 @@ fn parses_infix_operation_expr_3() {
                                     span: Span::new(2, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Mul),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Mul)),
                             OperationElem::Term(
                                 Expr {
                                     kind: ExprKind::Id(
@@ -449,7 +449,7 @@ fn parses_infix_operation_expr_3() {
                                     span: Span::new(4, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Add),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Add)),
                         ],
                     },
                 ),
@@ -511,7 +511,7 @@ fn parses_infix_operation_expr_4() {
                                     span: Span::new(4, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Mul),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Mul)),
                             OperationElem::Term(
                                 Expr {
                                     kind: ExprKind::Id(
@@ -520,8 +520,8 @@ fn parses_infix_operation_expr_4() {
                                     span: Span::new(6, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Div),
-                            OperationElem::Operator(Operator::Add),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Div)),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Add)),
                             OperationElem::Term(
                                 Expr {
                                     kind: ExprKind::Id(
@@ -530,7 +530,7 @@ fn parses_infix_operation_expr_4() {
                                     span: Span::new(8, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Sub),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Sub)),
                         ],
                     },
                 ),
@@ -584,7 +584,7 @@ fn parses_infix_operation_expr_5() {
                                     span: Span::new(2, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Mul),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Mul)),
                             OperationElem::Term(
                                 Expr {
                                     kind: ExprKind::Id(
@@ -593,7 +593,7 @@ fn parses_infix_operation_expr_5() {
                                     span: Span::new(4, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Div),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Div)),
                             OperationElem::Term(
                                 Expr {
                                     kind: ExprKind::Id(
@@ -602,7 +602,7 @@ fn parses_infix_operation_expr_5() {
                                     span: Span::new(6, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Add),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Add)),
                             OperationElem::Term(
                                 Expr {
                                     kind: ExprKind::Id(
@@ -611,7 +611,7 @@ fn parses_infix_operation_expr_5() {
                                     span: Span::new(8, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Add),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Add)),
                         ],
                     },
                 ),
@@ -652,7 +652,7 @@ fn parses_postfix_operation_expr_1() {
                                     span: Span::new(0, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Void),
+                            OperationElem::Operator(Operator::Unary(UnaryOperator::Void)),
                         ],
                     },
                 ),
@@ -703,8 +703,8 @@ fn parses_mixed_operator_expr_1() {
                                     span: Span::new(2, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Void),
-                            OperationElem::Operator(Operator::Add),
+                            OperationElem::Operator(Operator::Unary(UnaryOperator::Void)),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Add)),
                         ],
                     },
                 ),
@@ -744,8 +744,8 @@ fn parses_mixed_operator_expr_2() {
                                     span: Span::new(1, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Void),
-                            OperationElem::Operator(Operator::Not),
+                            OperationElem::Operator(Operator::Unary(UnaryOperator::Void)),
+                            OperationElem::Operator(Operator::Unary(UnaryOperator::Not)),
                         ],
                     },
                 ),
@@ -787,7 +787,7 @@ fn parses_mixed_operator_expr_3() {
                                     span: Span::new(1, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Not),
+                            OperationElem::Operator(Operator::Unary(UnaryOperator::Not)),
                             OperationElem::Term(
                                 Expr {
                                     kind: ExprKind::Id(
@@ -796,8 +796,8 @@ fn parses_mixed_operator_expr_3() {
                                     span: Span::new(3, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Void),
-                            OperationElem::Operator(Operator::Add),
+                            OperationElem::Operator(Operator::Unary(UnaryOperator::Void)),
+                            OperationElem::Operator(Operator::Binary(BinaryOperator::Add)),
                         ],
                     },
                 ),
