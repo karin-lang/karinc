@@ -252,6 +252,47 @@ fn expects_semicolon_after_expr_in_body_or_block() {
     assert!(parser.peek().is_none());
 }
 
+/* prefix operator */
+
+#[test]
+fn parses_prefix_operation_expr_1() {
+    // input: !a
+    // output: a !
+    let tokens = vec![
+        token!(Exclamation, 0, 1),
+        id_token!("a", 1, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Operation(
+                Box::new(
+                    Operation {
+                        elems: vec![
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "a".to_string(), span: Span::new(1, 1) },
+                                    ),
+                                    span: Span::new(1, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Not),
+                        ],
+                    },
+                ),
+            ),
+            span: Span::new(1, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
 /* infix operator */
 
 #[test]
@@ -669,6 +710,99 @@ fn parses_mixed_operator_expr_1() {
                 ),
             ),
             span: Span::new(0, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_mixed_operator_expr_2() {
+    // input: !<not> a !<void>
+    // output: a !<void> !<not>
+    let tokens = vec![
+        token!(Exclamation, 0, 1),
+        id_token!("a", 1, 1),
+        token!(Exclamation, 2, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Operation(
+                Box::new(
+                    Operation {
+                        elems: vec![
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "a".to_string(), span: Span::new(1, 1) },
+                                    ),
+                                    span: Span::new(1, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Void),
+                            OperationElem::Operator(Operator::Not),
+                        ],
+                    },
+                ),
+            ),
+            span: Span::new(1, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_mixed_operator_expr_3() {
+    // input: !<not> a + b !<void>
+    // output: a !<not> b !<void> +
+    let tokens = vec![
+        token!(Exclamation, 0, 1),
+        id_token!("a", 1, 1),
+        token!(Plus, 2, 1),
+        id_token!("b", 3, 1),
+        token!(Exclamation, 4, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Operation(
+                Box::new(
+                    Operation {
+                        elems: vec![
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "a".to_string(), span: Span::new(1, 1) },
+                                    ),
+                                    span: Span::new(1, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Not),
+                            OperationElem::Term(
+                                Expr {
+                                    kind: ExprKind::Id(
+                                        Id { id: "b".to_string(), span: Span::new(3, 1) },
+                                    ),
+                                    span: Span::new(3, 1),
+                                },
+                            ),
+                            OperationElem::Operator(Operator::Void),
+                            OperationElem::Operator(Operator::Add),
+                        ],
+                    },
+                ),
+            ),
+            span: Span::new(1, 1),
         },
     );
     assert!(parser.get_logs().is_empty());

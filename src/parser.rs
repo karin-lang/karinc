@@ -39,6 +39,11 @@ impl ParserHakoContext {
     }
 }
 
+pub enum OperationExprResult {
+    Expr(Expr),
+    ExprWithOperators(Vec<OperationElem>, Span),
+}
+
 pub struct Parser<'a> {
     tokens: Peekable<Iter<'a, Token>>,
     hako_context: &'a mut ParserHakoContext,
@@ -389,26 +394,20 @@ impl<'a> Parser<'a> {
         self._parse_operation_expr()
     }
 
+    // 通常の式もしくは中置演算子つきの演算式をパースする
     fn _parse_operation_expr(&mut self) -> ParserResult<Expr> {
-        let term = self._parse_expr()?;
-
-        // 演算式でなければ通常の式として返す
-        if !self.is_next_operator() {
-            return Ok(term);
-        }
-
-        let span = term.span.clone();
-        let mut elems = vec![OperationElem::Term(term)];
+        let first_expr = self.__parse_operation_expr()?;
         let mut op_stack: Vec<Operator> = Vec::new();
 
-        loop {
-            // 後置演算子のパース (演算子の優先度が最も高いので直接スタックにをプッシュする)
-            match self.consume_postfix_operator()? {
-                Some(op) => elems.push(OperationElem::Operator(op)),
-                None => (),
-            }
+        let (mut elems, span) = match first_expr {
+            // 演算式でなければ通常の式として返す
+            OperationExprResult::Expr(expr) => return Ok(expr),
+            // 演算式であれば中置演算子のパースに進む
+            OperationExprResult::ExprWithOperators(expr, span) => (expr, span),
+        };
 
-            // 中置演算子のパース
+        loop {
+            // 中置演算子をパース
             match self.consume_infix_operator()? {
                 Some(op) => {
                     if let Some(last_op) = op_stack.last() {
@@ -427,8 +426,10 @@ impl<'a> Parser<'a> {
                         }
                     }
                     op_stack.push(op);
-                    let right_term = self._parse_expr()?;
-                    elems.push(OperationElem::Term(right_term));
+                    match self.__parse_operation_expr()? {
+                        OperationExprResult::Expr(expr) => elems.push(OperationElem::Term(expr)),
+                        OperationExprResult::ExprWithOperators(mut expr, _) => elems.append(&mut expr),
+                    }
                 },
                 _ => break, // どの演算子にもマッチしないため演算式の終端と判断して終了する
             }
@@ -445,11 +446,52 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn is_next_operator(&mut self) -> bool {
+    // 通常の式もしくは前置/後置演算子つきの演算式をパースする
+    fn __parse_operation_expr(&mut self) -> ParserResult<OperationExprResult> {
+        // 前置演算子をパース
+        let prefix_op = self.consume_prefix_operator()?;
+        // 式をパース
+        let expr = self._parse_expr()?;
+        let span = expr.span.clone();
+        // 後置演算子をパース
+        let postfix_op = self.consume_postfix_operator()?;
+        // 中置演算子つきの演算式か判断する (式の後ろに中置演算子があるかを判定)
+        let has_infix_operator = self.is_next_infix_operator();
+        // 結果を返す
+        let result = if prefix_op.is_some() || postfix_op.is_some() || has_infix_operator {
+            let mut elems = vec![OperationElem::Term(expr)];
+            if let Some(op) = postfix_op {
+                elems.push(OperationElem::Operator(op));
+            }
+            if let Some(op) = prefix_op {
+                elems.push(OperationElem::Operator(op));
+            }
+            // 前置/中置/後置のいずれかの演算子が見つかることで演算式と判断されれば ExprWithOperators を返す
+            OperationExprResult::ExprWithOperators(elems, span)
+        } else {
+            // 演算式でなければ Expr を返す
+            OperationExprResult::Expr(expr)
+        };
+        Ok(result)
+    }
+
+    fn consume_prefix_operator(&mut self) -> ParserResult<Option<Operator>> {
+        if let Some(next) = self.peek() {
+            match Operator::to_prefix_operator(next) {
+                Some(v) => {
+                    self.expect_any()?;
+                    Ok(Some(v))
+                },
+                None => Ok(None),
+            }
+        } else {
+            Ok(None)
+        }
+    }
+
+    fn is_next_infix_operator(&mut self) -> bool {
         match self.peek() {
-            Some(next) =>
-                Operator::to_infix_operator(next).is_some() ||
-                    Operator::to_postfix_operator(next).is_some(),
+            Some(next) => Operator::to_infix_operator(next).is_some(),
             None => false,
         }
     }

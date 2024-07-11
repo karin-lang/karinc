@@ -140,6 +140,7 @@ pub enum Operator {
     Sub,
     Mul,
     Div,
+    Not,
     Void,
 }
 
@@ -150,8 +151,17 @@ impl Operator {
             Operator::Sub => 0,
             Operator::Mul => 1,
             Operator::Div => 1,
-            Operator::Void => 2,
+            Operator::Not => 2,
+            Operator::Void => 3,
         }
+    }
+
+    pub fn to_prefix_operator(token: &Token) -> Option<Operator> {
+        let op = match &token.kind {
+            TokenKind::Exclamation => Operator::Not,
+            _ => return None,
+        };
+        Some(op)
     }
 
     pub fn to_infix_operator(token: &Token) -> Option<Operator> {
