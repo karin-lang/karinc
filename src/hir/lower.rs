@@ -202,7 +202,7 @@ impl<'a> HirLowering<'a> {
 
     pub fn lower_expr(&mut self, expr: &ast::Expr) -> Expr {
         match &expr.kind {
-            ast::ExprKind::Operation(_) => todo!(),
+            ast::ExprKind::Operation(_) => todo!("逆ポーランドを木構造に変換する"),
             ast::ExprKind::Block(block) => Expr {
                 id: self.body_scope_hierarchy.generate_expr_id(),
                 kind: ExprKind::Block(self.lower_block(block)),

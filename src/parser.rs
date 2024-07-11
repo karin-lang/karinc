@@ -393,7 +393,7 @@ impl<'a> Parser<'a> {
         let term = self._parse_expr()?;
 
         // 演算式でなければ通常の式として返す
-        if let None = self.is_next_infix_operator() {
+        if !self.is_next_operator() {
             return Ok(term);
         }
 
@@ -402,6 +402,13 @@ impl<'a> Parser<'a> {
         let mut op_stack: Vec<Operator> = Vec::new();
 
         loop {
+            // 後置演算子のパース (演算子の優先度が最も高いので直接スタックにをプッシュする)
+            match self.consume_postfix_operator()? {
+                Some(op) => elems.push(OperationElem::Operator(op)),
+                None => (),
+            }
+
+            // 中置演算子のパース
             match self.consume_infix_operator()? {
                 Some(op) => {
                     if let Some(last_op) = op_stack.last() {
@@ -423,8 +430,8 @@ impl<'a> Parser<'a> {
                     let right_term = self._parse_expr()?;
                     elems.push(OperationElem::Term(right_term));
                 },
-                _ => break,
-            };
+                _ => break, // どの演算子にもマッチしないため演算式の終端と判断して終了する
+            }
         }
 
         while let Some(op) = op_stack.pop() {
@@ -438,23 +445,41 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
-    fn is_next_infix_operator(&mut self) -> Option<Operator> {
-        if let Some(next) = self.peek() {
-            match Operator::to_infix_operator(next) {
-                Some(v) => Some(v),
-                None => None,
-            }
-        } else {
-            None
+    fn is_next_operator(&mut self) -> bool {
+        match self.peek() {
+            Some(next) =>
+                Operator::to_infix_operator(next).is_some() ||
+                    Operator::to_postfix_operator(next).is_some(),
+            None => false,
         }
     }
 
     fn consume_infix_operator(&mut self) -> ParserResult<Option<Operator>> {
-        let op = self.is_next_infix_operator();
-        if let Some(_) = &op {
-            self.expect_any()?;
+        if let Some(next) = self.peek() {
+            match Operator::to_infix_operator(next) {
+                Some(v) => {
+                    self.expect_any()?;
+                    Ok(Some(v))
+                },
+                None => Ok(None),
+            }
+        } else {
+            Ok(None)
         }
-        Ok(op)
+    }
+
+    fn consume_postfix_operator(&mut self) -> ParserResult<Option<Operator>> {
+        if let Some(next) = self.peek() {
+            match Operator::to_postfix_operator(next) {
+                Some(v) => {
+                    self.expect_any()?;
+                    Ok(Some(v))
+                },
+                None => Ok(None),
+            }
+        } else {
+            Ok(None)
+        }
     }
 
     fn _parse_expr(&mut self) -> ParserResult<Expr> {

@@ -140,6 +140,7 @@ pub enum Operator {
     Sub,
     Mul,
     Div,
+    Void,
 }
 
 impl Operator {
@@ -149,6 +150,7 @@ impl Operator {
             Operator::Sub => 0,
             Operator::Mul => 1,
             Operator::Div => 1,
+            Operator::Void => 2,
         }
     }
 
@@ -160,7 +162,15 @@ impl Operator {
             TokenKind::Slash => Operator::Div,
             _ => return None,
         };
-        return Some(op);
+        Some(op)
+    }
+
+    pub fn to_postfix_operator(token: &Token) -> Option<Operator> {
+        let op = match &token.kind {
+            TokenKind::Exclamation => Operator::Void,
+            _ => return None,
+        };
+        Some(op)
     }
 }
 

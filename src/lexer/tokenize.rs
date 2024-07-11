@@ -192,6 +192,7 @@ impl Lexer {
                 ',' => Some((1, TokenKind::Comma)),
                 '.' => Some((1, TokenKind::Dot)),
                 '=' => Some((1, TokenKind::Equal)),
+                '!' => Some((1, TokenKind::Exclamation)),
                 '-' => Some((1, TokenKind::Minus)),
                 '{' => Some((1, TokenKind::OpenCurlyBracket)),
                 '(' => Some((1, TokenKind::OpenParen)),

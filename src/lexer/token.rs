@@ -109,6 +109,7 @@ pub enum TokenKind {
     Dot,
     DoubleColon,
     Equal,
+    Exclamation,
     Minus,
     OpenCurlyBracket,
     OpenParen,
