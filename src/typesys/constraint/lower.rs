@@ -49,7 +49,36 @@ impl<'a> TypeConstraintLowering<'a> {
 
     pub fn lower_expr(&mut self, body: &hir::Body, expr: &hir::Expr) {
         match &expr.kind {
-            hir::ExprKind::Operation(_) => todo!(),
+            // todo: 型制約を改善してテストを追加する
+            hir::ExprKind::Operation(operation) => match &**operation {
+                hir::Operation::Unary { operator, term } => match operator {
+                    ast::UnaryOperator::Not => {
+                        let result = self.builder.constrain_by_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::Bool));
+                        self.collect_log(result);
+                        let result = self.builder.constrain_by_type(TypeId::Expr(body.id, term.id), Type::Prim(ast::PrimType::Bool));
+                        self.collect_log(result);
+                    },
+                    ast::UnaryOperator::Void => {
+                        let result = self.builder.constrain_by_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::Void));
+                        self.collect_log(result);
+                        let result = self.builder.constrain(TypeId::Expr(body.id, term.id));
+                        self.collect_log(result);
+                    },
+                },
+                hir::Operation::Binary { operator, left_term, right_term } => match operator {
+                    ast::BinaryOperator::Add |
+                    ast::BinaryOperator::Sub |
+                    ast::BinaryOperator::Mul |
+                    ast::BinaryOperator::Div => {
+                        let result = self.builder.constrain_by_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::Usize));
+                        self.collect_log(result);
+                        let result = self.builder.constrain_by_other(TypeId::Expr(body.id, left_term.id), TypeId::Expr(body.id, expr.id));
+                        self.collect_log(result);
+                        let result = self.builder.constrain_by_other(TypeId::Expr(body.id, right_term.id), TypeId::Expr(body.id, expr.id));
+                        self.collect_log(result);
+                    },
+                },
+            },
             // ブロックの返り値の型はブロック単位でなく式単位で関連付ける
             // 例）if-else 式の場合: if ブロック内の最後の式と else ブロック内の最後の式が関連付けられて型を検査する
             hir::ExprKind::Block(block) => self.lower_constrained_block(body, &expr.id, block),
