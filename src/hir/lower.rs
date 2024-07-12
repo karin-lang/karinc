@@ -4,6 +4,20 @@ use crate::hir::*;
 use crate::hir::log::{HirLoweringLog, HirLoweringResult};
 use crate::hir::resolve::*;
 
+pub enum HirOperationStackItem {
+    Term(Expr),
+    Operator(ast::Operator),
+}
+
+impl HirOperationStackItem {
+    pub fn expect_term(self) -> Expr {
+        match self {
+            HirOperationStackItem::Term(term) => term,
+            _ => panic!("expected a term"),
+        }
+    }
+}
+
 pub struct HirLowering<'a> {
     asts: &'a Vec<&'a ast::Ast>,
     current_mod_id: Option<ModId>,
@@ -204,10 +218,7 @@ impl<'a> HirLowering<'a> {
 
     pub fn lower_expr(&mut self, expr: &ast::Expr) -> Expr {
         match &expr.kind {
-            ast::ExprKind::Operation(operation) => Expr {
-                id: self.body_scope_hierarchy.generate_expr_id(),
-                kind: ExprKind::Operation(Box::new(self.lower_operation(operation))),
-            },
+            ast::ExprKind::Operation(operation) => self.lower_operation(operation),
             ast::ExprKind::Block(block) => Expr {
                 id: self.body_scope_hierarchy.generate_expr_id(),
                 kind: ExprKind::Block(self.lower_block(block)),
@@ -275,48 +286,34 @@ impl<'a> HirLowering<'a> {
         }
     }
 
-    pub fn lower_operation(&mut self, operation: &ast::Operation) -> Operation {
-        self._lower_operation(None, &mut operation.elems.iter(), &mut Vec::new())
+    pub fn lower_operation(&mut self, operation: &ast::Operation) -> Expr {
+        self._lower_operation(&mut operation.elems.iter(), &mut Vec::new())
     }
 
-    pub fn _lower_operation(&mut self, operation: Option<Operation>, elems: &mut Iter<ast::OperationElem>, term_stack: &mut Vec<Expr>) -> Operation {
-        match elems.next() {
-            Some(ast::OperationElem::Term(term)) => {
-                let term = self.lower_expr(term);
-                term_stack.push(term);
-                self._lower_operation(operation, elems, term_stack)
-            },
-            Some(ast::OperationElem::Operator(op)) => {
-                let new_operation = match op {
+    pub fn _lower_operation(&mut self, elems: &mut Iter<ast::OperationElem>, stack: &mut Vec<HirOperationStackItem>) -> Expr {
+        while let Some(next_elem) = elems.next() {
+            let new_operation = match next_elem {
+                ast::OperationElem::Term(term) => {
+                    stack.push(HirOperationStackItem::Term(self.lower_expr(term)));
+                    continue;
+                },
+                ast::OperationElem::Operator(op) => match op {
                     ast::Operator::Unary(unary_op) => {
-                        let term = match operation {
-                            Some(operation) => Expr {
-                                id: self.body_scope_hierarchy.generate_expr_id(),
-                                kind: ExprKind::Operation(Box::new(operation)),
-                            },
-                            None => term_stack.pop().expect("expected a term"),
-                        };
-                        let new_operation = Operation::Unary { operator: *unary_op, term };
-                        self._lower_operation(Some(new_operation), elems, term_stack)
+                        let term = stack.pop().expect("expected a term").expect_term();
+                        Operation::Unary { operator: *unary_op, term }
                     },
                     ast::Operator::Binary(binary_op) => {
-                        // 項スタックをポップする順番に注意すること (右項を先にポップする)
-                        let right_term = match operation {
-                            Some(operation) => Expr {
-                                id: self.body_scope_hierarchy.generate_expr_id(),
-                                kind: ExprKind::Operation(Box::new(operation)),
-                            },
-                            None => term_stack.pop().expect("expected a right term"),
-                        };
-                        let left_term = term_stack.pop().expect("expected a left term");
-                        let new_operation = Operation::Binary { operator: *binary_op, left_term, right_term };
-                        self._lower_operation(Some(new_operation), elems, term_stack)
+                        let right_term = stack.pop().expect("expected right term").expect_term();
+                        let left_term = stack.pop().expect("expected left term").expect_term();
+                        Operation::Binary { operator: *binary_op, left_term, right_term }
                     },
-                };
-                self._lower_operation(Some(new_operation), elems, term_stack)
-            },
-            None => operation.expect("expected operation"),
+                },
+            };
+            let new_expr = Expr { id: self.body_scope_hierarchy.generate_expr_id(), kind: ExprKind::Operation(Box::new(new_operation)) };
+            let new_item = HirOperationStackItem::Term(new_expr);
+            stack.push(new_item);
         }
+        stack.pop().expect("expected result operation").expect_term()
     }
 
     pub fn lower_ret(&mut self, ret: &ast::Ret) -> Ret {
