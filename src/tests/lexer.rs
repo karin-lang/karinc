@@ -6,7 +6,7 @@ use crate::lexer::token::*;
 
 #[test]
 fn skips_whitespaces() {
-    let input = &mut " \t\n".into();
+    let input = &mut " \t\r\n".into();
     let (tokens, logs) = Lexer::new().tokenize_(input);
 
     assert!(tokens.is_empty());

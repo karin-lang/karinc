@@ -73,7 +73,7 @@ impl Lexer {
             let mut is_unknown_token = false;
 
             let token: Option<(usize, TokenKind)> = match next_char {
-                ' ' | '\t' => None,
+                ' ' | '\r' | '\t' => None,
                 '\n' => {
                     self.add_newline_index(index);
                     None
