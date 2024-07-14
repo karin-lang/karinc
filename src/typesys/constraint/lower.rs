@@ -42,7 +42,6 @@ impl<'a> TypeConstraintLowering<'a> {
     }
 
     pub fn lower_formal_arg(&mut self, body_id: BodyId, arg_id: FormalArgId, arg: &hir::FormalArgDef) {
-        println!("{:?}", TypeId::FormalArg(body_id, arg_id));
         let result = self.builder.constrain_by_type(TypeId::FormalArg(body_id, arg_id), (&arg.r#type).into());
         self.collect_log(result);
     }
