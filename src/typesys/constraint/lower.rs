@@ -122,27 +122,33 @@ impl<'a> TypeConstraintLowering<'a> {
                 );
                 self.collect_log(result);
             }
-            hir::ExprKind::FnCall(call) => if let Some((item_id, _)) = &call.r#fn {
-                let type_id = TypeId::TopLevel(TopLevelId::FnRet(*item_id));
-                let result = self.builder.constrain_by_other(TypeId::Expr(body.id, expr.id), type_id);
-                self.collect_log(result);
+            hir::ExprKind::FnCall(call) => match &call.r#fn {
+                Some((item_id, _)) => {
+                    let type_id = TypeId::TopLevel(TopLevelId::FnRet(*item_id));
+                    let result = self.builder.constrain_by_other(TypeId::Expr(body.id, expr.id), type_id);
+                    self.collect_log(result);
 
-                let fn_type = match self.builder.top_level_type_table.get_fn(item_id) {
-                    Some(v) => v,
-                    None => unreachable!("called unknown function"),
-                };
-                let arg_len_match = fn_type.arg_types.len() == call.args.len();
-                if !arg_len_match {
-                    self.collect_log::<()>(Err(TypeLog::FnCallWithInvalidArgLen { expected: fn_type.arg_types.len(), provided: call.args.len() }));
-                }
-                for (i, each_arg) in call.args.iter().enumerate() {
-                    self.lower_expr(body, &each_arg.expr);
-                    if arg_len_match {
-                        let type_id = TypeId::TopLevel(TopLevelId::FnArg(*item_id, FormalArgId::new(i)));
-                        let result = self.builder.constrain_by_other(TypeId::Expr(body.id, each_arg.expr.id), type_id);
-                        self.collect_log(result);
+                    let fn_type = match self.builder.top_level_type_table.get_fn(item_id) {
+                        Some(v) => v,
+                        None => unreachable!("called unknown function"),
+                    };
+                    let arg_len_match = fn_type.arg_types.len() == call.args.len();
+                    if !arg_len_match {
+                        self.collect_log::<()>(Err(TypeLog::FnCallWithInvalidArgLen { expected: fn_type.arg_types.len(), provided: call.args.len() }));
                     }
-                }
+                    for (i, each_arg) in call.args.iter().enumerate() {
+                        self.lower_expr(body, &each_arg.expr);
+                        if arg_len_match {
+                            let type_id = TypeId::TopLevel(TopLevelId::FnArg(*item_id, FormalArgId::new(i)));
+                            let result = self.builder.constrain_by_other(TypeId::Expr(body.id, each_arg.expr.id), type_id);
+                            self.collect_log(result);
+                        }
+                    }
+                },
+                None => {
+                    let result = self.builder.constrain(TypeId::Expr(body.id, expr.id));
+                    self.collect_log(result);
+                },
             },
             hir::ExprKind::TopLevelRef(top_level_id, _) => {
                 let type_id = TypeId::TopLevel(*top_level_id);

@@ -871,6 +871,63 @@ fn constrains_by_fn_call() {
 }
 
 #[test]
+fn constrains_fn_call_with_no_item_id_as_unresolved() {
+    let hir = hir::Hir {
+        items: hashmap! {
+            "my_hako::item".into() => (
+                hir::Item {
+                    id: ItemId::new(0, 0),
+                    mod_id: ModId::new(0, 0),
+                    accessibility: ast::Accessibility::Default,
+                    kind: hir::ItemKind::FnDecl(
+                        hir::FnDecl {
+                            body: hir::Body {
+                                id: BodyId::new(0),
+                                ret_type: None,
+                                args: Vec::new(),
+                                vars: Vec::new(),
+                                exprs: vec![
+                                    hir::Expr {
+                                        id: ExprId::new(0),
+                                        kind: hir::ExprKind::FnCall(
+                                            hir::FnCall {
+                                                r#fn: None,
+                                                args: Vec::new(),
+                                            },
+                                        ),
+                                    },
+                                ],
+                            },
+                        },
+                    ),
+                }
+            ),
+        },
+    };
+    let top_level_type_table = HashMap::new().into();
+    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table);
+
+    assert_eq!(
+        table.to_sorted_vec(),
+        TypeConstraintTable::from(
+            hashmap! {
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
+                    TypePtr::new(Type::Unresolved),
+                ),
+            },
+        ).to_sorted_vec(),
+    );
+    assert_eq!(
+        logs,
+        hashmap! {
+            ModId::new(0, 0) => vec![
+                TypeLog::UnresolvedType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(0)) },
+            ],
+        },
+    );
+}
+
+#[test]
 fn detects_inconsistent_constraint_of_fn_call() {
     let hir = hir::Hir {
         items: hashmap! {
