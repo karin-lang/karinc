@@ -84,6 +84,7 @@ pub enum SyntaxErrorKind {
     ExpectedToken { kind: token::TokenKind },
     ExpectedType,
     UnexpectedEof,
+    UnknownMarkerName,
 
     /* HIR lowering */
     ExpectedExprButFoundHako { hako_id: HakoId },

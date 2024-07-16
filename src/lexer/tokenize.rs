@@ -181,6 +181,7 @@ impl Lexer {
                     Some((len, TokenKind::Literal(literal)))
                 },
                 '*' => Some((1, TokenKind::Asterisk)),
+                '@' => Some((1, TokenKind::At)),
                 '}' => Some((1, TokenKind::ClosingCurlyBracket)),
                 ')' => Some((1, TokenKind::ClosingParen)),
                 ':' => if let Some((_, ':')) = input.peek() {

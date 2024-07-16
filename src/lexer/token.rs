@@ -102,6 +102,7 @@ pub enum TokenKind {
 
     // symbol tokens
     Asterisk,
+    At,
     ClosingCurlyBracket,
     ClosingParen,
     Colon,

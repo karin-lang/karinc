@@ -40,6 +40,7 @@ fn generates_js() {
                 ast::Item {
                     id: ItemId::new(0, 0),
                     name: ast::Id { id: "f".to_string(), span: Span::new(3, 1) },
+                    markers: Vec::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: ast::ItemKind::FnDecl(
                         ast::FnDecl {

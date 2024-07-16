@@ -288,6 +288,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_single_item(&mut self) -> ParserResult<Item> {
+        let markers = self.parse_marker()?;
         let beginning_span = self.get_next_span();
         let accessibility = if self.consume_keyword(Keyword::Pub).is_some() {
             Accessibility::Pub
@@ -305,11 +306,29 @@ impl<'a> Parser<'a> {
             };
             let body = self.parse_body(ret_type, args)?;
             let decl = FnDecl { body };
-            Item { id, name, accessibility, kind: ItemKind::FnDecl(decl) }
+            Item { id, name, markers, accessibility, kind: ItemKind::FnDecl(decl) }
         } else {
             return Err(ParserLog::ExpectedItem { span: beginning_span });
         };
         Ok(item)
+    }
+
+    pub fn parse_marker(&mut self) -> ParserResult<Vec<Marker>> {
+        let mut markers = Vec::new();
+        while let Some(_) = self.consume(TokenKind::At) {
+            let (name_token, name) = self.expect_id()?;
+            let span = name_token.span.clone();
+            let kind = match name.id.as_str() {
+                "sysembed" => {
+                    let (_, embed_name) = self.expect_id()?;
+                    MarkerKind::SysEmbed { name: embed_name.id.clone() }
+                },
+                _ => return Err(ParserLog::UnknownMarkerName { span }),
+            };
+            let new_marker = Marker { kind, span };
+            markers.push(new_marker);
+        }
+        Ok(markers)
     }
 
     pub fn consume_ref_mut(&mut self) -> RefMut {

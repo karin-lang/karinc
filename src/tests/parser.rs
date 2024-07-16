@@ -34,6 +34,7 @@ fn outputs_parser_result() {
                         id: "f".to_string(),
                         span: Span::new(1, 1),
                     },
+                    markers: Vec::new(),
                     accessibility: Accessibility::Default,
                     kind: ItemKind::FnDecl(
                         FnDecl {
@@ -81,6 +82,7 @@ fn parses_continuous_items() {
                     id: "f1".to_string(),
                     span: Span::new(1, 1),
                 },
+                markers: Vec::new(),
                 accessibility: Accessibility::Default,
                 kind: ItemKind::FnDecl(
                     FnDecl {
@@ -99,6 +101,7 @@ fn parses_continuous_items() {
                     id: "f2".to_string(),
                     span: Span::new(7, 1),
                 },
+                markers: Vec::new(),
                 accessibility: Accessibility::Default,
                 kind: ItemKind::FnDecl(
                     FnDecl {
@@ -1204,6 +1207,58 @@ fn expects_item() {
     );
 }
 
+#[test]
+fn parses_item_with_markers() {
+    let tokens = vec![
+        token!(At, 0, 1),
+        id_token!("sysembed", 1, 1),
+        id_token!("arg1", 2, 1),
+        token!(At, 3, 1),
+        id_token!("sysembed", 4, 1),
+        id_token!("arg2", 5, 1),
+        keyword_token!(Fn, 6, 1),
+        id_token!("f", 7, 1),
+        token!(OpenParen, 8, 1),
+        token!(ClosingParen, 9, 1),
+        token!(OpenCurlyBracket, 10, 1),
+        token!(ClosingCurlyBracket, 11, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_single_item().unwrap(),
+        Item {
+            id: ItemId::new(0, 0),
+            name: Id { id: "f".to_string(), span: Span::new(7, 1) },
+            markers: vec![
+                Marker {
+                    kind: MarkerKind::SysEmbed { name: "arg1".to_string() },
+                    span: Span::new(1, 1),
+                },
+                Marker {
+                    kind: MarkerKind::SysEmbed { name: "arg2".to_string() },
+                    span: Span::new(4, 1),
+                },
+            ],
+            accessibility: Accessibility::Default,
+            kind: ItemKind::FnDecl(
+                FnDecl {
+                    body: Body {
+                        id: BodyId::new(0),
+                        ret_type: None,
+                        args: Vec::new(),
+                        exprs: Vec::new(),
+                    },
+                },
+            ),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
 /* item - function declaration */
 
 #[test]
@@ -1225,6 +1280,7 @@ fn parses_fn_decl_item() {
         Item {
             id: ItemId::new(0, 0),
             name: Id { id: "f".to_string(), span: Span::new(1, 1) },
+            markers: Vec::new(),
             accessibility: Accessibility::Default,
             kind: ItemKind::FnDecl(
                 FnDecl {
@@ -1262,6 +1318,7 @@ fn parses_pub_fn_decl_item() {
         Item {
             id: ItemId::new(0, 0),
             name: Id { id: "f".to_string(), span: Span::new(2, 1) },
+            markers: Vec::new(),
             accessibility: Accessibility::Pub,
             kind: ItemKind::FnDecl(
                 FnDecl {
@@ -1299,6 +1356,7 @@ fn parses_fn_decl_item_with_ret_type() {
         Item {
             id: ItemId::new(0, 0),
             name: Id { id: "f".to_string(), span: Span::new(1, 1) },
+            markers: Vec::new(),
             accessibility: Accessibility::Default,
             kind: ItemKind::FnDecl(
                 FnDecl {

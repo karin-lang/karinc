@@ -108,6 +108,7 @@ impl<'a> HirLowering<'a> {
     }
 
     pub fn resolve_id(&mut self, span: &token::Span, id: &str) -> Option<Expr> {
+        // ローカル要素を検索する
         if let Some(local_id) = self.resolve_local(id) {
             return Some(
                 Expr {
@@ -116,6 +117,7 @@ impl<'a> HirLowering<'a> {
                 },
             );
         }
+        // ローカル要素が見つからなければ ID をパスと判定してパスを検索する
         let path = self.get_item_path(id);
         if let Some(global_id) = self.resolve_path(&path) {
             // todo: test errors
@@ -151,14 +153,12 @@ impl<'a> HirLowering<'a> {
         if let Some(global_id) = self.paths.get(path) {
             return Some(*global_id);
         }
-
         let mut item_path = path.clone();
         while let Some(_) = item_path.pop_segment() {
             if let Some(global_id) = self.paths.get(&path) {
                 return Some(*global_id);
             }
         }
-
         None
     }
 

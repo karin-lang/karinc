@@ -15,6 +15,7 @@ pub enum ParserLog {
     ExpectedToken { kind: TokenKind, span: Span },
     ExpectedType { span: Span },
     UnexpectedEof { span: Span },
+    UnknownMarkerName { span: Span },
 }
 
 impl From<ParserLog> for CompilerLog {
@@ -30,6 +31,7 @@ impl From<ParserLog> for CompilerLog {
             ParserLog::ExpectedToken { kind, span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedToken { kind }, span),
             ParserLog::ExpectedType { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedType, span),
             ParserLog::UnexpectedEof { span } => CompilerLog::syntax_err(SyntaxErrorKind::UnexpectedEof, span),
+            ParserLog::UnknownMarkerName { span } => CompilerLog::syntax_err(SyntaxErrorKind::UnknownMarkerName, span),
         }
     }
 }

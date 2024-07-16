@@ -58,9 +58,21 @@ pub enum Accessibility {
 }
 
 #[derive(Clone, Debug, PartialEq)]
+pub struct Marker {
+    pub kind: MarkerKind,
+    pub span: Span,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum MarkerKind {
+    SysEmbed { name: String },
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Item {
     pub id: ItemId,
     pub name: Id,
+    pub markers: Vec<Marker>,
     pub accessibility: Accessibility,
     pub kind: ItemKind,
 }
