@@ -55,6 +55,7 @@ pub enum CompilerErr {
     IdIsNotFoundInScope { id: ast::Id },
     SyntaxError { kind: SyntaxErrorKind },
     TypeError { kind: TypeErrorKind },
+    UnknownSysEmbedName { name: String },
     UnnecessaryPath { path: ast::Path },
 }
 
