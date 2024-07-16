@@ -17,6 +17,7 @@ fn constrains_types() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -97,6 +98,7 @@ fn constrains_different_body_types() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -123,6 +125,7 @@ fn constrains_different_body_types() {
                 hir::Item {
                     id: ItemId::new(0, 1),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -174,6 +177,7 @@ fn constrains_block_type() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -259,6 +263,7 @@ fn constrains_literal_types() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -401,6 +406,7 @@ fn constrains_by_top_level_ref() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -477,6 +483,7 @@ fn constrains_by_local_ref() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -569,6 +576,7 @@ fn detects_inconsistent_constraint_of_var_init() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -645,6 +653,7 @@ fn constrains_by_ret() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -718,6 +727,7 @@ fn constrains_by_unmatch_type_ret() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -790,6 +800,7 @@ fn constrains_by_fn_call() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -878,6 +889,7 @@ fn constrains_fn_call_with_no_item_id_as_unresolved() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -935,6 +947,7 @@ fn detects_inconsistent_constraint_of_fn_call() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -1045,6 +1058,7 @@ fn constrains_var_by_bind() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -1126,6 +1140,7 @@ fn detects_inconsistent_constraint_of_var_bind() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -1240,6 +1255,7 @@ fn constrains_if_type() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -1357,6 +1373,7 @@ fn constrains_if_type_with_void() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {
@@ -1438,6 +1455,7 @@ fn constrains_endless_for_type() {
                 hir::Item {
                     id: ItemId::new(0, 0),
                     mod_id: ModId::new(0, 0),
+                    marker: hir::MarkerInfo::new(),
                     accessibility: ast::Accessibility::Default,
                     kind: hir::ItemKind::FnDecl(
                         hir::FnDecl {

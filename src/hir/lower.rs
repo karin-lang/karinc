@@ -181,6 +181,7 @@ impl<'a> HirLowering<'a> {
     }
 
     pub fn lower_item(&mut self, item: &ast::Item) -> Item {
+        let marker = self.lower_markers(&item.markers);
         let kind = match &item.kind {
             ast::ItemKind::FnDecl(decl) => {
                 let hir_decl = self.lower_fn_decl(decl);
@@ -188,7 +189,21 @@ impl<'a> HirLowering<'a> {
             },
         };
         let mod_id = self.current_mod_id.expect("current module id is not set.");
-        Item { id: item.id, mod_id, accessibility: item.accessibility.clone(), kind }
+        Item { id: item.id, mod_id, marker, accessibility: item.accessibility.clone(), kind }
+    }
+
+    pub fn lower_markers(&mut self, markers: &Vec<ast::Marker>) -> MarkerInfo {
+        let mut sys_embed = None;
+        for each_marker in markers {
+            match &each_marker.kind {
+                ast::MarkerKind::SysEmbed { name } => if sys_embed.is_none() {
+                    sys_embed = Some(name.clone());
+                } else {
+                    self.collect_log::<()>(Err(HirLoweringLog::DuplicateSysEmbedMarker { name: name.clone(), span: each_marker.span.clone() }));
+                }
+            }
+        }
+        MarkerInfo { sys_embed }
     }
 
     pub fn lower_fn_decl(&mut self, decl: &ast::FnDecl) -> FnDecl {

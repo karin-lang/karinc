@@ -76,6 +76,7 @@ fn generates_js() {
                     hir::Item {
                         id: ItemId::new(0, 0),
                         mod_id: ModId::new(0, 0),
+                        marker: hir::MarkerInfo::new(),
                         accessibility: ast::Accessibility::Default,
                         kind: hir::ItemKind::FnDecl(
                             hir::FnDecl {

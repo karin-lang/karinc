@@ -18,8 +18,20 @@ pub struct Hir {
 pub struct Item {
     pub id: ItemId,
     pub mod_id: ModId,
+    pub marker: MarkerInfo,
     pub accessibility: ast::Accessibility,
     pub kind: ItemKind,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct MarkerInfo {
+    pub sys_embed: Option<String>,
+}
+
+impl MarkerInfo {
+    pub fn new() -> MarkerInfo {
+        MarkerInfo { sys_embed: None }
+    }
 }
 
 #[derive(Clone, Debug, PartialEq)]

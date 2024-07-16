@@ -62,6 +62,7 @@ fn lowers_subitem_in_mod() {
                     Item {
                         id: ItemId::new(0, 0),
                         mod_id: ModId::new(0, 0),
+                        marker: MarkerInfo::new(),
                         accessibility: ast::Accessibility::Default,
                         kind: ItemKind::FnDecl(
                             FnDecl {
@@ -142,6 +143,7 @@ fn resolves_item_and_local() {
                     Item {
                         id: ItemId::new(0, 0),
                         mod_id: ModId::new(0, 0),
+                        marker: MarkerInfo::new(),
                         accessibility: ast::Accessibility::Default,
                         kind: ItemKind::FnDecl(
                             FnDecl {
