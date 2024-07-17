@@ -359,15 +359,14 @@ impl<'a> Parser<'a> {
                     MarkerKind::RetVal { description }
                 },
                 "todo" => {
-                    let exits = match self.consume_id() {
-                        Some((_, id)) if id.id == "exit" => true,
-                        _ => false,
-                    };
                     let description = self.expect_str_literal()?;
-                    if exits && is_expr {
+                    MarkerKind::Todo { description }
+                },
+                "exit" => {
+                    if is_expr {
                         return Err(ParserLog::MarkerCannotTreatAsItemDescriptor { name: format!("{} exit", name.id), span });
                     }
-                    MarkerKind::Todo { description, exits }
+                    MarkerKind::Exit
                 },
                 _ => return Err(ParserLog::UnknownMarkerName { span }),
             };

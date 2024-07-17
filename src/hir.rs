@@ -30,7 +30,8 @@ pub struct MarkerInfo {
     pub spec_description: Option<String>,
     pub arg_descriptions: HashMap<String, String>,
     pub ret_val_description: Option<String>,
-    pub todos: Vec<(String, bool)>,
+    pub todos: Vec<String>,
+    pub exits: bool,
 }
 
 impl MarkerInfo {
@@ -41,6 +42,7 @@ impl MarkerInfo {
             arg_descriptions: HashMap::new(),
             ret_val_description: None,
             todos: Vec::new(),
+            exits: false,
         }
     }
 }

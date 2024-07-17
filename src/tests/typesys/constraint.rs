@@ -58,6 +58,7 @@ fn constrains_types() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
@@ -126,6 +127,7 @@ fn validates_main_fn_signature() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, Some(&"my_hako::main".into()));
@@ -210,6 +212,7 @@ fn constrains_different_body_types() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
@@ -286,6 +289,7 @@ fn constrains_block_type() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
@@ -421,6 +425,7 @@ fn constrains_literal_types() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
@@ -500,6 +505,7 @@ fn constrains_by_top_level_ref() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = hashmap! {
         TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn(
@@ -592,6 +598,7 @@ fn constrains_by_local_ref() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
@@ -676,6 +683,7 @@ fn detects_inconsistent_constraint_of_var_init() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
@@ -750,6 +758,7 @@ fn constrains_by_ret() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = hashmap! {
         TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn(
@@ -820,6 +829,7 @@ fn constrains_by_unmatch_type_ret() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = hashmap! {
         TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn(
@@ -904,6 +914,7 @@ fn constrains_by_fn_call() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = hashmap! {
         TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn(
@@ -976,6 +987,7 @@ fn constrains_fn_call_with_no_item_id_as_unresolved() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
@@ -1060,6 +1072,7 @@ fn detects_inconsistent_constraint_of_fn_call() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = hashmap! {
         TopLevelId::Item(ItemId::new(0, 0)) => Type::Fn(
@@ -1163,6 +1176,7 @@ fn constrains_var_by_bind() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
@@ -1249,6 +1263,7 @@ fn detects_inconsistent_constraint_of_var_bind() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
@@ -1382,6 +1397,7 @@ fn constrains_if_type() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
@@ -1485,6 +1501,7 @@ fn constrains_if_type_with_void() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
@@ -1551,6 +1568,7 @@ fn constrains_endless_for_type() {
                 }
             ),
         },
+        todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
     let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);

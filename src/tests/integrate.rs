@@ -97,6 +97,7 @@ fn generates_js() {
                     }
                 ),
             },
+            todos: Vec::new(),
         },
     );
     assert!(hir_lowering_logs.is_empty());

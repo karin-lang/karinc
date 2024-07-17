@@ -51,6 +51,7 @@ fn lowers_item_with_marker() {
                 arg_descriptions: HashMap::new(),
                 ret_val_description: None,
                 todos: Vec::new(),
+                exits: false,
             },
             accessibility: ast::Accessibility::Default,
             kind: ItemKind::FnDecl(
@@ -117,6 +118,7 @@ fn detects_duplicate_sysembed_marker_of_item() {
                 arg_descriptions: HashMap::new(),
                 ret_val_description: None,
                 todos: Vec::new(),
+                exits: false,
             },
             accessibility: ast::Accessibility::Default,
             kind: ItemKind::FnDecl(

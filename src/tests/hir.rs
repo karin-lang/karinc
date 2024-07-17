@@ -22,7 +22,7 @@ fn lowers_empty_ast() {
     let lowering = HirLowering::new(&asts);
     let (hir, logs) = lowering.lower();
 
-    assert_eq!(hir, Hir { items: HashMap::new() });
+    assert_eq!(hir, Hir { items: HashMap::new(), todos: Vec::new() });
     assert!(logs.is_empty());
 }
 
@@ -78,6 +78,7 @@ fn lowers_subitem_in_mod() {
                     }
                 ),
             },
+            todos: Vec::new(),
         },
     );
     assert!(logs.is_empty());
@@ -182,6 +183,7 @@ fn resolves_item_and_local() {
                     }
                 ),
             },
+            todos: Vec::new(),
         },
     );
     assert!(logs.is_empty());

@@ -69,7 +69,8 @@ pub enum MarkerKind {
     Spec { description: String },
     Arg { name: String, description: String },
     RetVal { description: String },
-    Todo { description: String, exits: bool },
+    Todo { description: String },
+    Exit,
 }
 
 #[derive(Clone, Debug, PartialEq)]

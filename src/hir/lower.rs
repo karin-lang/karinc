@@ -200,6 +200,7 @@ impl<'a> HirLowering<'a> {
         let mut arg_descriptions = HashMap::new();
         let mut ret_val_description = None;
         let mut todos = Vec::new();
+        let mut exits = false;
         for each_marker in markers {
             match &each_marker.kind {
                 ast::MarkerKind::SysEmbed { name } => if sys_embed.is_none() {
@@ -222,10 +223,11 @@ impl<'a> HirLowering<'a> {
                 } else {
                     self.collect_log::<()>(Err(HirLoweringLog::DuplicateMarker { name: "ret".to_string(), span: each_marker.span.clone() }));
                 },
-                ast::MarkerKind::Todo { description, exits } => {
-                    todos.push((description.clone(), *exits));
+                ast::MarkerKind::Todo { description } => {
+                    todos.push(description.clone());
                     self.todos.push((description.clone(), each_marker.span.clone()));
                 },
+                ast::MarkerKind::Exit => exits = true,
             }
         }
         MarkerInfo {
@@ -234,6 +236,7 @@ impl<'a> HirLowering<'a> {
             arg_descriptions,
             ret_val_description,
             todos,
+            exits,
         }
     }
 
