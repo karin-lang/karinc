@@ -95,8 +95,11 @@ pub enum SyntaxErrorKind {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeErrorKind {
+    ExpectedMainFnArgsToBeZeroLen,
+    ExpectedMainFnRetTypeToBeVoid,
     FnCallWithInvalidArgLen { expected: usize, provided: usize },
     InconsistentConstraint,
+    MainFnIsNotFound,
     UnknownType { type_id: TypeId },
     UnresolvedType { type_id: TypeId },
 }

@@ -1,5 +1,5 @@
 use super::*;
-use crate::lexer::token;
+use crate::lexer::token::{self, Span};
 use crate::hir::id::*;
 
 pub struct TypeConstraintLowering<'a> {
@@ -15,7 +15,8 @@ impl<'a> TypeConstraintLowering<'a> {
         self.builder.collect_log(mod_id, result)
     }
 
-    pub fn lower(hir: &hir::Hir, top_level_type_table: &'a TopLevelTypeTable) -> (TypeConstraintTable, HashMap<ModId, Vec<TypeLog>>) {
+    // arg: main_fn_path: Some の場合はメイン関数のパスを探してシグネチャ検査を実施する
+    pub fn lower(hir: &hir::Hir, top_level_type_table: &'a TopLevelTypeTable, main_fn_path: Option<&ast::Path>) -> (TypeConstraintTable, HashMap<ModId, Vec<TypeLog>>) {
         let mut lowering = TypeConstraintLowering {
             hir,
             builder: TypeConstraintBuilder::new(top_level_type_table),
@@ -23,7 +24,31 @@ impl<'a> TypeConstraintLowering<'a> {
             current_item_id: None,
         };
         lowering.hir.items.iter().for_each(|(_, item)| lowering.lower_item(item));
+        lowering.validate_main_fn_signature(hir, main_fn_path);
         lowering.builder.finalize()
+    }
+
+    pub fn validate_main_fn_signature(&mut self, hir: &hir::Hir, main_fn_path: Option<&ast::Path>) {
+        if let Some(main_fn_path) = main_fn_path {
+            for (path, item) in &hir.items {
+                if *path == *main_fn_path {
+                    match &item.kind {
+                        hir::ItemKind::FnDecl(decl) => {
+                            if decl.body.args.len() != 0 {
+                                self.builder.collect_log::<()>(item.mod_id, Err(TypeLog::ExpectedMainFnArgsToBeZeroLen { span: Span::new(0, 0) /* fix: span */ }));
+                            }
+                            if let Some(r#type) = &decl.body.ret_type {
+                                if *r#type.kind != hir::TypeKind::Prim(ast::PrimType::Void) {
+                                    self.builder.collect_log::<()>(item.mod_id, Err(TypeLog::ExpectedMainFnRetTypeToBeVoid { span: Span::new(0, 0) /* fix: span */ }));
+                                }
+                            }
+                        },
+                    }
+                    return;
+                }
+            }
+            self.builder.collect_log::<()>(ModId::new(0, 0), Err(TypeLog::MainFnIsNotFound));
+        }
     }
 
     pub fn lower_item(&mut self, item: &hir::Item) {

@@ -119,7 +119,7 @@ fn generates_js() {
     let (
         type_constraint_table,
         type_constraint_lowering_logs,
-    ) = typesys::constraint::lower::TypeConstraintLowering::lower(&hir, &top_level_type_table);
+    ) = typesys::constraint::lower::TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
     assert_eq!(
         type_constraint_table.to_sorted_vec(),
         typesys::constraint::TypeConstraintTable::from(
