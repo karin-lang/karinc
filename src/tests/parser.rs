@@ -2248,3 +2248,60 @@ fn parses_void_literal_from_keyword() {
     assert!(parser.get_logs().is_empty());
     assert!(parser.peek().is_none());
 }
+
+/* marker */
+
+#[test]
+fn parses_exit_marker_expr() {
+    let tokens = vec![
+        token!(At, 0, 1),
+        id_token!("exit", 1, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Marker(
+                Marker {
+                    kind: MarkerKind::Exit,
+                    span: Span::new(1, 1),
+                },
+            ),
+            span: Span::new(1, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}
+
+#[test]
+fn parses_todo_marker_expr() {
+    let tokens = vec![
+        token!(At, 0, 1),
+        id_token!("todo", 1, 1),
+        literal_token!(token::Literal::Str { value: "desc".to_string() }, 2, 1),
+    ];
+    let mut crate_context = ParserHakoContext::new(HakoId::new(0));
+    let mut last_body_id = 0;
+    let mut parser = Parser::new(&tokens, &mut crate_context, &mut last_body_id);
+
+    assert_eq!(
+        parser.parse_expr().unwrap(),
+        Expr {
+            kind: ExprKind::Marker(
+                Marker {
+                    kind: MarkerKind::Todo {
+                        description: "desc".to_string(),
+                    },
+                    span: Span::new(1, 1),
+                },
+            ),
+            span: Span::new(1, 1),
+        },
+    );
+    assert!(parser.get_logs().is_empty());
+    assert!(parser.peek().is_none());
+}

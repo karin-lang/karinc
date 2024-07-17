@@ -332,6 +332,15 @@ impl<'a> HirLowering<'a> {
                 id: self.body_scope_hierarchy.generate_expr_id(),
                 kind: ExprKind::For(self.lower_for(r#for)),
             },
+            ast::ExprKind::Marker(marker) => {
+                if let ast::MarkerKind::Todo { description } = &marker.kind {
+                    self.todos.push((description.clone(), marker.span.clone()));
+                }
+                Expr {
+                    id: self.body_scope_hierarchy.generate_expr_id(),
+                    kind: ExprKind::Marker(marker.clone()),
+                }
+            },
         }
     }
 

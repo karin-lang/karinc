@@ -138,6 +138,7 @@ pub enum ExprKind {
     VarBind(VarBind),
     If(If),
     For(For),
+    Marker(Marker),
 }
 
 #[derive(Clone, Debug, PartialEq)]

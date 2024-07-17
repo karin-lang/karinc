@@ -298,7 +298,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_single_item(&mut self) -> ParserResult<Item> {
-        let markers = self.parse_marker(false)?;
+        let markers = self.parse_item_markers()?;
         let beginning_span = self.get_next_span();
         let accessibility = if self.consume_keyword(Keyword::Pub).is_some() {
             Accessibility::Pub
@@ -323,57 +323,63 @@ impl<'a> Parser<'a> {
         Ok(item)
     }
 
-    pub fn parse_marker(&mut self, is_expr: bool) -> ParserResult<Vec<Marker>> {
+    pub fn parse_item_markers(&mut self) -> ParserResult<Vec<Marker>> {
         let mut markers = Vec::new();
-        while let Some(_) = self.consume(TokenKind::At) {
-            let (name_token, name) = self.expect_id()?;
-            let span = name_token.span.clone();
-            let kind = match name.id.as_str() {
-                "sysembed" => {
-                    let (_, embed_name) = self.expect_id()?;
-                    if is_expr {
-                        return Err(ParserLog::MarkerCannotTreatAsExpr { name: name.id.clone(), span });
-                    }
-                    MarkerKind::SysEmbed { name: embed_name.id }
-                },
-                "spec" => {
-                    let description = self.expect_str_literal()?;
-                    if is_expr {
-                        return Err(ParserLog::MarkerCannotTreatAsExpr { name: name.id.clone(), span });
-                    }
-                    MarkerKind::Spec { description }
-                },
-                "arg" => {
-                    let (_, arg_name) = self.expect_id()?;
-                    let description = self.expect_str_literal()?;
-                    if is_expr {
-                        return Err(ParserLog::MarkerCannotTreatAsExpr { name: name.id.clone(), span });
-                    }
-                    MarkerKind::Arg { name: arg_name.id, description }
-                },
-                "retval" => {
-                    let description = self.expect_str_literal()?;
-                    if is_expr {
-                        return Err(ParserLog::MarkerCannotTreatAsExpr { name: name.id.clone(), span });
-                    }
-                    MarkerKind::RetVal { description }
-                },
-                "todo" => {
-                    let description = self.expect_str_literal()?;
-                    MarkerKind::Todo { description }
-                },
-                "exit" => {
-                    if is_expr {
-                        return Err(ParserLog::MarkerCannotTreatAsItemDescriptor { name: format!("{} exit", name.id), span });
-                    }
-                    MarkerKind::Exit
-                },
-                _ => return Err(ParserLog::UnknownMarkerName { span }),
-            };
-            let new_marker = Marker { kind, span };
+        while self.is_next_eq(TokenKind::At).is_some() {
+            let new_marker = self.parse_marker(false)?;
             markers.push(new_marker);
         }
         Ok(markers)
+    }
+
+    pub fn parse_marker(&mut self, is_expr: bool) -> ParserResult<Marker> {
+        self.expect(TokenKind::At)?;
+        let (name_token, name) = self.expect_id()?;
+        let span = name_token.span.clone();
+        let kind = match name.id.as_str() {
+            "sysembed" => {
+                let (_, embed_name) = self.expect_id()?;
+                if is_expr {
+                    return Err(ParserLog::MarkerCannotTreatAsExpr { name: name.id.clone(), span });
+                }
+                MarkerKind::SysEmbed { name: embed_name.id }
+            },
+            "spec" => {
+                let description = self.expect_str_literal()?;
+                if is_expr {
+                    return Err(ParserLog::MarkerCannotTreatAsExpr { name: name.id.clone(), span });
+                }
+                MarkerKind::Spec { description }
+            },
+            "arg" => {
+                let (_, arg_name) = self.expect_id()?;
+                let description = self.expect_str_literal()?;
+                if is_expr {
+                    return Err(ParserLog::MarkerCannotTreatAsExpr { name: name.id.clone(), span });
+                }
+                MarkerKind::Arg { name: arg_name.id, description }
+            },
+            "retval" => {
+                let description = self.expect_str_literal()?;
+                if is_expr {
+                    return Err(ParserLog::MarkerCannotTreatAsExpr { name: name.id.clone(), span });
+                }
+                MarkerKind::RetVal { description }
+            },
+            "todo" => {
+                let description = self.expect_str_literal()?;
+                MarkerKind::Todo { description }
+            },
+            "exit" => {
+                if !is_expr {
+                    return Err(ParserLog::MarkerCannotTreatAsItemDescriptor { name: name.id.clone(), span });
+                }
+                MarkerKind::Exit
+            },
+            _ => return Err(ParserLog::UnknownMarkerName { span }),
+        };
+        let new_marker = Marker { kind, span };
+        Ok(new_marker)
     }
 
     pub fn consume_ref_mut(&mut self) -> RefMut {
@@ -639,6 +645,11 @@ impl<'a> Parser<'a> {
             // todo: add test
             self.expect_any()?;
             let expr = Expr { kind: ExprKind::Literal(literal), span: beginning_span };
+            Ok(expr)
+        } else if let Some(_) = self.is_next_eq(TokenKind::At) {
+            let marker = self.parse_marker(true)?;
+            let span = marker.span.clone();
+            let expr = Expr { kind: ExprKind::Marker(marker), span };
             Ok(expr)
         } else if let Some(_) = self.is_next_eq(TokenKind::OpenCurlyBracket) {
             let exprs = self.parse_body_or_block()?;
