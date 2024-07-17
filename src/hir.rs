@@ -5,13 +5,14 @@ pub mod resolve;
 
 use std::collections::HashMap;
 
-use crate::lexer::token;
+use crate::lexer::token::{self, Span};
 use crate::parser::ast::{self, Id};
 use crate::hir::id::*;
 
 #[derive(Clone, Debug, PartialEq)]
 pub struct Hir {
     pub items: HashMap<ast::Path, Item>,
+    pub todos: Vec<(String, Span)>,
 }
 
 #[derive(Clone, Debug, PartialEq)]

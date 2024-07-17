@@ -24,6 +24,7 @@ pub struct HirLowering<'a> {
     current_mod_path: ast::Path,
     paths: HashMap<ast::Path, GlobalId>,
     body_scope_hierarchy: BodyScopeHierarchy,
+    todos: Vec<(String, Span)>,
     logs: HashMap<ModId, Vec<HirLoweringLog>>,
 }
 
@@ -35,6 +36,7 @@ impl<'a> HirLowering<'a> {
             current_mod_path: ast::Path::new(),
             paths: HashMap::new(),
             body_scope_hierarchy: BodyScopeHierarchy::new(),
+            todos: Vec::new(),
             logs: HashMap::new(),
         };
         lowering.collect();
@@ -103,7 +105,7 @@ impl<'a> HirLowering<'a> {
         for each_ast in self.asts {
             self.lower_ast(&mut items, each_ast);
         }
-        let hir = Hir { items };
+        let hir = Hir { items, todos: self.todos };
         (hir, self.logs)
     }
 
@@ -222,6 +224,7 @@ impl<'a> HirLowering<'a> {
                 },
                 ast::MarkerKind::Todo { description, exits } => {
                     todos.push((description.clone(), *exits));
+                    self.todos.push((description.clone(), each_marker.span.clone()));
                 },
             }
         }
