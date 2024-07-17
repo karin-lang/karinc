@@ -1023,3 +1023,35 @@ fn lowers_range_for() {
     );
     assert!(lowering.get_logs().is_empty());
 }
+
+#[test]
+fn lowers_marker_expr() {
+    let ast = ast::Expr {
+        kind: ast::ExprKind::Marker(
+            ast::Marker {
+                kind: ast::MarkerKind::Exit,
+                span: Span::new(0, 0),
+            },
+        ),
+        span: Span::new(0, 0),
+    };
+    let asts = Vec::new();
+    let paths = HashMap::new();
+    let mut lowering = HirLowering::new(&asts);
+    lowering.debug_in_body(paths);
+    let hir = lowering.lower_expr(&ast);
+
+    assert_eq!(
+        hir,
+        Expr {
+            id: ExprId::new(0),
+            kind: ExprKind::Marker(
+                ast::Marker {
+                    kind: ast::MarkerKind::Exit,
+                    span: Span::new(0, 0),
+                },
+            ),
+        },
+    );
+    assert!(lowering.get_logs().is_empty());
+}
