@@ -47,6 +47,10 @@ fn lowers_item_with_marker() {
             mod_id: ModId::new(0, 0),
             marker: MarkerInfo {
                 sys_embed: Some("name".to_string()),
+                spec_description: None,
+                arg_descriptions: HashMap::new(),
+                ret_val_description: None,
+                todos: Vec::new(),
             },
             accessibility: ast::Accessibility::Default,
             kind: ItemKind::FnDecl(
@@ -109,6 +113,10 @@ fn detects_duplicate_sysembed_marker_of_item() {
             mod_id: ModId::new(0, 0),
             marker: MarkerInfo {
                 sys_embed: Some("name1".to_string()),
+                spec_description: None,
+                arg_descriptions: HashMap::new(),
+                ret_val_description: None,
+                todos: Vec::new(),
             },
             accessibility: ast::Accessibility::Default,
             kind: ItemKind::FnDecl(
@@ -128,7 +136,7 @@ fn detects_duplicate_sysembed_marker_of_item() {
         *lowering.get_logs(),
         hashmap! {
             ModId::new(0, 0) => vec![
-                HirLoweringLog::DuplicateSysEmbedMarker { name: "name2".to_string(), span: Span::new(0, 2) }
+                HirLoweringLog::DuplicateMarker { name: "sysembed".to_string(), span: Span::new(0, 2) }
             ],
         },
     );

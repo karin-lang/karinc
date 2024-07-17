@@ -194,16 +194,44 @@ impl<'a> HirLowering<'a> {
 
     pub fn lower_markers(&mut self, markers: &Vec<ast::Marker>) -> MarkerInfo {
         let mut sys_embed = None;
+        let mut spec_description = None;
+        let mut arg_descriptions = HashMap::new();
+        let mut ret_val_description = None;
+        let mut todos = Vec::new();
         for each_marker in markers {
             match &each_marker.kind {
                 ast::MarkerKind::SysEmbed { name } => if sys_embed.is_none() {
                     sys_embed = Some(name.clone());
                 } else {
-                    self.collect_log::<()>(Err(HirLoweringLog::DuplicateSysEmbedMarker { name: name.clone(), span: each_marker.span.clone() }));
-                }
+                    self.collect_log::<()>(Err(HirLoweringLog::DuplicateMarker { name: "sysembed".to_string(), span: each_marker.span.clone() }));
+                },
+                ast::MarkerKind::Spec { description } => if spec_description.is_none() {
+                    spec_description = Some(description.clone());
+                } else {
+                    self.collect_log::<()>(Err(HirLoweringLog::DuplicateMarker { name: "spec".to_string(), span: each_marker.span.clone() }));
+                },
+                ast::MarkerKind::Arg { name, description } => if !arg_descriptions.contains_key(name) {
+                    arg_descriptions.insert(name.clone(), description.clone());
+                } else {
+                    self.collect_log::<()>(Err(HirLoweringLog::DuplicateMarker { name: format!("arg {name}"), span: each_marker.span.clone() }));
+                },
+                ast::MarkerKind::RetVal { description } => if ret_val_description.is_none() {
+                    ret_val_description = Some(description.clone());
+                } else {
+                    self.collect_log::<()>(Err(HirLoweringLog::DuplicateMarker { name: "ret".to_string(), span: each_marker.span.clone() }));
+                },
+                ast::MarkerKind::Todo { description, exits } => {
+                    todos.push((description.clone(), *exits));
+                },
             }
         }
-        MarkerInfo { sys_embed }
+        MarkerInfo {
+            sys_embed,
+            spec_description,
+            arg_descriptions,
+            ret_val_description,
+            todos,
+        }
     }
 
     pub fn lower_fn_decl(&mut self, decl: &ast::FnDecl) -> FnDecl {

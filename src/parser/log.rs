@@ -12,8 +12,11 @@ pub enum ParserLog {
     ExpectedId { span: Span },
     ExpectedItem { span: Span },
     ExpectedKeyword { keyword: Keyword, span: Span },
+    ExpectedStrLiteral { span: Span },
     ExpectedToken { kind: TokenKind, span: Span },
     ExpectedType { span: Span },
+    MarkerCannotTreatAsExpr { name: String, span: Span },
+    MarkerCannotTreatAsItemDescriptor { name: String, span: Span },
     UnexpectedEof { span: Span },
     UnknownMarkerName { span: Span },
 }
@@ -28,8 +31,11 @@ impl From<ParserLog> for CompilerLog {
             ParserLog::ExpectedId { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedId, span),
             ParserLog::ExpectedItem { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedItem, span),
             ParserLog::ExpectedKeyword { keyword, span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedKeyword { keyword }, span),
+            ParserLog::ExpectedStrLiteral { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedStrLiteral, span),
             ParserLog::ExpectedToken { kind, span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedToken { kind }, span),
             ParserLog::ExpectedType { span } => CompilerLog::syntax_err(SyntaxErrorKind::ExpectedType, span),
+            ParserLog::MarkerCannotTreatAsExpr { name, span } => CompilerLog::syntax_err(SyntaxErrorKind::MarkerCannotTreatAsExpr { name }, span),
+            ParserLog::MarkerCannotTreatAsItemDescriptor { name, span } => CompilerLog::syntax_err(SyntaxErrorKind::MarkerCannotTreatAsItemDescriptor { name }, span),
             ParserLog::UnexpectedEof { span } => CompilerLog::syntax_err(SyntaxErrorKind::UnexpectedEof, span),
             ParserLog::UnknownMarkerName { span } => CompilerLog::syntax_err(SyntaxErrorKind::UnknownMarkerName, span),
         }

@@ -66,6 +66,10 @@ pub struct Marker {
 #[derive(Clone, Debug, PartialEq)]
 pub enum MarkerKind {
     SysEmbed { name: String },
+    Spec { description: String },
+    Arg { name: String, description: String },
+    RetVal { description: String },
+    Todo { description: String, exits: bool },
 }
 
 #[derive(Clone, Debug, PartialEq)]

@@ -1207,6 +1207,8 @@ fn expects_item() {
     );
 }
 
+/* item - marker */
+
 #[test]
 fn parses_item_with_markers() {
     let tokens = vec![

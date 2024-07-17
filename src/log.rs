@@ -49,7 +49,7 @@ pub enum CompilerLogKind {
 #[derive(Clone, Debug, PartialEq)]
 pub enum CompilerErr {
     DuplicateItemName { id: ast::Id },
-    DuplicateSysEmbedMarker { name: String },
+    DuplicateMarker { name: String },
     GlobalIdIsNotFound { global_id: GlobalId },
     PathIsNotFoundInScope { path: ast::Path },
     IdIsNotFoundInScope { id: ast::Id },
@@ -83,8 +83,11 @@ pub enum SyntaxErrorKind {
     ExpectedId,
     ExpectedItem,
     ExpectedKeyword { keyword: token::Keyword },
+    ExpectedStrLiteral,
     ExpectedToken { kind: token::TokenKind },
     ExpectedType,
+    MarkerCannotTreatAsExpr { name: String },
+    MarkerCannotTreatAsItemDescriptor { name: String },
     UnexpectedEof,
     UnknownMarkerName,
 

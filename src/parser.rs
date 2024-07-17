@@ -212,6 +212,16 @@ impl<'a> Parser<'a> {
         }
     }
 
+    pub fn expect_str_literal(&mut self) -> ParserResult<String> {
+        let expr = self._parse_expr()?;
+        let span = expr.span.clone();
+        if let ExprKind::Literal(Literal::Str { value }) = expr.kind {
+            Ok(value)
+        } else {
+            Err(ParserLog::ExpectedStrLiteral { span })
+        }
+    }
+
     pub fn generate_body_id(&mut self) -> BodyId {
         let new_id = BodyId::new(*self.last_body_id);
         *self.last_body_id += 1;
@@ -288,7 +298,7 @@ impl<'a> Parser<'a> {
     }
 
     pub fn parse_single_item(&mut self) -> ParserResult<Item> {
-        let markers = self.parse_marker()?;
+        let markers = self.parse_marker(false)?;
         let beginning_span = self.get_next_span();
         let accessibility = if self.consume_keyword(Keyword::Pub).is_some() {
             Accessibility::Pub
@@ -313,7 +323,7 @@ impl<'a> Parser<'a> {
         Ok(item)
     }
 
-    pub fn parse_marker(&mut self) -> ParserResult<Vec<Marker>> {
+    pub fn parse_marker(&mut self, is_expr: bool) -> ParserResult<Vec<Marker>> {
         let mut markers = Vec::new();
         while let Some(_) = self.consume(TokenKind::At) {
             let (name_token, name) = self.expect_id()?;
@@ -321,7 +331,43 @@ impl<'a> Parser<'a> {
             let kind = match name.id.as_str() {
                 "sysembed" => {
                     let (_, embed_name) = self.expect_id()?;
-                    MarkerKind::SysEmbed { name: embed_name.id.clone() }
+                    if is_expr {
+                        return Err(ParserLog::MarkerCannotTreatAsExpr { name: name.id.clone(), span });
+                    }
+                    MarkerKind::SysEmbed { name: embed_name.id }
+                },
+                "spec" => {
+                    let description = self.expect_str_literal()?;
+                    if is_expr {
+                        return Err(ParserLog::MarkerCannotTreatAsExpr { name: name.id.clone(), span });
+                    }
+                    MarkerKind::Spec { description }
+                },
+                "arg" => {
+                    let (_, arg_name) = self.expect_id()?;
+                    let description = self.expect_str_literal()?;
+                    if is_expr {
+                        return Err(ParserLog::MarkerCannotTreatAsExpr { name: name.id.clone(), span });
+                    }
+                    MarkerKind::Arg { name: arg_name.id, description }
+                },
+                "retval" => {
+                    let description = self.expect_str_literal()?;
+                    if is_expr {
+                        return Err(ParserLog::MarkerCannotTreatAsExpr { name: name.id.clone(), span });
+                    }
+                    MarkerKind::RetVal { description }
+                },
+                "todo" => {
+                    let exits = match self.consume_id() {
+                        Some((_, id)) if id.id == "exit" => true,
+                        _ => false,
+                    };
+                    let description = self.expect_str_literal()?;
+                    if exits && is_expr {
+                        return Err(ParserLog::MarkerCannotTreatAsItemDescriptor { name: format!("{} exit", name.id), span });
+                    }
+                    MarkerKind::Todo { description, exits }
                 },
                 _ => return Err(ParserLog::UnknownMarkerName { span }),
             };

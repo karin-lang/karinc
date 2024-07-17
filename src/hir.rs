@@ -26,11 +26,21 @@ pub struct Item {
 #[derive(Clone, Debug, PartialEq)]
 pub struct MarkerInfo {
     pub sys_embed: Option<String>,
+    pub spec_description: Option<String>,
+    pub arg_descriptions: HashMap<String, String>,
+    pub ret_val_description: Option<String>,
+    pub todos: Vec<(String, bool)>,
 }
 
 impl MarkerInfo {
     pub fn new() -> MarkerInfo {
-        MarkerInfo { sys_embed: None }
+        MarkerInfo {
+            sys_embed: None,
+            spec_description: None,
+            arg_descriptions: HashMap::new(),
+            ret_val_description: None,
+            todos: Vec::new(),
+        }
     }
 }
 
