@@ -180,7 +180,7 @@ impl Operator {
 
     pub fn to_postfix_operator(token: &Token) -> Option<UnaryOperator> {
         let op = match &token.kind {
-            TokenKind::Exclamation => UnaryOperator::Void,
+            TokenKind::Exclamation => UnaryOperator::None,
             _ => return None,
         };
         Some(op)
@@ -190,7 +190,7 @@ impl Operator {
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum UnaryOperator {
     Not,
-    Void,
+    None,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -232,7 +232,7 @@ pub enum TypeKind {
 // 追加した場合は部分型判定条件を変更する (Type::is_subtype())
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PrimType {
-    Void,
+    None,
     Bool,
     I8, I16, I32, I64, Isize,
     U8, U16, U32, U64, Usize,

@@ -63,8 +63,8 @@ fn lowers_operation_expr() {
 
 #[test]
 fn lowers_operation_1() {
-    // input: true !<not> !<void>
-    // output: ((!<void>)!<not>true)
+    // input: true !<not> !<none>
+    // output: ((!<none>)!<not>true)
     let ast = ast::Expr {
         kind: ast::ExprKind::Operation(
             Box::new(
@@ -79,7 +79,7 @@ fn lowers_operation_1() {
                             },
                         ),
                         ast::OperationElem::Operator(ast::Operator::Unary(ast::UnaryOperator::Not)),
-                        ast::OperationElem::Operator(ast::Operator::Unary(ast::UnaryOperator::Void)),
+                        ast::OperationElem::Operator(ast::Operator::Unary(ast::UnaryOperator::None)),
                     ],
                 },
             ),
@@ -99,7 +99,7 @@ fn lowers_operation_1() {
             kind: ExprKind::Operation(
                 Box::new(
                     Operation::Unary {
-                        operator: ast::UnaryOperator::Void,
+                        operator: ast::UnaryOperator::None,
                         term: Expr {
                             id: ExprId::new(1),
                             kind: ExprKind::Operation(

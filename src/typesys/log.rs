@@ -8,7 +8,7 @@ pub type TypeResult<T> = Result<T, TypeLog>;
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeLog {
     ExpectedMainFnArgsToBeZeroLen { span: Span },
-    ExpectedMainFnRetTypeToBeVoid { span: Span },
+    ExpectedMainFnRetTypeToBeNone { span: Span },
     FnCallWithInvalidArgLen { expected: usize, provided: usize },
     // todo: 引数を追加
     InconsistentConstraint,
@@ -23,8 +23,8 @@ impl From<TypeLog> for CompilerLog {
                 TypeErrorKind::ExpectedMainFnArgsToBeZeroLen,
                 span,
             ),
-            TypeLog::ExpectedMainFnRetTypeToBeVoid { span } => CompilerLog::type_err(
-                TypeErrorKind::ExpectedMainFnRetTypeToBeVoid,
+            TypeLog::ExpectedMainFnRetTypeToBeNone { span } => CompilerLog::type_err(
+                TypeErrorKind::ExpectedMainFnRetTypeToBeNone,
                 span,
             ),
             TypeLog::FnCallWithInvalidArgLen { expected, provided } => CompilerLog::type_err(

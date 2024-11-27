@@ -41,8 +41,8 @@ impl<'a> TypeResolver<'a> {
                                 self.builder.collect_log::<()>(item.mod_id, Err(TypeLog::ExpectedMainFnArgsToBeZeroLen { span: Span::new(0, 0) /* fix: span */ }));
                             }
                             if let Some(r#type) = &decl.body.ret_type {
-                                if *r#type.kind != hir::TypeKind::Prim(ast::PrimType::Void) {
-                                    self.builder.collect_log::<()>(item.mod_id, Err(TypeLog::ExpectedMainFnRetTypeToBeVoid { span: Span::new(0, 0) /* fix: span */ }));
+                                if *r#type.kind != hir::TypeKind::Prim(ast::PrimType::None) {
+                                    self.builder.collect_log::<()>(item.mod_id, Err(TypeLog::ExpectedMainFnRetTypeToBeNone { span: Span::new(0, 0) /* fix: span */ }));
                                 }
                             }
                         },
@@ -85,8 +85,8 @@ impl<'a> TypeResolver<'a> {
                         let result = self.builder.determine_type(TypeId::Expr(body.id, term.id), Type::Prim(ast::PrimType::Bool));
                         self.collect_log(result);
                     },
-                    ast::UnaryOperator::Void => {
-                        let result = self.builder.determine_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::Void));
+                    ast::UnaryOperator::None => {
+                        let result = self.builder.determine_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::None));
                         self.collect_log(result);
                         let result = self.builder.assume_unknown(TypeId::Expr(body.id, term.id));
                         self.collect_log(result);
@@ -111,7 +111,7 @@ impl<'a> TypeResolver<'a> {
             hir::ExprKind::Block(block) => self.resolve_constrained_block(body, &expr.id, block),
             hir::ExprKind::Literal(literal) => {
                 let r#type = match literal {
-                    token::Literal::Void => Type::Prim(ast::PrimType::Void),
+                    token::Literal::None => Type::Prim(ast::PrimType::None),
                     token::Literal::Bool { value: _ } => Type::Prim(ast::PrimType::Bool),
                     // todo: 桁などの型検査を実施する & テスト追加
                     token::Literal::Int { base: _, int_digits: _, r#type } => match r#type {
@@ -141,7 +141,7 @@ impl<'a> TypeResolver<'a> {
                 self.collect_log(result);
             },
             hir::ExprKind::Ret(ret) => {
-                let result = self.builder.determine_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::Void));
+                let result = self.builder.determine_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::None));
                 self.collect_log(result);
                 self.resolve_expr(body, &ret.value);
                 let result = self.builder.constrain_with(
@@ -188,7 +188,7 @@ impl<'a> TypeResolver<'a> {
                     Some(v) => v,
                     None => unreachable!("unknown variable id"),
                 };
-                let result = self.builder.determine_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::Void));
+                let result = self.builder.determine_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::None));
                 self.collect_log(result);
                 if let Some(r#type) = &var_def.r#type {
                     let result = self.builder.determine_type(TypeId::Var(body.id, *var_id), r#type.into());
@@ -201,7 +201,7 @@ impl<'a> TypeResolver<'a> {
                 }
             },
             hir::ExprKind::VarBind(bind) => {
-                let result = self.builder.determine_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::Void));
+                let result = self.builder.determine_type(TypeId::Expr(body.id, expr.id), Type::Prim(ast::PrimType::None));
                 self.collect_log(result);
                 self.resolve_expr(body, &bind.value);
                 // 制約方向としては通常「バインド値が変数の型を制約する」ことになるが「変数がバインド値の型を制約する」ようにする
@@ -210,7 +210,7 @@ impl<'a> TypeResolver<'a> {
                 self.collect_log(result);
             },
             hir::ExprKind::If(r#if) => {
-                // todo: 条件網羅のため、body の型が void でないかつ else 節がついていない場合はエラーを吐く（理想は CFG 解析をして条件網羅を判断する）
+                // todo: 条件網羅のため、body の型が none でないかつ else 節がついていない場合はエラーを吐く（理想は CFG 解析をして条件網羅を判断する）
                 let result = self.builder.assume_unknown(TypeId::Expr(body.id, expr.id));
                 self.collect_log(result);
                 self.resolve_expr(body, &r#if.cond);
@@ -253,7 +253,7 @@ impl<'a> TypeResolver<'a> {
                 self.collect_log(result);
             },
             None => {
-                let result = self.builder.determine_type(TypeId::Expr(body.id, *constrained_expr_id), Type::Prim(ast::PrimType::Void));
+                let result = self.builder.determine_type(TypeId::Expr(body.id, *constrained_expr_id), Type::Prim(ast::PrimType::None));
                 self.collect_log(result);
             },
         }
@@ -268,7 +268,7 @@ impl<'a> TypeResolver<'a> {
                 self.collect_log(result);
             },
             None => {
-                let result = self.builder.determine_type(TypeId::Expr(body.id, *constraining_expr_id), Type::Prim(ast::PrimType::Void));
+                let result = self.builder.determine_type(TypeId::Expr(body.id, *constraining_expr_id), Type::Prim(ast::PrimType::None));
                 self.collect_log(result);
             },
         }

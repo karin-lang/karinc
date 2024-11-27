@@ -99,7 +99,7 @@ pub enum SyntaxErrorKind {
 #[derive(Clone, Debug, PartialEq)]
 pub enum TypeErrorKind {
     ExpectedMainFnArgsToBeZeroLen,
-    ExpectedMainFnRetTypeToBeVoid,
+    ExpectedMainFnRetTypeToBeNone,
     FnCallWithInvalidArgLen { expected: usize, provided: usize },
     InconsistentConstraint,
     MainFnIsNotFound,

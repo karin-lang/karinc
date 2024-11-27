@@ -148,7 +148,7 @@ impl ast::PrimType {
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Literal {
-    Void,
+    None,
     Bool { value: bool },
     Int { base: Base, int_digits: String, r#type: Option<ast::PrimType> },
     Float { digits: Option<FloatDigits>, r#type: Option<ast::PrimType> },
@@ -197,7 +197,7 @@ pub enum Keyword {
     Ret,
     Struct,
     // 字句解析時点ではキーワードとして扱い、構文解析時に型もしくはリテラルに変換する
-    Void,
+    None,
 }
 
 impl Keyword {
@@ -215,7 +215,7 @@ impl Keyword {
             "ref" => Keyword::Ref,
             "ret" => Keyword::Ret,
             "struct" => Keyword::Struct,
-            "void" => Keyword::Void,
+            "none" => Keyword::None,
             _ => return None,
         };
         Some(keyword)

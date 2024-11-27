@@ -655,7 +655,7 @@ fn parses_postfix_operation_expr_1() {
                                     span: Span::new(0, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Unary(UnaryOperator::Void)),
+                            OperationElem::Operator(Operator::Unary(UnaryOperator::None)),
                         ],
                     },
                 ),
@@ -706,7 +706,7 @@ fn parses_mixed_operator_expr_1() {
                                     span: Span::new(2, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Unary(UnaryOperator::Void)),
+                            OperationElem::Operator(Operator::Unary(UnaryOperator::None)),
                             OperationElem::Operator(Operator::Binary(BinaryOperator::Add)),
                         ],
                     },
@@ -721,8 +721,8 @@ fn parses_mixed_operator_expr_1() {
 
 #[test]
 fn parses_mixed_operator_expr_2() {
-    // input: !<not> a !<void>
-    // output: a !<void> !<not>
+    // input: !<not> a !<none>
+    // output: a !<none> !<not>
     let tokens = vec![
         token!(Exclamation, 0, 1),
         id_token!("a", 1, 1),
@@ -747,7 +747,7 @@ fn parses_mixed_operator_expr_2() {
                                     span: Span::new(1, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Unary(UnaryOperator::Void)),
+                            OperationElem::Operator(Operator::Unary(UnaryOperator::None)),
                             OperationElem::Operator(Operator::Unary(UnaryOperator::Not)),
                         ],
                     },
@@ -762,8 +762,8 @@ fn parses_mixed_operator_expr_2() {
 
 #[test]
 fn parses_mixed_operator_expr_3() {
-    // input: !<not> a + b !<void>
-    // output: a !<not> b !<void> +
+    // input: !<not> a + b !<none>
+    // output: a !<not> b !<none> +
     let tokens = vec![
         token!(Exclamation, 0, 1),
         id_token!("a", 1, 1),
@@ -799,7 +799,7 @@ fn parses_mixed_operator_expr_3() {
                                     span: Span::new(3, 1),
                                 },
                             ),
-                            OperationElem::Operator(Operator::Unary(UnaryOperator::Void)),
+                            OperationElem::Operator(Operator::Unary(UnaryOperator::None)),
                             OperationElem::Operator(Operator::Binary(BinaryOperator::Add)),
                         ],
                     },
@@ -1695,9 +1695,9 @@ fn parses_prim_type() {
 }
 
 #[test]
-fn parses_void_type_from_keyword() {
+fn parses_none_type_from_keyword() {
     let tokens = vec![
-        keyword_token!(Void, 0, 1),
+        keyword_token!(None, 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let mut last_body_id = 0;
@@ -1706,7 +1706,7 @@ fn parses_void_type_from_keyword() {
     assert_eq!(
         parser.parse_type().unwrap(),
         Type {
-            kind: Box::new(TypeKind::Prim(PrimType::Void)),
+            kind: Box::new(TypeKind::Prim(PrimType::None)),
             span: Span::new(0, 1),
         },
     );
@@ -2228,9 +2228,9 @@ fn parses_literal_expr() {
 }
 
 #[test]
-fn parses_void_literal_from_keyword() {
+fn parses_none_literal_from_keyword() {
     let tokens = vec![
-        keyword_token!(Void, 0, 1),
+        keyword_token!(None, 0, 1),
     ];
     let mut crate_context = ParserHakoContext::new(HakoId::new(0));
     let mut last_body_id = 0;
@@ -2240,7 +2240,7 @@ fn parses_void_literal_from_keyword() {
         parser.parse_expr().unwrap(),
         Expr {
             kind: ExprKind::Literal(
-                token::Literal::Void,
+                token::Literal::None,
             ),
             span: Span::new(0, 1),
         },

@@ -109,11 +109,11 @@ fn generates_js() {
         hashmap! {
             TopLevelId::Item(ItemId::new(0, 0)) => typesys::Type::Fn(
                 typesys::FnType {
-                    ret_type: Box::new(typesys::Type::Prim(ast::PrimType::Void)),
+                    ret_type: Box::new(typesys::Type::Prim(ast::PrimType::None)),
                     arg_types: Vec::new(),
                 },
             ),
-            TopLevelId::FnRet(ItemId::new(0, 0)) => typesys::Type::Prim(ast::PrimType::Void),
+            TopLevelId::FnRet(ItemId::new(0, 0)) => typesys::Type::Prim(ast::PrimType::None),
         }.into(),
     );
 
@@ -129,7 +129,7 @@ fn generates_js() {
                     typesys::TypePtr::new(
                         typesys::Type::Fn(
                             typesys::FnType {
-                                ret_type: Box::new(typesys::Type::Prim(ast::PrimType::Void)),
+                                ret_type: Box::new(typesys::Type::Prim(ast::PrimType::None)),
                                 arg_types: Vec::new(),
                             },
                         ),
