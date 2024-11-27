@@ -437,13 +437,13 @@ fn constrains_literal_types() {
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
                 ),
                 TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
-                    TypePtr::new(Type::Infer(InferType::Int)),
+                    TypePtr::new(Type::Ambiguous(AmbiguousType::Int)),
                 ),
                 TypeId::Expr(BodyId::new(0), ExprId::new(2)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Usize)),
                 ),
                 TypeId::Expr(BodyId::new(0), ExprId::new(3)) => TypeConstraint::new(
-                    TypePtr::new(Type::Infer(InferType::Float)),
+                    TypePtr::new(Type::Ambiguous(AmbiguousType::Float)),
                 ),
                 TypeId::Expr(BodyId::new(0), ExprId::new(4)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::F32)),

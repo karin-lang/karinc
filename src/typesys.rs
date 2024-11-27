@@ -10,7 +10,7 @@ use crate::hir;
 
 #[derive(Clone, Debug, PartialEq)]
 pub enum Type {
-    Infer(InferType),
+    Ambiguous(AmbiguousType),
     Item(ast::Path),
     Prim(ast::PrimType),
     Fn(FnType),
@@ -23,6 +23,47 @@ pub enum Type {
 impl Type {
     pub fn is_resolved(&self) -> bool {
         *self != Type::Unresolved
+    }
+
+    // todo: テストを追加
+    // 双方の型に一貫性があるか判断する; どちらか一方がもう一方の部分型である場合に一貫性があるとみなす
+    //   ※同一の型は部分型としてみなされる
+    pub fn is_consistent(&self, r#type: &Type) -> bool {
+        self.is_subtype(r#type) || r#type.is_subtype(self)
+    }
+
+    // todo: テストを追加
+    // type が self の部分型か判定する
+    pub fn is_subtype(&self, r#type: &Type) -> bool {
+        match self {
+            Type::Ambiguous(ambiguous) => match r#type {
+                Type::Prim(prim) => match ambiguous {
+                    AmbiguousType::Num => match prim {
+                        ast::PrimType::I8 | ast::PrimType::I16 | ast::PrimType::I32 | ast::PrimType::I64 |
+                        ast::PrimType::U8 | ast::PrimType::U16 | ast::PrimType::U32 | ast::PrimType::U64 |
+                        ast::PrimType::F32 | ast::PrimType::F64 => true,
+                        _ => false,
+                    },
+                    AmbiguousType::Int => match prim {
+                        ast::PrimType::I8 | ast::PrimType::I16 | ast::PrimType::I32 | ast::PrimType::I64 |
+                        ast::PrimType::U8 | ast::PrimType::U16 | ast::PrimType::U32 | ast::PrimType::U64 => true,
+                        _ => false,
+                    },
+                    AmbiguousType::Float => match prim {
+                        ast::PrimType::F32 | ast::PrimType::F64 => true,
+                        _ => false,
+                    },
+                },
+                _ => false,
+            },
+            Type::Item(_) => self == r#type, // fix
+            Type::Prim(_) => self == r#type, // check
+            Type::Fn(_) => self == r#type, // check
+            // todo: Unresolved を削除して Unknown に統合 (unknown は未解決の型を表す)
+            // あわせて TypeLog::UnresolvedType を削除
+            Type::Unresolved => true, // rem
+            Type::Unknown => true,
+        }
     }
 }
 
@@ -45,17 +86,17 @@ impl From<&hir::Type> for Type {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub enum InferType {
+pub enum AmbiguousType {
     Num,
     Int,
     Float,
 }
 
-impl InferType {
+impl AmbiguousType {
     pub fn derive_default(&self) -> ast::PrimType {
         match self {
-            InferType::Num | InferType::Int => ast::PrimType::I32,
-            InferType::Float => ast::PrimType::F32,
+            AmbiguousType::Num | AmbiguousType::Int => ast::PrimType::I32,
+            AmbiguousType::Float => ast::PrimType::F32,
         }
     }
 }

@@ -229,6 +229,7 @@ pub enum TypeKind {
     Prim(PrimType),
 }
 
+// 追加した場合は部分型判定条件を変更する (Type::is_subtype())
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum PrimType {
     Void,

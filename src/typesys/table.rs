@@ -108,12 +108,6 @@ impl<'a> TypeTableBuilder<'a> {
         }
     }
 
-    // todo: 部分型に対応
-    // 双方の型に一貫性があるか判断する; 双方の型が解決済み、かつ双方の型が一致する場合に一貫性があるとみなす
-    pub fn is_consistent(target: &Type, constrain_with: &Type) -> bool {
-        !target.is_resolved() || !constrain_with.is_resolved() || *target == *constrain_with
-    }
-
     // target を一時的に不明型で決定する (型解決終了時までに解決されなかった場合は解決不可能な型としてエラーが発生する)
     pub fn assume_unknown(&mut self, target: TypeId) -> TypeResult<()> {
         if !self.table.contains_type_id(&target) {
@@ -126,7 +120,7 @@ impl<'a> TypeTableBuilder<'a> {
     pub fn determine_type(&mut self, target: TypeId, r#type: Type) -> TypeResult<()> {
         if let Some(constraint) = self.table.get_mut(&target) {
             let ptr = constraint.get_ptr().borrow();
-            if !TypeTableBuilder::is_consistent(&*ptr, &r#type) {
+            if !ptr.is_consistent(&r#type) {
                 // detects inconsistent types
                 return Err(TypeLog::InconsistentConstraint);
             }
@@ -143,7 +137,7 @@ impl<'a> TypeTableBuilder<'a> {
                 Some(type_constrain_with) => {
                     if let Some(target_constraint) = self.table.get(&target) {
                         let target_ptr = target_constraint.get_ptr().borrow();
-                        if !TypeTableBuilder::is_consistent(&target_ptr, type_constrain_with) {
+                        if !target_ptr.is_consistent(type_constrain_with) {
                             // detects inconsistent types
                             return Err(TypeLog::InconsistentConstraint);
                         }
@@ -177,7 +171,7 @@ impl<'a> TypeTableBuilder<'a> {
             // 制約先の型を新しいポインタに設定する
             match self.table.get_mut(&target) {
                 Some(constraint) => {
-                    if !TypeTableBuilder::is_consistent(&constraint.get_ptr().borrow(), &new_ptr.borrow()) {
+                    if !constraint.get_ptr().borrow().is_consistent(&new_ptr.borrow()) {
                         // detects inconsistent types
                         return Err(TypeLog::InconsistentConstraint);
                     }

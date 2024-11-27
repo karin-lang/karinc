@@ -116,11 +116,11 @@ impl<'a> TypeResolver<'a> {
                     // todo: 桁などの型検査を実施する & テスト追加
                     token::Literal::Int { base: _, int_digits: _, r#type } => match r#type {
                         Some(r#type) => Type::Prim(*r#type),
-                        None => Type::Infer(InferType::Int), // todo: uint を追加
+                        None => Type::Ambiguous(AmbiguousType::Int), // todo: AmbiguousType::UnsignedInt を作成
                     },
                     token::Literal::Float { digits: _, r#type } => match r#type {
                         Some(r#type) => Type::Prim(*r#type),
-                        None => Type::Infer(InferType::Float),
+                        None => Type::Ambiguous(AmbiguousType::Float),
                     },
                     token::Literal::Char { value: _ } => Type::Prim(ast::PrimType::Char),
                     token::Literal::Str { value: _ } => Type::Prim(ast::PrimType::Str),
