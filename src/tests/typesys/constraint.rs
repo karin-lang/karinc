@@ -653,8 +653,8 @@ fn detects_inconsistent_constraint_of_var_init() {
                                 args: Vec::new(),
                                 vars: vec![
                                     hir::VarDef {
-                                            id: ast::Id { id: "id".to_string(), span: Span::new(0, 1) },
-                                            r#type: Some(
+                                        id: ast::Id { id: "id".to_string(), span: Span::new(0, 1) },
+                                        r#type: Some(
                                             hir::Type {
                                                 kind: Box::new(hir::TypeKind::Prim(ast::PrimType::I32)),
                                             },
@@ -697,10 +697,8 @@ fn detects_inconsistent_constraint_of_var_init() {
                 TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
-                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
-                    vec![TypeId::Var(BodyId::new(0), VarId::new(0))],
-                    None,
                 ),
             },
         ).to_sorted_vec(),
@@ -996,7 +994,7 @@ fn constrains_fn_call_with_no_item_id_as_unresolved() {
         TypeTable::from(
             hashmap! {
                 TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
-                    TypePtr::new(Type::Unresolved),
+                    TypePtr::new(Type::Unknown),
                 ),
             },
         ).to_sorted_vec(),
@@ -1005,7 +1003,7 @@ fn constrains_fn_call_with_no_item_id_as_unresolved() {
         logs,
         hashmap! {
             ModId::new(0, 0) => vec![
-                TypeLog::UnresolvedType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(0)) },
+                TypeLog::UnknownType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(0)) },
             ],
         },
     );
@@ -1300,7 +1298,7 @@ fn detects_invalid_types_on_finalization() {
             TypePtr::new(Type::Unknown),
         ),
         TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
-            TypePtr::new(Type::Unresolved),
+            TypePtr::new(Type::Unknown),
         ),
     }.into();
     let top_level_type_table = TopLevelTypeTable::new();
@@ -1312,7 +1310,7 @@ fn detects_invalid_types_on_finalization() {
         hashmap! {
             ModId::new(0, 0) => vec![
                 TypeLog::UnknownType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(0)) },
-                TypeLog::UnresolvedType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(1)) },
+                TypeLog::UnknownType { type_id: TypeId::Expr(BodyId::new(0), ExprId::new(1)) },
             ],
         },
     );

@@ -111,7 +111,7 @@ impl<'a> TypeTableBuilder<'a> {
     // target を一時的に不明型で決定する (型解決終了時までに解決されなかった場合は解決不可能な型としてエラーが発生する)
     pub fn assume_unknown(&mut self, target: TypeId) -> TypeResult<()> {
         if !self.table.contains_type_id(&target) {
-            self.determine_type(target, Type::Unresolved)?;
+            self.determine_type(target, Type::Unknown)?;
         }
         Ok(())
     }
@@ -130,7 +130,7 @@ impl<'a> TypeTableBuilder<'a> {
         Ok(())
     }
 
-    // target の型を他要素の型で制約する
+    // target の型を constrain_with の型で制約する
     pub fn constrain_with(&mut self, target: TypeId, constrain_with: TypeId) -> TypeResult<()> {
         if let TypeId::TopLevel(top_level_id) = &constrain_with {
             match self.top_level_type_table.get(top_level_id) {
@@ -138,7 +138,6 @@ impl<'a> TypeTableBuilder<'a> {
                     if let Some(target_constraint) = self.table.get(&target) {
                         let target_ptr = target_constraint.get_ptr().borrow();
                         if !target_ptr.is_consistent(type_constrain_with) {
-                            // detects inconsistent types
                             return Err(TypeLog::InconsistentConstraint);
                         }
                     }
@@ -152,16 +151,38 @@ impl<'a> TypeTableBuilder<'a> {
                 None => panic!("unknown top level id"), // todo: fix panic?
             }
         } else {
-            let new_ptr = match self.table.get_mut(&constrain_with) {
-                Some(constraint) => {
-                    constraint.constrain(target);
-                    if constraint.get_ptr().borrow().is_resolved() {
-                        // 制約元の型が解決済みであれば制約元の型を制約先に複製する
-                        constraint.get_ptr().clone()
+            let is_subtype = match self.table.get(&target) {
+                Some(target) => match self.table.get(&constrain_with) {
+                    Some(constrain_with) => target.is_subtype(&constrain_with),
+                    None => false, // value in this case is not used
+                },
+                None => true,
+            };
+            let new_ptr = match self.table.get(&constrain_with) {
+                Some(constrain_with) => {
+                    if is_subtype {
+                        // constrain_with の型で置き換える
+                        let constrain_with = constrain_with.get_ptr().clone();
+                        match self.table.get(&target) {
+                            Some(target) => {
+                                let target = target.get_ptr().clone();
+                                if !constrain_with.borrow().is_consistent(&target.borrow()) {
+                                    return Err(TypeLog::InconsistentConstraint);
+                                }
+                            },
+                            None => (),
+                        }
+                        constrain_with
                     } else {
-                        // 制約元の型が未解決であれば制約先の型を制約元に複製する
-                        match self.table.get_mut(&target) {
-                            Some(constraint) => constraint.get_ptr().clone(),
+                        // target の型で置き換える
+                        match self.table.get(&target) {
+                            Some(target) => {
+                                let target = target.get_ptr().clone();
+                                if !constrain_with.get_ptr().borrow().is_consistent(&target.borrow()) {
+                                    return Err(TypeLog::InconsistentConstraint);
+                                }
+                                target
+                            },
                             None => TypePtr::new(Type::Unknown),
                         }
                     }
@@ -169,14 +190,11 @@ impl<'a> TypeTableBuilder<'a> {
                 None => TypePtr::new(Type::Unknown),
             };
             // 制約先の型を新しいポインタに設定する
+            // 上位型と下位型が存在した際は上位型を下位型で置き換える
             match self.table.get_mut(&target) {
-                Some(constraint) => {
-                    if !constraint.get_ptr().borrow().is_consistent(&new_ptr.borrow()) {
-                        // detects inconsistent types
-                        return Err(TypeLog::InconsistentConstraint);
-                    }
-                    constraint.set_ptr(new_ptr.clone());
-                    constraint.constrain_with(constrain_with);
+                Some(target_constraint) => {
+                    target_constraint.set_ptr(new_ptr.clone());
+                    target_constraint.constrain_with(constrain_with);
                 },
                 None => {
                     let new_constraint = TypeConstraint::new_constrained(
@@ -187,9 +205,11 @@ impl<'a> TypeTableBuilder<'a> {
                     self.table.insert(target, new_constraint);
                 },
             }
-            // 制約元の型を制約先と一致させる
             match self.table.get_mut(&constrain_with) {
-                Some(constraint) => constraint.set_ptr(new_ptr),
+                Some(constrain_with) => {
+                    constrain_with.constrain(target);
+                    constrain_with.set_ptr(new_ptr);
+                },
                 None => (),
             }
         }
@@ -220,7 +240,6 @@ impl<'a> TypeTableBuilder<'a> {
         for (type_id, constraint) in self.table.to_sorted_vec() {
             let new_log = match &*constraint.get_ptr().borrow() {
                 Type::Unknown => Some(TypeLog::UnknownType { type_id: *type_id }),
-                Type::Unresolved => Some(TypeLog::UnresolvedType { type_id: *type_id }),
                 _ => None,
             };
             if let Some(new_log) = new_log {
@@ -249,6 +268,10 @@ impl TypeConstraint {
 
     pub fn new_constrained(ptr: TypePtr, constrains: Vec<TypeId>, constrained_with: Option<TypeId>) -> TypeConstraint {
         TypeConstraint { ptr, constrains, constrained_with }
+    }
+
+    pub fn is_subtype(&self, constraint: &TypeConstraint) -> bool {
+        self.get_ptr().borrow().is_subtype(&constraint.get_ptr().borrow())
     }
 
     pub fn get_ptr(&self) -> &TypePtr {

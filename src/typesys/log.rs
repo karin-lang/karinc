@@ -14,7 +14,6 @@ pub enum TypeLog {
     InconsistentConstraint,
     MainFnIsNotFound,
     UnknownType { type_id: TypeId },
-    UnresolvedType { type_id: TypeId },
 }
 
 impl From<TypeLog> for CompilerLog {
@@ -42,10 +41,6 @@ impl From<TypeLog> for CompilerLog {
             ),
             TypeLog::UnknownType { type_id } => CompilerLog::type_err(
                 TypeErrorKind::UnknownType { type_id },
-                Span::new(0, 0),
-            ),
-            TypeLog::UnresolvedType { type_id } => CompilerLog::type_err(
-                TypeErrorKind::UnresolvedType { type_id },
                 Span::new(0, 0),
             ),
         }

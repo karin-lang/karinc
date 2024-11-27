@@ -14,17 +14,10 @@ pub enum Type {
     Item(ast::Path),
     Prim(ast::PrimType),
     Fn(FnType),
-    // todo: Unresolved を削除して Unknown に統合 (unknown は未解決の型を表す)
-    // あわせて TypeLog::UnresolvedType を削除
-    Unresolved,
     Unknown,
 }
 
 impl Type {
-    pub fn is_resolved(&self) -> bool {
-        *self != Type::Unresolved
-    }
-
     // todo: テストを追加
     // 双方の型に一貫性があるか判断する; どちらか一方がもう一方の部分型である場合に一貫性があるとみなす
     //   ※同一の型は部分型としてみなされる
@@ -59,9 +52,6 @@ impl Type {
             Type::Item(_) => self == r#type, // fix
             Type::Prim(_) => self == r#type, // check
             Type::Fn(_) => self == r#type, // check
-            // todo: Unresolved を削除して Unknown に統合 (unknown は未解決の型を表す)
-            // あわせて TypeLog::UnresolvedType を削除
-            Type::Unresolved => true, // rem
             Type::Unknown => true,
         }
     }

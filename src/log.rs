@@ -104,5 +104,4 @@ pub enum TypeErrorKind {
     InconsistentConstraint,
     MainFnIsNotFound,
     UnknownType { type_id: TypeId },
-    UnresolvedType { type_id: TypeId },
 }
