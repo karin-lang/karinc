@@ -118,14 +118,14 @@ fn generates_js() {
     );
 
     let (
-        type_constraint_table,
+        type_table,
         type_constraint_lowering_logs,
-    ) = typesys::constraint::lower::TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    ) = typesys::resolve::TypeResolver::resolve(&hir, &top_level_type_table, None);
     assert_eq!(
-        type_constraint_table.to_sorted_vec(),
-        typesys::constraint::TypeConstraintTable::from(
+        type_table.to_sorted_vec(),
+        typesys::table::TypeTable::from(
             hashmap! {
-                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => typesys::constraint::TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(0)) => typesys::table::TypeConstraint::new_constrained(
                     typesys::TypePtr::new(
                         typesys::Type::Fn(
                             typesys::FnType {

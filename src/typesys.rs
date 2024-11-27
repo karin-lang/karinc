@@ -1,4 +1,5 @@
-pub mod constraint;
+pub mod resolve;
+pub mod table;
 pub mod log;
 
 use std::cell::{Ref, RefCell};
@@ -13,6 +14,8 @@ pub enum Type {
     Item(ast::Path),
     Prim(ast::PrimType),
     Fn(FnType),
+    // todo: Unresolved を削除して Unknown に統合 (unknown は未解決の型を表す)
+    // あわせて TypeLog::UnresolvedType を削除
     Unresolved,
     Unknown,
 }

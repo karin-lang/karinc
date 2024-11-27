@@ -5,8 +5,7 @@ use maplit::hashmap;
 use crate::lexer::token::{self, Span};
 use crate::parser::ast::{self, tltype::TopLevelTypeTable};
 use crate::hir::{self, id::*};
-use crate::typesys::*;
-use crate::typesys::constraint::{*, lower::*};
+use crate::typesys::{*, resolve::*, table::*};
 use crate::typesys::log::TypeLog;
 
 #[test]
@@ -61,11 +60,11 @@ fn constrains_types() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
@@ -130,11 +129,11 @@ fn validates_main_fn_signature() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, Some(&"my_hako::main".into()));
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, Some(&"my_hako::main".into()));
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
@@ -215,11 +214,11 @@ fn constrains_different_body_types() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
@@ -292,11 +291,11 @@ fn constrains_block_type() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Char)),
@@ -428,11 +427,11 @@ fn constrains_literal_types() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
@@ -515,11 +514,11 @@ fn constrains_by_top_level_ref() {
             },
         ),
     }.into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::U16)),
@@ -601,11 +600,11 @@ fn constrains_by_local_ref() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::U8)),
@@ -686,11 +685,11 @@ fn detects_inconsistent_constraint_of_var_init() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::Var(BodyId::new(0), VarId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::I32)),
@@ -769,11 +768,11 @@ fn constrains_by_ret() {
         ),
         TopLevelId::FnRet(ItemId::new(0, 0)) => Type::Prim(ast::PrimType::Bool),
     }.into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
@@ -840,11 +839,11 @@ fn constrains_by_unmatch_type_ret() {
         ),
         TopLevelId::FnRet(ItemId::new(0, 0)) => Type::Prim(ast::PrimType::Void),
     }.into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
@@ -926,11 +925,11 @@ fn constrains_by_fn_call() {
         TopLevelId::FnRet(ItemId::new(0, 0)) => Type::Prim(ast::PrimType::Void),
         TopLevelId::FnArg(ItemId::new(0, 0), FormalArgId::new(0)) => Type::Prim(ast::PrimType::Bool),
     }.into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
@@ -990,11 +989,11 @@ fn constrains_fn_call_with_no_item_id_as_unresolved() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Unresolved),
@@ -1084,11 +1083,11 @@ fn detects_inconsistent_constraint_of_fn_call() {
         TopLevelId::FnRet(ItemId::new(0, 0)) => Type::Prim(ast::PrimType::Void),
         TopLevelId::FnArg(ItemId::new(0, 0), FormalArgId::new(0)) => Type::Prim(ast::PrimType::Bool),
     }.into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::FormalArg(BodyId::new(0), FormalArgId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
@@ -1179,11 +1178,11 @@ fn constrains_var_by_bind() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::Var(BodyId::new(0), VarId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
@@ -1266,15 +1265,13 @@ fn detects_inconsistent_constraint_of_var_bind() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
-                TypeId::Var(BodyId::new(0), VarId::new(0)) => TypeConstraint::new_constrained(
+                TypeId::Var(BodyId::new(0), VarId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Usize)),
-                    Vec::new(),
-                    None,
                 ),
                 TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
@@ -1282,10 +1279,8 @@ fn detects_inconsistent_constraint_of_var_bind() {
                 TypeId::Expr(BodyId::new(0), ExprId::new(1)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
                 ),
-                TypeId::Expr(BodyId::new(0), ExprId::new(2)) => TypeConstraint::new_constrained(
+                TypeId::Expr(BodyId::new(0), ExprId::new(2)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
-                    Vec::new(),
-                    None,
                 ),
             },
         ).to_sorted_vec(),
@@ -1300,7 +1295,7 @@ fn detects_inconsistent_constraint_of_var_bind() {
 
 #[test]
 fn detects_invalid_types_on_finalization() {
-    let type_constraint_table = hashmap! {
+    let type_table = hashmap! {
         TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
             TypePtr::new(Type::Unknown),
         ),
@@ -1309,7 +1304,7 @@ fn detects_invalid_types_on_finalization() {
         ),
     }.into();
     let top_level_type_table = TopLevelTypeTable::new();
-    let builder = TypeConstraintBuilder::from_table(&top_level_type_table, type_constraint_table);
+    let builder = TypeTableBuilder::from_table(&top_level_type_table, type_table);
     let (_, logs) = builder.finalize();
 
     assert_eq!(
@@ -1400,11 +1395,11 @@ fn constrains_if_type() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Char)),
@@ -1504,11 +1499,11 @@ fn constrains_if_type_with_void() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new(
                     TypePtr::new(Type::Prim(ast::PrimType::Void)),
@@ -1571,11 +1566,11 @@ fn constrains_endless_for_type() {
         todos: Vec::new(),
     };
     let top_level_type_table = HashMap::new().into();
-    let (table, logs) = TypeConstraintLowering::lower(&hir, &top_level_type_table, None);
+    let (table, logs) = TypeResolver::resolve(&hir, &top_level_type_table, None);
 
     assert_eq!(
         table.to_sorted_vec(),
-        TypeConstraintTable::from(
+        TypeTable::from(
             hashmap! {
                 TypeId::Expr(BodyId::new(0), ExprId::new(0)) => TypeConstraint::new_constrained(
                     TypePtr::new(Type::Prim(ast::PrimType::Bool)),
